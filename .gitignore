@@ -1,0 +1,6 @@
+/.idea
+/venv
+*.pyc
+__pycache__
+.DS_Store
+/src/test/test_inverter_monitor.log

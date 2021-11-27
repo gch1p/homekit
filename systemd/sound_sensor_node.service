@@ -1,0 +1,13 @@
+[Unit]
+Description=MyHomeKit Sound Sensor Node
+After=network-online.target
+
+[Service]
+User=root
+Group=root
+Restart=on-failure
+ExecStart=/home/user/homekit/src/sound_sensor_node.py --config /etc/sound_sensor_node.toml
+WorkingDirectory=/root
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=sensors mqtt receiver
+After=network.target
+
+[Service]
+User=user
+Group=user
+Restart=on-failure
+ExecStart=python3 /home/user/home/src/sensors_mqtt_receiver.py
+WorkingDirectory=/home/user
+
+[Install]
+WantedBy=multi-user.target

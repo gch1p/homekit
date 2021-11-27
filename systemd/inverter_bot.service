@@ -1,0 +1,13 @@
+[Unit]
+Description=InfiniSolar V 5KW Inverter Telegram Bot
+After=inverterd.service
+
+[Service]
+User=user
+Group=user
+Restart=on-failure
+ExecStart=/home/user/homekit/src/inverter_bot.py
+WorkingDirectory=/home/user
+
+[Install]
+WantedBy=multi-user.target

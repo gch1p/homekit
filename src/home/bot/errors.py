@@ -1,0 +1,2 @@
+class StoreNotEnabledError(Exception):
+    pass

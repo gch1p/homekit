@@ -1,0 +1,12 @@
+[Unit]
+Description=MyHomeKit's Sound Bot for Telegram
+After=network-online.target
+
+[Service]
+Restart=on-failure
+User=user
+WorkingDirectory=/home/user
+ExecStart=/home/user/homekit/src/sound_bot.py
+
+[Install]
+WantedBy=multi-user.target

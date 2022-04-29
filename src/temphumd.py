@@ -1,29 +1,26 @@
 #!/usr/bin/env python3
-import smbus
-import argparse
 import asyncio
 import json
 import logging
 
+from typing import Optional
+
 from home.config import config
 from home.util import parse_addr
+from home.temphum import SensorType, create_sensor, TempHumSensor
 
 logger = logging.getLogger(__name__)
-bus = None
+sensor: Optional[TempHumSensor] = None
 lock = asyncio.Lock()
 delay = 0.01
 
 
-async def si7021_read():
+async def get_measurements():
     async with lock:
         await asyncio.sleep(delay)
 
-        # these are still blocking... meh
-        raw = bus.read_i2c_block_data(0x40, 0xE3, 2)
-        temp = 175.72 * (raw[0] << 8 | raw[1]) / 65536.0 - 46.85
-
-        raw = bus.read_i2c_block_data(0x40, 0xE5, 2)
-        rh = 125.0 * (raw[0] << 8 | raw[1]) / 65536.0 - 6.0
+        temp = sensor.temperature()
+        rh = sensor.humidity()
 
         return rh, temp
 
@@ -41,7 +38,7 @@ async def handle_client(reader, writer):
 
         if request == 'read':
             try:
-                rh, temp = await asyncio.wait_for(si7021_read(), timeout=3)
+                rh, temp = await asyncio.wait_for(get_measurements(), timeout=3)
                 data = dict(humidity=rh, temp=temp)
             except asyncio.TimeoutError as e:
                 logger.exception(e)
@@ -68,12 +65,14 @@ async def run_server(host, port):
 if __name__ == '__main__':
     config.load()
 
-    host, port = parse_addr(config['server']['listen'])
+    if 'measure_delay' in config['sensor']:
+        delay = float(config['sensor']['measure_delay'])
 
-    delay = float(config['smbus']['delay'])
-    bus = smbus.SMBus(int(config['smbus']['bus']))
+    sensor = create_sensor(SensorType(config['sensor']['type']),
+                           int(config['sensor']['bus']))
 
     try:
+        host, port = parse_addr(config['server']['listen'])
         asyncio.run(run_server(host, port))
     except KeyboardInterrupt:
         logging.info('Exiting...')

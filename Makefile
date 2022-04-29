@@ -10,7 +10,7 @@ endif
 PROGRAMS = admin_bot inverter_bot pump_bot sensors_bot
 PROGRAMS += inverter_mqtt_receiver inverter_mqtt_sender
 PROGRAMS += sensors_mqtt_receiver sensors_mqtt_sender
-PROGRAMS += si7021d
+PROGRAMS += temphumd
 PROGRAMS += gpiorelayd
 PROGRAMS += gpiosensord
 #PROGRAMS += web_api

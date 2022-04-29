@@ -1,6 +1,6 @@
 [Unit]
 Description=Sensors MQTT sender
-After=si7021d.service
+After=temphumd.service
 
 [Service]
 User=user

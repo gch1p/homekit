@@ -4,7 +4,7 @@ After=network-online.target
 
 [Service]
 Restart=on-failure
-ExecStart=/home/user/homekit/src/temphumd.py --config /etc/%i.toml
+ExecStart=/home/user/homekit/src/temphumd.py --config /etc/temphumd-%i.toml
 
 [Install]
 WantedBy=multi-user.target

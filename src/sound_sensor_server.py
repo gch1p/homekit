@@ -25,7 +25,10 @@ def get_related_sound_nodes(sensor_name: str) -> list[str]:
 
 def get_sound_node_config(name: str) -> Optional[dict]:
     if name in config['sound_nodes']:
-        return config['sound_nodes'][name]
+        cfg = config['sound_nodes'][name]
+        if 'min_hits' not in cfg:
+            cfg['min_hits'] = 1
+        return cfg
     else:
         return None
 
@@ -63,23 +66,37 @@ class HitHandler(SoundSensorHitHandler):
             logger.error(f'invalid sensor name: {name}')
             return
 
-        node_config = get_sound_node_config(name)
-        if node_config is None:
+        try:
+            nodes = get_related_sound_nodes(name)
+        except ValueError:
             logger.error(f'config for node {name} not found')
             return
 
-        min_hits = node_config['min_hits'] if 'min_hits' in node_config else 1
-        if hits < min_hits:
+        should_continue = False
+        for node in nodes:
+            node_config = get_sound_node_config(node)
+            if node_config is None:
+                logger.error(f'config for node {node} not found')
+                continue
+            if hits < node_config['min_hits']:
+                continue
+            should_continue = True
+
+        if not should_continue:
             return
 
         hc.add(name, hits)
 
         if server.is_recording_enabled():
             try:
-                nodes = get_related_sound_nodes(name)
                 for node in nodes:
-                    durations = config['sound_nodes'][node]['durations']
-                    dur = durations[1] if hits > min_hits else durations[0]
+                    node_config = get_sound_node_config(node)
+                    if node_config is None:
+                        logger.error(f'node config for {node} not found')
+                        continue
+
+                    durations = node_config['durations']
+                    dur = durations[1] if hits > node_config['min_hits'] else durations[0]
                     record.record(node, dur*60, {'node': node})
             except ValueError as exc:
                 logger.exception(exc)

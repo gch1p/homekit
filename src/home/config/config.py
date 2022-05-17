@@ -37,20 +37,23 @@ class ConfigStore:
         log_default_fmt = False
         log_file = None
         log_verbose = False
+        no_config = name is False
 
         path = None
         if use_cli:
             if parser is None:
                 parser = ArgumentParser()
-            parser.add_argument('--config', type=str, required=name is None,
-                                help='Path to the config in TOML format')
-            parser.add_argument('--verbose', action='store_true')
+            if not no_config:
+                parser.add_argument('-c', '--config', type=str, required=name is None,
+                                    help='Path to the config in TOML format')
+            parser.add_argument('-V', '--verbose', action='store_true')
             parser.add_argument('--log-file', type=str)
             parser.add_argument('--log-default-fmt', action='store_true')
             args = parser.parse_args()
 
-            if args.config:
+            if not no_config and args.config:
                 path = args.config
+
             if args.verbose:
                 log_verbose = True
             if args.log_file:
@@ -58,10 +61,10 @@ class ConfigStore:
             if args.log_default_fmt:
                 log_default_fmt = args.log_default_fmt
 
-        if name and path is None:
+        if not no_config and path is None:
             path = _get_config_path(name)
 
-        self.data = toml.load(path)
+        self.data = {} if no_config else toml.load(path)
 
         if 'logging' in self:
             if not log_file and 'file' in self['logging']:

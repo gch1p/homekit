@@ -271,6 +271,9 @@ class Wrapper:
             text = exc2text(text)
         self.updater.bot.send_message(chat_id=user_id, text=text, parse_mode='HTML')
 
+    def send_photo(self, user_id, **kwargs):
+        self.updater.bot.send_photo(chat_id=user_id, **kwargs)
+
     def send_audio(self, user_id, **kwargs):
         self.updater.bot.send_audio(chat_id=user_id, **kwargs)
 

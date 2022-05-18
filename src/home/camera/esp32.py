@@ -47,6 +47,50 @@ class WebClient:
         self.delay = 0
         self.isfirstrequest = True
 
+    def syncsettings(self, settings) -> bool:
+        status = self.getstatus()
+        self.logger.debug(f'syncsettings: status={status}')
+
+        changed_anything = False
+
+        for name, value in settings.items():
+            server_name = name
+            if name == 'aec_dsp':
+                server_name = 'aec2'
+
+            if server_name not in status:
+                # legacy compatibility
+                if server_name != 'vflip':
+                    self.logger.warning(f'syncsettings: field `{server_name}` not found in camera status')
+                    continue
+
+            try:
+                # server returns 0 or 1 for bool values
+                if type(value) is bool:
+                    value = int(value)
+
+                if status[server_name] == value:
+                    continue
+            except KeyError as exc:
+                if name != 'vflip':
+                    self.logger.error(exc)
+
+            try:
+                # fix for cases like when field is called raw_gma, but method is setrawgma()
+                name = name.replace('_', '')
+
+                func = getattr(self, f'set{name}')
+                self.logger.debug(f'syncsettings: calling set{name}({value})')
+
+                func(value)
+
+                changed_anything = True
+            except AttributeError as exc:
+                self.logger.exception(exc)
+                self.logger.error(f'syncsettings: method set{name}() not found')
+
+        return changed_anything
+
     def setdelay(self, delay: int):
         self.delay = delay
 
@@ -59,7 +103,9 @@ class WebClient:
     def setflash(self, enable: bool):
         self._control('flash', int(enable))
 
-    def setresolution(self, fs: FrameSize):
+    def setframesize(self, fs: Union[int, FrameSize]):
+        if type(fs) is int:
+            fs = FrameSize(fs)
         self._control('framesize', fs.value)
 
     def sethmirror(self, enable: bool):

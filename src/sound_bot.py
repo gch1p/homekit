@@ -54,6 +54,13 @@ def camera_exists(name: str) -> bool:
     return name in config['cameras']
 
 
+def camera_settings(name: str) -> Optional[dict]:
+    try:
+        return config['cameras'][name]['settings']
+    except KeyError:
+        return None
+
+
 def have_cameras() -> bool:
     return 'cameras' in config and config['cameras']
 
@@ -427,6 +434,10 @@ def camera_capture(ctx: Context) -> None:
     ctx.answer()
 
     client = camera_client(cam)
+    if client.syncsettings(camera_settings(cam)) is True:
+        logger.debug('some settings were changed, sleeping for 0.4 sec')
+        time.sleep(0.4)
+
     client.setflash(True if flash else False)
     time.sleep(0.2)
 

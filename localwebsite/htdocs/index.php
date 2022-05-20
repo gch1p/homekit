@@ -2,8 +2,6 @@
 
 require_once __DIR__.'/../init.php';
 
-global $lang;
-
 $router = new router;
 
 // modem

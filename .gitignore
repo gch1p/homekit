@@ -9,3 +9,4 @@ __pycache__
 /localwebsite/vendor
 /localwebsite/.debug.log
 /localwebsite/config.local.php
+/localwebsite/cache

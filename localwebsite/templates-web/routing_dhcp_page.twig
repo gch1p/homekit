@@ -1,0 +1,11 @@
+{% include 'routing_header.twig' with {
+  selected_tab: 'dhcp'
+} %}
+
+{% for lease in leases %}
+  <div class="mt-3">
+    <b>{{ lease.hostname }}</b> <span class="text-secondary">(exp: {{ lease.time_s }})</span><br/>
+    {{ lease.ip }}<br>
+    <span class="text-secondary">{{ lease.mac }}</span>
+  </div>
+{% endfor %}

@@ -5,3 +5,7 @@ __pycache__
 .DS_Store
 /src/test/test_inverter_monitor.log
 /esp32-cam/CameraWebServer/wifi_password.h
+
+/localwebsite/vendor
+/localwebsite/.debug.log
+/localwebsite/config.local.php

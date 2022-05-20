@@ -1,0 +1,24 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Главная</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Маршрутизация</li>
+  </ol>
+</nav>
+
+{% set routing_tabs = [
+  {tab: 'smallhome', url: '/routing/', label: 'Маленький дом'},
+  {tab: 'ipsets', url: '/routing/ipsets/', label: 'Правила'},
+  {tab: 'dhcp', url: '/routing/dhcp/', label: 'DHCP'}
+] %}
+
+<nav>
+  <div class="nav nav-tabs" id="nav-tab">
+    {% for tab in routing_tabs %}
+      <a href="{{ tab.url }}" class="text-decoration-none"><button class="nav-link{% if tab.tab == selected_tab %} active{% endif %}" type="button">{{ tab.label }}</button></a>
+    {% endfor %}
+  </div>
+</nav>
+
+{% if error %}
+  <div class="mt-4 alert alert-danger"><b>Ошибка:</b> {{ error }}</div>
+{% endif %}

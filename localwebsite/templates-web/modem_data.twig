@@ -1,0 +1,12 @@
+{% if not loading %}
+<span class="text-secondary">Сигнал:</span> {% include 'signal_level.twig' with {'level': modem_data.level} %}<br>
+<span class="text-secondary">Тип сети:</span> <b>{{ modem_data.type }}</b><br>
+<span class="text-secondary">RSSI:</span> {{ modem_data.rssi }}<br/>
+{% if modem_data.sinr %}
+  <span class="text-secondary">SINR:</span> {{ modem_data.sinr }}<br/>
+{% endif %}
+<span class="text-secondary">Время соединения:</span> {{ modem_data.connected_time }}<br>
+<span class="text-secondary">Принято/передано:</span> {{ modem_data.downloaded }} / {{ modem_data.uploaded }}
+{% else %}
+{% include 'spinner.twig' %}
+{% endif %}

@@ -1,0 +1,18 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Главная</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Насос</li>
+  </ol>
+</nav>
+
+<form action="/pump/" method="get">
+  <input type="hidden" name="set" value="{{ status == 'on' ? 'off' : 'on' }}" />
+  Сейчас насос
+  {% if status == 'on' %}
+    <span class="text-success"><b>включен</b></span>.<br><br>
+    <button type="submit" class="btn btn-primary">Выключить</button>
+  {% else %}
+    <span class="text-danger"><b>выключен</b></span>.<br><br>
+    <button type="submit" class="btn btn-primary">Включить</button>
+  {% endif %}
+</form>

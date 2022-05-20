@@ -1,0 +1,14 @@
+{
+    "name": "ch1p/localwebsite.homekit",
+    "type": "project",
+    "require": {
+        "twig/twig": "^3.3",
+        "ext-mbstring": "*",
+        "ext-sockets": "*",
+        "ext-simplexml": "*",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "ext-gmp": "*"
+    },
+    "license": "MIT"
+}

@@ -1,0 +1,15 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Главная</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Инвертор</li>
+  </ol>
+</nav>
+
+<h6 class="text-primary">Статус</h6>
+<div id="inverter_status">
+  {{ html|raw }}
+</div>
+
+{% js %}
+Inverter.poll();
+{% endjs %}

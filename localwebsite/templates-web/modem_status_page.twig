@@ -1,0 +1,19 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Главная</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Модемы</li>
+  </ol>
+</nav>
+
+{% for modem_key, modem in modems %}
+  <h6 class="text-primary{% if not loop.first %} mt-4{% endif %}">{{ modem.label }}</h6>
+  <div id="modem_data_{{ modem_key }}">
+    {% include 'modem_data.twig' with {
+      loading: true
+    } %}
+  </div>
+{% endfor %}
+
+{% js %}
+ModemStatus.init({{ js_modems|json_encode|raw }});
+{% endjs %}

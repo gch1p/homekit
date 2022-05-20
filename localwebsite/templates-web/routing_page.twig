@@ -1,0 +1,17 @@
+{% include 'routing_header.twig' with {
+  selected_tab: 'smallhome'
+} %}
+
+<div class="mt-3 mb-3">
+  Текущий апстрим: <b>{{ current.label }}</b>
+</div>
+
+{% for key, modem in modems %}
+  {% if key != current.key %}
+    <div class="pt-1 pb-2">
+      <a href="/routing/switch-small-home/?upstream={{ key }}">
+        <button type="button" class="btn btn-primary">Переключить на <b>{{ modem.label }}</b></button>
+      </a>
+    </div>
+  {% endif %}
+{% endfor %}

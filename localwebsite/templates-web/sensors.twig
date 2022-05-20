@@ -1,0 +1,12 @@
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Главная</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Датчики</li>
+  </ol>
+</nav>
+
+{% for key, sensor in sensors %}
+  <h6 class="text-primary{% if not loop.first %} mt-4{% endif %}">{{ sensor.name }}</h6>
+  <span class="text-secondary">Температура:</span> <b>{{ sensor.temp }}</b> °C<br>
+  <span class="text-secondary">Влажность:</span> <b>{{ sensor.humidity }}</b>%
+{% endfor %}

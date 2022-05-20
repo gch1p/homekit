@@ -68,4 +68,4 @@ $debug->enable();
 unset($debug);
 
 // composer
-require_once ROOT.'/../vendor/autoload.php';
+require_once ROOT.'/vendor/autoload.php';

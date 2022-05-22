@@ -49,10 +49,15 @@ return [
     ],
 
     'static' => [
-        'app.css' => 6,
+        'app.css' => 8,
         'app.js' => 1,
         'polyfills.js' => 1,
         'modem.js' => 1,
         'inverter.js' => 2,
+    ],
+
+    'cam_hls_host' => '192.168.1.1',
+    'cam_list' => [
+        // fill me with names
     ]
 ];

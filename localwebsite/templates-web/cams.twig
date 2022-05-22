@@ -1,0 +1,64 @@
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Главная</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Камеры</li>
+    </ol>
+</nav>
+
+<div id="videos" class="camfeeds"></div>
+<video height="300" id="video"></video>
+
+<script>
+function hasFallbackSupport() {
+    var video = document.createElement('video');
+    return video.canPlayType('application/vnd.apple.mpegurl');
+}
+
+function setupHls(video, name, useHls) {
+    var src = 'http://{{ hls_host }}/ipcam/'+name+'/live.m3u8';
+
+    // hls.js is not supported on platforms that do not have Media Source Extensions (MSE) enabled.
+
+    // When the browser has built-in HLS support (check using `canPlayType`), we can provide an HLS manifest (i.e. .m3u8 URL) directly to the video element through the `src` property.
+    // This is using the built-in support of the plain video element, without using hls.js.
+
+    if (useHls) {
+        var hls = new Hls({
+            // debug: true,
+            startPosition: -1,
+        });
+        hls.loadSource(src);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MEDIA_ATTACHED, function () {
+            video.muted = true;
+            video.play();
+        });
+    } else {
+        video.src = src;
+        video.addEventListener('canplay', function () {
+            video.play();
+        });
+    }
+}
+
+function init() {
+    let useHls = Hls.isSupported();
+    if (!useHls && !hasFallbackSupport()) {
+        alert('Neither HLS nor vnd.apple.mpegurl is not supported by your browser.');
+        return;
+    }
+
+    var cams = {{ cams|json_encode|raw }};
+    for (var i = 0; i < cams.length; i++) {
+        var name = cams[i];
+        var video = document.createElement('video');
+        // video.setAttribute('height', '400');
+        video.setAttribute('id', 'video-'+name);
+        document.getElementById('videos').appendChild(video);
+
+        setupHls(video, name, useHls);
+    }
+}
+
+init();
+</script>

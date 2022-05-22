@@ -49,4 +49,17 @@ class MiscHandler extends RequestHandler
         $this->tpl->render_page('pump.twig');
     }
 
+    public function GET_cams() {
+        global $config;
+
+        $this->tpl->add_external_static('js', 'https://cdn.jsdelivr.net/npm/hls.js@latest');
+
+        $this->tpl->set([
+            'hls_host' => $config['cam_hls_host'],
+            'cams' => $config['cam_list']
+        ]);
+        $this->tpl->set_title('Камеры');
+        $this->tpl->render_page('cams.twig');
+    }
+
 }

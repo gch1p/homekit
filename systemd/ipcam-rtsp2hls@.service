@@ -1,0 +1,13 @@
+[Unit]
+Description=convert rtsp to hls for viewing live camera feeds in browser
+After=network-online.target
+
+[Service]
+Restart=on-failure
+User=user
+Group=user
+EnvironmentFile=/etc/ipcam-rtsp2hls.conf.d/%i.conf
+ExecStart=/home/user/homekit/tools/ipcam-rtsp2hls.sh --name %i --user $USER --password $PASSWORD --ip $IP --port $PORT $ARGS
+
+[Install]
+WantedBy=multi-user.target

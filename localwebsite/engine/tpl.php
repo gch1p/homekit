@@ -20,7 +20,7 @@ abstract class base_tpl {
     public function __construct($templates_dir, $cache_dir) {
         global $config;
 
-        $cl = get_called_class();
+        // $cl = get_called_class();
 
         $this->twig = self::twig_instance($templates_dir, $cache_dir, $config['is_dev']);
         $this->static_time = time();

@@ -25,6 +25,7 @@ $router->add('/',        'Misc main');
 $router->add('sensors/', 'Misc sensors_page');
 $router->add('pump/',    'Misc pump_page');
 $router->add('phpinfo/', 'Misc phpinfo');
+$router->add('cams/',    'Misc cams');
 
 
 $route = routerFind($router);

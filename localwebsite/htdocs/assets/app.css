@@ -151,3 +151,18 @@
     0%, 39%, 100% { opacity: 0; }
     40% { opacity: 1; }
 }
+
+/* cams page */
+.camfeeds {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+}
+.camfeeds > video {
+    display: flex;
+    flex-basis: calc(50% - 20px);
+    justify-content: center;
+    flex-direction: column;
+    width: calc(50% - 10px);
+    margin: 5px;
+}

@@ -3,7 +3,7 @@ Description=convert rtsp to hls for viewing live camera feeds in browser
 After=network-online.target
 
 [Service]
-Restart=on-failure
+Restart=always
 User=user
 Group=user
 EnvironmentFile=/etc/ipcam-rtsp2hls.conf.d/%i.conf

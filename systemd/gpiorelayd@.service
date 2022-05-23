@@ -6,7 +6,7 @@ After=network-online.target
 User=root
 Group=root
 Restart=on-failure
-ExecStart=/home/user/homekit/src/gpiorelayd.py -с /etc/gpiorelayd.conf.d/%i.toml
+ExecStart=/home/user/homekit/src/gpiorelayd.py -c /etc/gpiorelayd.conf.d/%i.toml
 WorkingDirectory=/root
 
 [Install]

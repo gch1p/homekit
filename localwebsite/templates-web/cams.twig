@@ -6,7 +6,6 @@
 </nav>
 
 <div id="videos" class="camfeeds"></div>
-<video height="300" id="video"></video>
 
 <script>
 function hasFallbackSupport() {
@@ -23,10 +22,7 @@ function setupHls(video, name, useHls) {
     // This is using the built-in support of the plain video element, without using hls.js.
 
     if (useHls) {
-        var hls = new Hls({
-            // debug: true,
-            startPosition: -1,
-        });
+        var hls = new Hls({{ hls_opts|json_encode|raw }});
         hls.loadSource(src);
         hls.attachMedia(video);
         hls.on(Hls.Events.MEDIA_ATTACHED, function () {

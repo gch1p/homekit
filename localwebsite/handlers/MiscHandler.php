@@ -52,10 +52,19 @@ class MiscHandler extends RequestHandler
     public function GET_cams() {
         global $config;
 
+        list($hls_debug) = $this->input('b:hls_debug');
+
+        $hls_opts = [
+            'startPosition' => -1
+        ];
+        if ($hls_debug)
+            $hls_opts['debug'] = true;
+
         $this->tpl->add_external_static('js', 'https://cdn.jsdelivr.net/npm/hls.js@latest');
 
         $this->tpl->set([
             'hls_host' => $config['cam_hls_host'],
+            'hls_opts' => $hls_opts,
             'cams' => $config['cam_list']
         ]);
         $this->tpl->set_title('Камеры');

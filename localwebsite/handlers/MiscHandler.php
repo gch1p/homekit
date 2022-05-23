@@ -52,7 +52,7 @@ class MiscHandler extends RequestHandler
     public function GET_cams() {
         global $config;
 
-        list($hls_debug) = $this->input('b:hls_debug');
+        list($hls_debug, $video_events) = $this->input('b:hls_debug, b:video_events');
 
         $hls_opts = [
             'startPosition' => -1
@@ -65,7 +65,8 @@ class MiscHandler extends RequestHandler
         $this->tpl->set([
             'hls_host' => $config['cam_hls_host'],
             'hls_opts' => $hls_opts,
-            'cams' => $config['cam_list']
+            'cams' => $config['cam_list'],
+            'video_events' => $video_events
         ]);
         $this->tpl->set_title('Камеры');
         $this->tpl->render_page('cams.twig');

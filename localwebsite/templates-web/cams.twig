@@ -30,10 +30,32 @@ function setupHls(video, name, useHls) {
             video.play();
         });
     } else {
+        console.warn('hls.js is not supported, trying the native way...')
+
+        video.autoplay = true;
+        video.muted = true;
+        if (window.browserInfo.ios)
+            video.setAttribute('controls', 'controls');
+
         video.src = src;
-        video.addEventListener('canplay', function () {
-            video.play();
-        });
+
+        var events = ['canplay'];
+        {% if video_events %}
+        events.push('canplay', 'canplaythrough', 'durationchange', 'ended', 'loadeddata', 'loadedmetadata', 'pause', 'play', 'playing', 'progress', 'seeked', 'seeking', 'stalled', 'suspend', 'timeupdate', 'waiting');
+        {% endif %}
+
+        for (var i = 0; i < events.length; i++) {
+            var evt = events[i];
+            (function(evt, video, name) {
+                video.addEventListener(evt, function(e) {
+                    {% if video_events %}
+                    console.log(name + ': ' + evt, e);
+                    {% endif %}
+                    if (!window.browserInfo.ios && ['canplay', 'loadedmetadata'].includes(evt))
+                        video.play();
+                })
+            })(evt, video, name);
+        }
     }
 }
 

@@ -50,7 +50,7 @@ return [
 
     'static' => [
         'app.css' => 8,
-        'app.js' => 1,
+        'app.js' => 2,
         'polyfills.js' => 1,
         'modem.js' => 1,
         'inverter.js' => 2,

@@ -9,6 +9,8 @@ USER=
 PASSWORD=
 DEBUG=0
 CHANNEL=1
+FORCE_UDP=0
+FORCE_TCP=0
 
 die() {
   echo >&2 "error: $@"
@@ -26,6 +28,8 @@ Options:
   --user
   --password
   --debug
+  --force-tcp
+  --force-udp
   --channel 1|2
 
 EOF
@@ -59,6 +63,14 @@ while [[ $# -gt 0 ]]; do
       DEBUG=1
       ;;
 
+    --force-tcp)
+      FORCE_TCP=1
+      ;;
+
+    --force-udp)
+      FORCE_UDP=1
+      ;;
+
     --channel)
       CHANNEL="$2"
       shift
@@ -82,13 +94,20 @@ if [ ! -d "${OUTDIR}/${NAME}" ]; then
   mkdir "${OUTDIR}/${NAME}" || die "Failed to create ${OUTDIR}/${NAME}!"
 fi
 
+args=
 if [ "$DEBUG" = "1" ]; then
-  ffmpeg_args="-v info"
+  args="-v info"
 else
-  ffmpeg_args="-nostats -loglevel error"
+  args="-nostats -loglevel error"
 fi
 
-ffmpeg $ffmpeg_args -i rtsp://${USER}:${PASSWORD}@${IP}:${PORT}/Streaming/Channels/${CHANNEL} \
+if [ "$FORCE_TCP" = "1" ]; then
+  args="$args -rtsp_transport tcp"
+elif [ "$FORCE_UDP" = "1" ]; then
+  args="$args -rtsp_transport udp"
+fi
+
+ffmpeg $args -i rtsp://${USER}:${PASSWORD}@${IP}:${PORT}/Streaming/Channels/${CHANNEL} \
   -c:v copy -c:a copy -bufsize 1835k \
   -pix_fmt yuv420p \
   -flags -global_header -hls_time 5 -hls_list_size 6 -hls_wrap 5 \

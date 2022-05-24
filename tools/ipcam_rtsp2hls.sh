@@ -110,5 +110,5 @@ fi
 ffmpeg $args -i rtsp://${USER}:${PASSWORD}@${IP}:${PORT}/Streaming/Channels/${CHANNEL} \
   -c:v copy -c:a copy -bufsize 1835k \
   -pix_fmt yuv420p \
-  -flags -global_header -hls_time 2 -hls_list_size 3 \
+  -flags -global_header -hls_time 2 -hls_list_size 3 -hls_flags delete_segments \
   ${OUTDIR}/${NAME}/live.m3u8

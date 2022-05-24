@@ -55,8 +55,15 @@ class MiscHandler extends RequestHandler
         list($hls_debug, $video_events) = $this->input('b:hls_debug, b:video_events');
 
         $hls_opts = [
-            'startPosition' => -1
+            'startPosition' => -1,
+
+            // // https://github.com/video-dev/hls.js/issues/3884#issuecomment-842380784
+            'liveSyncDuration' => 2,
+            'liveMaxLatencyDuration' => 3,
+            'maxLiveSyncPlaybackRate' => 2,
+            'liveDurationInfinity' => true,
         ];
+
         if ($hls_debug)
             $hls_opts['debug'] = true;
 

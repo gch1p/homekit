@@ -49,7 +49,7 @@ return [
     ],
 
     'static' => [
-        'app.css' => 8,
+        'app.css' => 9,
         'app.js' => 2,
         'polyfills.js' => 1,
         'modem.js' => 1,

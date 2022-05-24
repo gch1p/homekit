@@ -1,0 +1,13 @@
+[Unit]
+Description=save ipcam streams
+After=network-online.target
+
+[Service]
+Restart=always
+User=user
+Group=user
+EnvironmentFile=/etc/ipcam_capture.conf.d/%i.conf
+ExecStart=/home/user/homekit/tools/ipcam_capture.sh --outdir $OUTDIR --creds $CREDS --ip $IP --port $PORT $ARGS
+
+[Install]
+WantedBy=multi-user.target

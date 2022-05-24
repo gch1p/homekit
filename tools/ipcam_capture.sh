@@ -6,6 +6,8 @@ IP=
 CREDS=
 DEBUG=0
 CHANNEL=1
+FORCE_UDP=0
+FORCE_TCP=0
 
 die() {
   echo >&2 "error: $@"
@@ -22,6 +24,8 @@ Options:
   --port    RTSP port (default: 554)
   --creds
   --debug
+  --force-tcp
+  --force-udp
   --channel 1|2
 
 EOF
@@ -55,6 +59,14 @@ while [[ $# -gt 0 ]]; do
       DEBUG=1
       ;;
 
+    --force-tcp)
+      FORCE_TCP=1
+      ;;
+
+    --force-udp)
+      FORCE_UDP=1
+      ;;
+
     --channel)
       CHANNEL="$2"
       shift
@@ -78,10 +90,17 @@ if [ ! -d "${OUTDIR}" ]; then
   echo "Created $OUTDIR."
 fi
 
+args=
 if [ "$DEBUG" = "1" ]; then
-  args="-v info"
+  args="$args -v info"
 else
-  args="-nostats -loglevel warning"
+  args="$args -nostats -loglevel warning"
+fi
+
+if [ "$FORCE_TCP" = "1" ]; then
+  args="$args -rtsp_transport tcp"
+elif [ "$FORCE_UDP" = "1" ]; then
+  args="$args -rtsp_transport udp"
 fi
 
 [ ! -z "$CREDS" ] && CREDS="${CREDS}@"

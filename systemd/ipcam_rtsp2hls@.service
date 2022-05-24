@@ -6,8 +6,8 @@ After=network-online.target
 Restart=always
 User=user
 Group=user
-EnvironmentFile=/etc/ipcam-rtsp2hls.conf.d/%i.conf
-ExecStart=/home/user/homekit/tools/ipcam-rtsp2hls.sh --name %i --user $USER --password $PASSWORD --ip $IP --port $PORT $ARGS
+EnvironmentFile=/etc/ipcam_rtsp2hls.conf.d/%i.conf
+ExecStart=/home/user/homekit/tools/ipcam_rtsp2hls.sh --name %i --user $USER --password $PASSWORD --ip $IP --port $PORT $ARGS
 
 [Install]
 WantedBy=multi-user.target

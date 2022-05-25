@@ -68,10 +68,16 @@ class MiscHandler extends RequestHandler
             $hls_opts['debug'] = true;
 
         $this->tpl->add_external_static('js', 'https://cdn.jsdelivr.net/npm/hls.js@latest');
+        
+        $hls_host = is_callable($config['cam_hls_host']) ? $config['cam_hls_host']() : $config['cam_hls_host'];
+        $hls_proto = is_callable($config['cam_hls_proto']) ? $config['cam_hls_proto']() : $config['cam_hls_proto'];
 
         $this->tpl->set([
-            'hls_host' => $config['cam_hls_host'],
+            'hls_host' => $hls_host,
+            'hls_proto' => $hls_proto,
             'hls_opts' => $hls_opts,
+            'hls_access_key' => $config['cam_hls_access_key'],
+
             'cams' => $config['cam_list'],
             'video_events' => $video_events
         ]);

@@ -56,6 +56,8 @@ return [
         'inverter.js' => 2,
     ],
 
+    'cam_hls_access_key' => '',
+    'cam_hls_proto' => 'http',
     'cam_hls_host' => '192.168.1.1',
     'cam_list' => [
         // fill me with names

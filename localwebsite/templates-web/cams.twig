@@ -14,7 +14,10 @@ function hasFallbackSupport() {
 }
 
 function setupHls(video, name, useHls) {
-    var src = 'http://{{ hls_host }}/ipcam/'+name+'/live.m3u8';
+    var src = '{{ hls_proto }}://{{ hls_host }}/ipcam/'+name+'/live.m3u8';
+    {% if hls_access_key %}
+    src += '?access_key={{ hls_access_key }}';
+    {% endif %}
 
     // hls.js is not supported on platforms that do not have Media Source Extensions (MSE) enabled.
 

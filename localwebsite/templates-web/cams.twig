@@ -25,7 +25,12 @@ function setupHls(video, name, useHls) {
     // This is using the built-in support of the plain video element, without using hls.js.
 
     if (useHls) {
-        var hls = new Hls({{ hls_opts|json_encode|raw }});
+        var config = {{ hls_opts|json_encode|raw }};
+        config.xhrSetup = function (xhr,url) {
+            xhr.withCredentials = true;
+        };
+
+        var hls = new Hls(config);
         hls.loadSource(src);
         hls.attachMedia(video);
         hls.on(Hls.Events.MEDIA_ATTACHED, function () {

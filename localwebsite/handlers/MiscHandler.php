@@ -79,4 +79,8 @@ class MiscHandler extends RequestHandler
         $this->tpl->render_page('cams.twig');
     }
 
+    public function GET_debug() {
+        print_r($_SERVER);
+    }
+
 }

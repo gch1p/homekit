@@ -1,9 +1,8 @@
-<nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">Главная</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Насос</li>
-  </ol>
-</nav>
+{% include 'bc.twig' with {
+  history: [
+    {text: "Насос" }
+  ]
+} %}
 
 <form action="/pump/" method="get">
   <input type="hidden" name="set" value="{{ status == 'on' ? 'off' : 'on' }}" />

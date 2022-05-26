@@ -57,8 +57,8 @@ return [
     ],
 
     'cam_hls_access_key' => '',
-    'cam_hls_proto' => 'http',
-    'cam_hls_host' => '192.168.1.1',
+    'cam_hls_proto' => 'http', // bool|callable
+    'cam_hls_host' => '192.168.1.1', // bool|callable
     'cam_list' => [
         // fill me with names
     ],
@@ -70,4 +70,8 @@ return [
     ],
 
     'database_path' => getenv('HOME').'/.config/homekit.localwebsite.sqlite3',
+
+    'auth_cookie_host' => '',
+    'auth_need' => false, // bool|callable
+    'auth_pw_salt' => '',
 ];

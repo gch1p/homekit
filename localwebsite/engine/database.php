@@ -7,13 +7,19 @@ class database {
     protected SQLite3 $link;
 
     public function __construct(string $db_path) {
+        $will_create = !file_exists($db_path);
         $this->link = new SQLite3($db_path);
+        if ($will_create)
+            setperm($db_path);
         $this->link->enableExceptions(true);
         $this->upgradeSchema();
     }
 
     protected function upgradeSchema() {
         $cur = $this->getSchemaVersion();
+        if ($cur == self::SCHEMA_VERSION)
+            return;
+
         if ($cur < 1) {
             $this->link->exec("CREATE TABLE users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -76,5 +82,50 @@ class database {
     public function querySingleRow(string $sql, ...$params) {
         return $this->link->querySingle($this->prepareQuery($sql, ...$params), true);
     }
+
+    protected function performInsert(string $command, string $table, array $fields): SQLite3Result {
+        $names = [];
+        $values = [];
+        $count = 0;
+        foreach ($fields as $k => $v) {
+            $names[] = $k;
+            $values[] = $v;
+            $count++;
+        }
+
+        $sql = "{$command} INTO `{$table}` (`" . implode('`, `', $names) . "`) VALUES (" . implode(', ', array_fill(0, $count, '?')) . ")";
+        array_unshift($values, $sql);
+
+        return call_user_func_array([$this, 'query'], $values);
+    }
+
+    public function insert(string $table, array $fields): SQLite3Result {
+        return $this->performInsert('INSERT', $table, $fields);
+    }
+
+    public function replace(string $table, array $fields): SQLite3Result {
+        return $this->performInsert('REPLACE', $table, $fields);
+    }
+
+    public function insertId(): int {
+        return $this->link->lastInsertRowID();
+    }
+
+    public function update($table, $rows, ...$cond): SQLite3Result {
+        $fields = [];
+        $args = [];
+        foreach ($rows as $row_name => $row_value) {
+            $fields[] = "`{$row_name}`=?";
+            $args[] = $row_value;
+        }
+        $sql = "UPDATE `$table` SET " . implode(', ', $fields);
+        if (!empty($cond)) {
+            $sql .= " WHERE " . $cond[0];
+            if (count($cond) > 1)
+                $args = array_merge($args, array_slice($cond, 1));
+        }
+        return $this->query($sql, ...$args);
+    }
+
 
 }

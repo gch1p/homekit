@@ -1,9 +1,8 @@
-<nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">Главная</a></li>
-    <li class="breadcrumb-item active" aria-current="page">SMS-сообщения</li>
-  </ol>
-</nav>
+{% include 'bc.twig' with {
+  history: [
+    {text: "SMS-сообщения" }
+  ]
+} %}
 
 <nav>
   <div class="nav nav-tabs" id="nav-tab">

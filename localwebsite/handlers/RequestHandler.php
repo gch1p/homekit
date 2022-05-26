@@ -15,6 +15,12 @@ class RequestHandler extends request_handler {
         $this->tpl->add_static('polyfills.js');
         $this->tpl->add_static('app.js');
         $this->tpl->add_static('app.css');
+
+        if (auth::id()) {
+            $this->tpl->set_global([
+                'auth_user' => auth::$authorizedUser
+            ]);
+        }
     }
 
     public function dispatch(string $act) {
@@ -37,5 +43,10 @@ class RequestHandler extends request_handler {
         else
             ajax_error('unknown act "'.$act.'"', 404);
 
+    }
+
+    protected function before_dispatch(string $method, string $act) {
+        if (config::get('auth_need') && !auth::id())
+            redirect('/auth/');
     }
 }

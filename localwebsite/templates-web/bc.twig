@@ -1,0 +1,12 @@
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Главная</a></li>
+        {% for item in history %}
+            <li class="breadcrumb-item"{% if loop.last %} aria-current="page"{% endif %}>
+                {% if item.link %}<a href="{{ item.link }}">{% endif %}
+                {{ item.html ? item.html|raw : item.text }}
+                {% if item.link %}</a>{% endif %}
+            </li>
+        {% endfor %}
+    </ol>
+</nav>

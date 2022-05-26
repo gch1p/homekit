@@ -5,6 +5,12 @@
     </ol>
   </nav>
 
+  {% if auth_user %}
+    <div class="mb-4 alert alert-secondary">
+      Вы авторизованы как <b>{{ auth_user.username }}</b>. <a href="/deauth/">Выйти</a>
+    </div>
+  {% endif %}
+
   <h6>Интернет</h6>
   <ul class="list-group list-group-flush">
     <li class="list-group-item"><a href="/modem/status/">Состояние</a></li>

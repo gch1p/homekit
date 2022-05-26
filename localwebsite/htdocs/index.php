@@ -28,6 +28,10 @@ $router->add('phpinfo/', 'Misc phpinfo');
 $router->add('cams/',    'Misc cams');
 $router->add('debug/',   'Misc debug');
 
+// auth
+$router->add('auth/',   'Auth auth');
+$router->add('deauth/', 'Auth deauth');
+
 
 $route = routerFind($router);
 if ($route === false)

@@ -1,0 +1,24 @@
+{% include 'bc.twig' with {
+    history: [
+        {text: "Авторизация" }
+    ]
+} %}
+
+{% if error %}
+    <div class="mt-4 alert alert-danger"><b>Ошибка:</b> {{ error }}</div>
+{% endif %}
+
+
+<form method="post" action="/auth/">
+    <div class="mt-2">
+        <input type="text" name="username" placeholder="Логин" class="form-control">
+    </div>
+
+    <div class="mt-2">
+        <input type="password" name="password" placeholder="Пароль" class="form-control">
+    </div>
+
+    <div class="mt-2">
+        <button type="submit" class="btn btn-outline-primary">Войти</button>
+    </div>
+</form>

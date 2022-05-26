@@ -8,11 +8,6 @@ class MiscHandler extends RequestHandler
         $this->tpl->render_page('index.twig');
     }
 
-    public function GET_phpinfo() {
-        phpinfo();
-        exit;
-    }
-
     public function GET_sensors_page() {
         global $config;
 
@@ -68,9 +63,9 @@ class MiscHandler extends RequestHandler
             $hls_opts['debug'] = true;
 
         $this->tpl->add_external_static('js', 'https://cdn.jsdelivr.net/npm/hls.js@latest');
-        
-        $hls_host = is_callable($config['cam_hls_host']) ? $config['cam_hls_host']() : $config['cam_hls_host'];
-        $hls_proto = is_callable($config['cam_hls_proto']) ? $config['cam_hls_proto']() : $config['cam_hls_proto'];
+
+        $hls_host = config::get('cam_hls_host');
+        $hls_proto = config::get('cam_hls_proto');
 
         $this->tpl->set([
             'hls_host' => $hls_host,
@@ -87,6 +82,10 @@ class MiscHandler extends RequestHandler
 
     public function GET_debug() {
         print_r($_SERVER);
+    }
+
+    public function GET_phpinfo() {
+        phpinfo();
     }
 
 }

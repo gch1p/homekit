@@ -242,6 +242,10 @@ function bytesToUnitsLabel(GMP $b): string {
     return gmp_strval($b);
 }
 
+function pwhash(string $s): string {
+    return hash('sha256', config::get('auth_pw_salt').'|'.$s);
+}
+
 $ShutdownFunctions = [];
 
 function append_shutdown_function(callable $f) {
@@ -255,11 +259,27 @@ function prepend_shutdown_function(callable $f) {
 }
 
 function getDB(): database {
-    global $config;
     static $link = null;
 
     if (is_null($link))
-        $link = new database($config['database_path']);
+        $link = new database(config::get('database_path'));
 
     return $link;
+}
+
+function to_camel_case(string $input, string $separator = '_'): string {
+    return lcfirst(str_replace($separator, '', ucwords($input, $separator)));
+}
+
+function from_camel_case(string $s): string {
+    $buf = '';
+    $len = strlen($s);
+    for ($i = 0; $i < $len; $i++) {
+        if (!ctype_upper($s[$i])) {
+            $buf .= $s[$i];
+        } else {
+            $buf .= '_'.strtolower($s[$i]);
+        }
+    }
+    return $buf;
 }

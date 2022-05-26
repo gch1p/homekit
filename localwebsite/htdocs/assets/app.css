@@ -152,25 +152,22 @@
     40% { opacity: 1; }
 }
 
-/* cams page */
-@media only screen and (min-width: 640px) {
-    .camfeeds {
-        display: flex;
-        flex-wrap: wrap;
-        flex-direction: row;
-    }
 
-    .camfeeds > video {
-        display: flex;
-        flex-basis: calc(50% - 20px);
-        justify-content: center;
-        flex-direction: column;
-        width: calc(50% - 10px);
-        margin: 5px;
-    }
+.camfeeds:not(.is_mobile) {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
 }
-@media only screen and (max-width: 639px) {
-    .camfeeds > video {
-        max-width: 100%;
-    }
+
+.camfeeds:not(.is_mobile) > video {
+    display: flex;
+    flex-basis: calc(50% - 20px);
+    justify-content: center;
+    flex-direction: column;
+    width: calc(50% - 10px);
+    margin: 5px;
+}
+
+.camfeeds.is_mobile > video {
+    max-width: 100%;
 }

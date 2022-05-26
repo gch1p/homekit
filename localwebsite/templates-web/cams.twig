@@ -6,84 +6,9 @@
 
 <div id="videos" class="camfeeds"></div>
 
-<script>
-function hasFallbackSupport() {
-    var video = document.createElement('video');
-    return video.canPlayType('application/vnd.apple.mpegurl');
+{% js %}
+if (isTouchDevice()) {
+    addClass(ge('videos'), 'is_mobile');
 }
-
-function setupHls(video, name, useHls) {
-    var src = '{{ hls_proto }}://{{ hls_host }}/ipcam/'+name+'/live.m3u8';
-    {% if hls_access_key %}
-    src += '?access_key={{ hls_access_key }}';
-    {% endif %}
-
-    // hls.js is not supported on platforms that do not have Media Source Extensions (MSE) enabled.
-
-    // When the browser has built-in HLS support (check using `canPlayType`), we can provide an HLS manifest (i.e. .m3u8 URL) directly to the video element through the `src` property.
-    // This is using the built-in support of the plain video element, without using hls.js.
-
-    if (useHls) {
-        var config = {{ hls_opts|json_encode|raw }};
-        config.xhrSetup = function (xhr,url) {
-            xhr.withCredentials = true;
-        };
-
-        var hls = new Hls(config);
-        hls.loadSource(src);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MEDIA_ATTACHED, function () {
-            video.muted = true;
-            video.play();
-        });
-    } else {
-        console.warn('hls.js is not supported, trying the native way...')
-
-        video.autoplay = true;
-        video.muted = true;
-        if (window.browserInfo.ios)
-            video.setAttribute('controls', 'controls');
-
-        video.src = src;
-
-        var events = ['canplay'];
-        {% if video_events %}
-        events.push('canplay', 'canplaythrough', 'durationchange', 'ended', 'loadeddata', 'loadedmetadata', 'pause', 'play', 'playing', 'progress', 'seeked', 'seeking', 'stalled', 'suspend', 'timeupdate', 'waiting');
-        {% endif %}
-
-        for (var i = 0; i < events.length; i++) {
-            var evt = events[i];
-            (function(evt, video, name) {
-                video.addEventListener(evt, function(e) {
-                    {% if video_events %}
-                    console.log(name + ': ' + evt, e);
-                    {% endif %}
-                    if (!window.browserInfo.ios && ['canplay', 'loadedmetadata'].includes(evt))
-                        video.play();
-                })
-            })(evt, video, name);
-        }
-    }
-}
-
-function init() {
-    let useHls = Hls.isSupported();
-    if (!useHls && !hasFallbackSupport()) {
-        alert('Neither HLS nor vnd.apple.mpegurl is not supported by your browser.');
-        return;
-    }
-
-    var cams = {{ cams|json_encode|raw }};
-    for (var i = 0; i < cams.length; i++) {
-        var name = cams[i];
-        var video = document.createElement('video');
-        // video.setAttribute('height', '400');
-        video.setAttribute('id', 'video-'+name);
-        document.getElementById('videos').appendChild(video);
-
-        setupHls(video, name, useHls);
-    }
-}
-
-init();
-</script>
+Cameras.init({{ cams|json_encode|raw }}, {{ hls_opts|json_encode|raw }}, '{{ hls_proto }}', '{{ hls_host }}', {{ video_events ? 'true' : 'false' }});
+{% endjs %}

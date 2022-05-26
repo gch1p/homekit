@@ -49,8 +49,8 @@ return [
     ],
 
     'static' => [
-        'app.css' => 9,
-        'app.js' => 2,
+        'app.css' => 10,
+        'app.js' => 4,
         'polyfills.js' => 1,
         'modem.js' => 1,
         'inverter.js' => 2,

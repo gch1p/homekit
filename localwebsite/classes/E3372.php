@@ -176,8 +176,10 @@ class E3372
 
         $messages = [];
         foreach ($xml->Messages->Message as $message) {
+            $dt = DateTime::createFromFormat("Y-m-d H:i:s", (string)$message->Date);
             $messages[] = [
                 'date' => (string)$message->Date,
+                'timestamp' => $dt->getTimestamp(),
                 'phone' => (string)$message->Phone,
                 'content' => (string)$message->Content
             ];

@@ -19,7 +19,7 @@ spl_autoload_register(function($class) {
         $path = ROOT.'/handlers/'.$class.'.php';
 
     // engine classes
-    else if (in_array($class, ['request_handler', 'router', 'model', 'debug']))
+    else if (in_array($class, ['request_handler', 'router', 'model', 'debug', 'database']))
         $path = ROOT.'/engine/'.$class.'.php';
 
     else if ($class == 'Lang')

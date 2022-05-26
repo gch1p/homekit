@@ -253,3 +253,13 @@ function prepend_shutdown_function(callable $f) {
     global $ShutdownFunctions;
     array_unshift($ShutdownFunctions, $f);
 }
+
+function getDB(): database {
+    global $config;
+    static $link = null;
+
+    if (is_null($link))
+        $link = new database($config['database_path']);
+
+    return $link;
+}

@@ -61,5 +61,13 @@ return [
     'cam_hls_host' => '192.168.1.1',
     'cam_list' => [
         // fill me with names
-    ]
+    ],
+
+    'vk_sms_checker' => [
+        'telegram_token' => '',
+        'telegram_chat_id' => '',
+        'modem_name' => '', // reference to the 'modems' array
+    ],
+
+    'database_path' => getenv('HOME').'/.config/homekit.localwebsite.sqlite3',
 ];

@@ -10,3 +10,4 @@ __pycache__
 /localwebsite/.debug.log
 /localwebsite/config.local.php
 /localwebsite/cache
+/localwebsite/test.php

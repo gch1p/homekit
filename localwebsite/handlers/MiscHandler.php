@@ -67,6 +67,10 @@ class MiscHandler extends RequestHandler
         $hls_host = config::get('cam_hls_host');
         $hls_proto = config::get('cam_hls_proto');
 
+        $hls_key = config::get('cam_hls_access_key');
+        if ($hls_key)
+            setcookie_safe('hls_key', $hls_key);
+
         $this->tpl->set([
             'hls_host' => $hls_host,
             'hls_proto' => $hls_proto,

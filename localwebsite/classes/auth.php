@@ -4,25 +4,19 @@ class auth {
 
     public static ?User $authorizedUser = null;
 
-    const SESSION_TIMEOUT = 86400 * 365;
-    const COOKIE_NAME = 'auth';
+    const COOKIE_NAME = 'lws-auth';
 
     public static function getToken(): ?string {
         return $_COOKIE[self::COOKIE_NAME] ?? null;
     }
 
     public static function setToken(string $token) {
-        setcookie(self::COOKIE_NAME,
-            $token,
-            time() + self::SESSION_TIMEOUT,
-            '/',
-            config::get('auth_cookie_host'),
-            true);
+        setcookie_safe(self::COOKIE_NAME, $token);
     }
 
     public static function resetToken() {
         if (!headers_sent())
-            setcookie(self::COOKIE_NAME, null, -1, '/', config::get('auth_cookie_host'));
+            unsetcookie(self::COOKIE_NAME);
     }
 
     public static function id(bool $do_check = true): int {

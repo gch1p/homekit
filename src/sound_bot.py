@@ -458,8 +458,9 @@ def camera_capture(ctx: Context) -> None:
     if 'rotate' in camera_config:
         im = Image.open(fd.name)
         im.rotate(camera_config['rotate'], expand=True)
-        # im.show()
+        im.show()
         im.save(fd.name)
+        logger.debug(f"rotated image {camera_config['rotate']} degrees")
 
     try:
         with open(fd.name, 'rb') as f:

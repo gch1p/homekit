@@ -1,4 +1,5 @@
 import toml
+import yaml
 import logging
 import os
 
@@ -8,14 +9,25 @@ from argparse import ArgumentParser
 
 
 def _get_config_path(name: str) -> str:
+    formats = ['toml', 'yaml']
+
     dirname = join(os.environ['HOME'], '.config', name)
-    filename = join(os.environ['HOME'], '.config', f'{name}.toml')
+
     if isdir(dirname):
-        return join(dirname, 'config.toml')
-    elif isfile(filename):
-        return filename
+        for fmt in formats:
+            filename = join(dirname, f'config.{fmt}')
+            if isfile(filename):
+                return filename
+
+        raise IOError(f'config not found in {dirname}')
+
     else:
-        raise IOError(f'configuration file not found (tried {dirname}/config.toml and {filename})')
+        filenames = [join(os.environ['HOME'], '.config', f'{name}.{format}') for format in formats]
+        for file in filenames:
+            if isfile(file):
+                return file
+
+    raise IOError(f'config not found')
 
 
 class ConfigStore:
@@ -64,7 +76,15 @@ class ConfigStore:
         if not no_config and path is None:
             path = _get_config_path(name)
 
-        self.data = {} if no_config else toml.load(path)
+        if no_config:
+            self.data = {}
+        else:
+            if path.endswith('.toml'):
+                self.data = toml.load(path)
+            elif path.endswith('.yaml'):
+                with open(path, 'r') as fd:
+                    self.data = yaml.safe_load(fd)
+                    print('loaded yaml config:', self.data)
 
         if 'logging' in self:
             if not log_file and 'file' in self['logging']:
@@ -109,5 +129,5 @@ def setup_logging(verbose=False, log_file=None, default_fmt=False):
     if log_file is not None:
         log_config['filename'] = log_file
         log_config['encoding'] = 'utf-8'
-        
+
     logging.basicConfig(**log_config)

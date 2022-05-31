@@ -334,25 +334,25 @@ class CamerasRenderer(Renderer):
     @classmethod
     def places_markup(cls, ctx: Context, callback_prefix: str) -> InlineKeyboardMarkup:
         buttons = []
-        for sensor, sensor_label in config['cameras'].items():
+        for camera_name, camera_data in config['cameras'].items():
             buttons.append(
-                [InlineKeyboardButton(sensor_label[ctx.user_lang], callback_data=f'{callback_prefix}/{sensor}')])
+                [InlineKeyboardButton(camera_data['label'][ctx.user_lang], callback_data=f'{callback_prefix}/{camera_name}')])
         return InlineKeyboardMarkup(buttons)
 
     @classmethod
-    def camera(cls, ctx: Context) -> RenderedContent:
+    def camera(cls, ctx: Context, flash_available: bool) -> RenderedContent:
         node, = callback_unpack(ctx)
 
         html = ctx.lang('select_option')
-        buttons = [
-            [
-                InlineKeyboardButton(ctx.lang('w_flash'), callback_data=f'c1/{node}/1'),
-                InlineKeyboardButton(ctx.lang('wo_flash'), callback_data=f'c1/{node}/0'),
-            ]
-        ]
-        cls.back_button(ctx, buttons, callback_data=f'c0')
 
-        return html, InlineKeyboardMarkup(buttons)
+        buttons = []
+        if flash_available:
+            buttons.append(InlineKeyboardButton(ctx.lang('w_flash'), callback_data=f'c1/{node}/1'))
+        buttons.append(InlineKeyboardButton(ctx.lang('wo_flash'), callback_data=f'c1/{node}/0'))
+
+        cls.back_button(ctx, [buttons], callback_data=f'c0')
+
+        return html, InlineKeyboardMarkup([buttons])
     #
     # @classmethod
     # def record_started(cls, ctx: Context, rid: int) -> RenderedContent:
@@ -419,8 +419,9 @@ def camera_options(ctx: Context) -> None:
         return
 
     ctx.answer()
+    flash_available = 'flash' in config['cameras'][cam] and config['cameras'][cam]['flash'] is True
 
-    text, markup = CamerasRenderer.camera(ctx)
+    text, markup = CamerasRenderer.camera(ctx, flash_available)
     ctx.edit(text, markup)
 
 

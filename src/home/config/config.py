@@ -84,7 +84,6 @@ class ConfigStore:
             elif path.endswith('.yaml'):
                 with open(path, 'r') as fd:
                     self.data = yaml.safe_load(fd)
-                    print('loaded yaml config:', self.data)
 
         if 'logging' in self:
             if not log_file and 'file' in self['logging']:

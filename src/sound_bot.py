@@ -130,7 +130,7 @@ class SettingsRenderer(Renderer):
         cls.back_button(ctx, buttons, callback_data='s0')
 
         return html, InlineKeyboardMarkup(buttons)
-    
+
     @classmethod
     def control(cls, ctx: Context, data) -> RenderedContent:
         node, control, *rest = callback_unpack(ctx)
@@ -343,7 +343,7 @@ class CamerasRenderer(Renderer):
     def camera(cls, ctx: Context) -> RenderedContent:
         node, = callback_unpack(ctx)
 
-        html = ctx.lang('select_interval')
+        html = ctx.lang('select_option')
         buttons = [
             [
                 InlineKeyboardButton(ctx.lang('w_flash'), callback_data=f'c1/{node}/1'),

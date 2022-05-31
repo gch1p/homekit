@@ -26,6 +26,8 @@ from telegram.ext import (
     MessageHandler
 )
 
+from PIL import Image
+
 logger = logging.getLogger(__name__)
 RenderedContent = tuple[str, Optional[InlineKeyboardMarkup]]
 record_client: Optional[RecordClient] = None
@@ -451,6 +453,13 @@ def camera_capture(ctx: Context) -> None:
     # disable flash led
     if flash:
         client.setflash(False)
+
+    camera_config = config['cameras'][cam]
+    if 'rotate' in camera_config:
+        im = Image.open(fd.name)
+        im.rotate(camera_config['rotate'], expand=True)
+        # im.show()
+        im.save(fd.name)
 
     try:
         with open(fd.name, 'rb') as f:

@@ -293,7 +293,7 @@ function setcookie_safe(...$args) {
     global $config;
     if (!headers_sent()) {
         if (count($args) == 2)
-            setcookie($args[0], $args[1], time()+86400+365, '/', $config['auth_cookie_host']);
+            setcookie($args[0], $args[1], time()+86400*365, '/', $config['auth_cookie_host']);
         else
             setcookie(...$args);
     }

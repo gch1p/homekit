@@ -70,8 +70,10 @@ if __name__ == '__main__':
         if start < 0:
             start = 0
 
+        duration = end - start
+
         dt1 = (file_dt + timedelta(seconds=start)).strftime(DATETIME_FORMAT)
         dt2 = (file_dt + timedelta(seconds=end)).strftime(DATETIME_FORMAT)
         filename = f'{dt1}__{dt2}.mp4'
 
-        print(f'{start} {end} {filename}')
+        print(f'{start} {duration} {filename}')

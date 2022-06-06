@@ -216,18 +216,24 @@ do_motion() {
 	timecodes="${timecodes[@]}"
 	timecodes=${timecodes// /,}
 
-	local output_dir="$(dirname "$input")/motion"
-	if ! [ -d "$output_dir" ]; then
-		mkdir "$output_dir" || die "do_motion: mkdir($output_dir) failed"
-		debug "do_motion: created $output_dir directory"
-	fi
+	if [ -z "$timecodes" ]; then
+		debug "do_motion: no motion detected"
+	else
+		debug "do_motion: detected timecodes: $timecodes"
 
-	local fragment
-	while read line; do
-		fragment=($line)
-		debug "do_motion: writing fragment start=${fragment[0]} duration=${fragment[1]} filename=$output_dir/${fragment[2]}"
-		ffmpeg $ffmpeg_args -i "$input" -ss ${fragment[0]} -t ${fragment[1]} -c copy -y "$output_dir/${fragment[2]}" </dev/null
-	done < <($DIR/process-motion-timecodes.py --source-filename "$input" --timecodes "$timecodes")
+		local output_dir="$(dirname "$input")/motion"
+		if ! [ -d "$output_dir" ]; then
+			mkdir "$output_dir" || die "do_motion: mkdir($output_dir) failed"
+			debug "do_motion: created $output_dir directory"
+		fi
+
+		local fragment
+		while read line; do
+			fragment=($line)
+			debug "do_motion: writing fragment start=${fragment[0]} duration=${fragment[1]} filename=$output_dir/${fragment[2]}"
+			ffmpeg $ffmpeg_args -i "$input" -ss ${fragment[0]} -t ${fragment[1]} -c copy -y "$output_dir/${fragment[2]}" </dev/null
+		done < <($DIR/process-motion-timecodes.py --source-filename "$input" --timecodes "$timecodes")
+	fi
 }
 
 #dvr_scan_fake() {

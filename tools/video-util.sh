@@ -2,8 +2,9 @@
 
 set -e
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+DIR="$( cd "$( dirname "$(realpath "${BASH_SOURCE[0]}")" )" &> /dev/null && pwd )"
 PROGNAME="$0"
+
 BOLD=$(tput bold)
 RST=$(tput sgr0)
 RED=$(tput setaf 1)
@@ -28,7 +29,7 @@ debug() {
 }
 
 echoinfo() {
-	echo "${CYAN}$@${RST}"
+	>&2 echo "${CYAN}$@${RST}"
 }
 
 echoerr() {
@@ -215,12 +216,23 @@ do_motion() {
 	timecodes="${timecodes[@]}"
 	timecodes=${timecodes// /,}
 
-	echo "all timecodes: $timecodes"
+	local output_dir="$(dirname "$input")/motion"
+	if ! [ -d "$output_dir" ]; then
+		mkdir "$output_dir" || die "do_motion: mkdir($output_dir) failed"
+		debug "do_motion: created $output_dir directory"
+	fi
+
+	local fragment
+	while read line; do
+		fragment=($line)
+		debug "do_motion: writing fragment start=${fragment[0]} duration=${fragment[1]} filename=$output_dir/${fragment[2]}"
+		ffmpeg $ffmpeg_args -i "$input" -ss ${fragment[0]} -t ${fragment[1]} -c copy -y "$output_dir/${fragment[2]}" </dev/null
+	done < <($DIR/process-motion-timecodes.py --source-filename "$input" --timecodes "$timecodes")
 }
 
-dvr_scan_fake() {
-	echo "00:05:06.930,00:05:24.063"
-}
+#dvr_scan_fake() {
+#	echo "00:05:06.930,00:05:24.063"
+#}
 
 dvr_scan() {
 	local input="$1"

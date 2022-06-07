@@ -23,6 +23,17 @@ verbose=
 config_dir=$HOME/.config/video-util
 config_dir_set=
 
+_time_started=
+
+time_start() {
+	_time_started=$(date +%s)
+}
+
+time_elapsed() {
+	local _time_finished=$(date +%s)
+	echo $(( _time_finished - _time_started ))
+}
+
 debug() {
 	if [ -n "$verbose" ]; then
 		>&2 echo "$@"
@@ -250,7 +261,9 @@ dvr_scan() {
 	else
 		echoinfo "dvr_scan($input): no roi, mt=$motion_threshold"
 	fi
+	time_start
 	dvr-scan $dvr_scan_args -i "$input" -so --min-event-length 3s -df 3 --frame-skip 2 -t $motion_threshold $args | tail -1
+	debug "dvr_scan: finished in $(time_elapsed)s"
 }
 
 [[ $# -lt 1 ]] && usage

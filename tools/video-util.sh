@@ -257,9 +257,9 @@ dvr_scan() {
 	local args=
 	if [ ! -z "$2" ]; then
 		args="-roi $2"
-		echoinfo "dvr_scan($input): roi=($2), mt=$motion_threshold"
+		echoinfo "dvr_scan(${BOLD}${input}${RST}${CYAN}): roi=($2), mt=$motion_threshold"
 	else
-		echoinfo "dvr_scan($input): no roi, mt=$motion_threshold"
+		echoinfo "dvr_scan(${BOLD}${input}${RST}${CYAN}): no roi, mt=$motion_threshold"
 	fi
 	time_start
 	dvr-scan $dvr_scan_args -i "$input" -so --min-event-length 3s -df 3 --frame-skip 2 -t $motion_threshold $args | tail -1

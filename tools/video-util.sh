@@ -13,6 +13,7 @@ YELLOW=$(tput setaf 3)
 CYAN=$(tput setaf 6)
 
 input=
+output=
 command=
 roi_file=
 motion_threshold=1
@@ -258,6 +259,11 @@ while [[ $# -gt 0 ]]; do
 	case $1 in
 		-i|--input)
 			input="$2"
+			shift; shift
+			;;
+
+		-o|--output)
+			output="$2"
 			shift; shift
 			;;
 

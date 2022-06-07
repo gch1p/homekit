@@ -48,6 +48,8 @@ if __name__ == '__main__':
 
     # sort out invalid fragments (dvr-scan returns them sometimes, idk why...)
     timecodes = list(filter(lambda f: f[0] < f[1], timecodes))
+    if not timecodes:
+        raise ValueError('no valid timecodes')
 
     file_dt = filename_to_datetime(arg.source_filename)
 

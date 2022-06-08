@@ -2,18 +2,16 @@
 import os
 
 from typing import Optional
-from aiohttp import web
-from aiohttp.web_exceptions import (
-    HTTPNotFound
-)
+
 from home.config import config
-from home.util import parse_addr, stringify, format_tb
+from home.util import parse_addr
 from home.sound import (
     amixer,
     Recorder,
     RecordStatus,
     RecordStorage
 )
+from home import http
 
 
 """
@@ -27,39 +25,8 @@ This script implements HTTP API for amixer and arecord.
 # ---------------------
 
 recorder: Optional[Recorder]
-routes = web.RouteTableDef()
+routes = http.routes()
 storage: Optional[RecordStorage]
-
-
-# common http funcs & helpers
-# ---------------------------
-
-@web.middleware
-async def errors_handler_middleware(request, handler):
-    try:
-        response = await handler(request)
-        return response
-
-    except HTTPNotFound:
-        return web.json_response({'error': 'not found'}, status=404)
-
-    except Exception as exc:
-        data = {
-            'error': exc.__class__.__name__,
-            'message': exc.message if hasattr(exc, 'message') else str(exc)
-        }
-        tb = format_tb(exc)
-        if tb:
-            data['stacktrace'] = tb
-
-        return web.json_response(data, status=500)
-
-
-def ok(data=None):
-    if data is None:
-        data = 1
-    response = {'response': data}
-    return web.json_response(response, dumps=stringify)
 
 
 # recording methods
@@ -73,14 +40,14 @@ async def do_record(request):
         raise ValueError(f'invalid duration: max duration is {max}')
 
     record_id = recorder.record(duration)
-    return ok({'id': record_id})
+    return http.ok({'id': record_id})
 
 
 @routes.get('/record/info/{id}/')
 async def record_info(request):
     record_id = int(request.match_info['id'])
     info = recorder.get_info(record_id)
-    return ok(info.as_dict())
+    return http.ok(info.as_dict())
 
 
 @routes.get('/record/forget/{id}/')
@@ -91,7 +58,7 @@ async def record_forget(request):
     assert info.status in (RecordStatus.FINISHED, RecordStatus.ERROR), f"can't forget: record status is {info.status}"
 
     recorder.forget(record_id)
-    return ok()
+    return http.ok()
 
 
 @routes.get('/record/download/{id}/')
@@ -101,7 +68,7 @@ async def record_download(request):
     info = recorder.get_info(record_id)
     assert info.status == RecordStatus.FINISHED, f"record status is {info.status}"
 
-    return web.FileResponse(info.file.path)
+    return http.FileResponse(info.file.path)
 
 
 @routes.get('/storage/list/')
@@ -112,7 +79,7 @@ async def storage_list(request):
     if extended:
         files = list(map(lambda file: file.__dict__(), files))
 
-    return ok({
+    return http.ok({
         'files': files
     })
 
@@ -125,7 +92,7 @@ async def storage_delete(request):
         raise ValueError(f'file {file} not found')
 
     storage.delete(file)
-    return ok()
+    return http.ok()
 
 
 @routes.get('/storage/download/')
@@ -135,7 +102,7 @@ async def storage_download(request):
     if not file:
         raise ValueError(f'file {file} not found')
 
-    return web.FileResponse(file.path)
+    return http.FileResponse(file.path)
 
 
 # ALSA mixer methods
@@ -144,7 +111,7 @@ async def storage_download(request):
 def _amixer_control_response(control):
     info = amixer.get(control)
     caps = amixer.get_caps(control)
-    return ok({
+    return http.ok({
         'caps': caps,
         'info': info
     })
@@ -153,7 +120,7 @@ def _amixer_control_response(control):
 @routes.get('/amixer/get-all/')
 async def amixer_get_all(request):
     controls_info = amixer.get_all()
-    return ok(controls_info)
+    return http.ok(controls_info)
 
 
 @routes.get('/amixer/get/{control}/')
@@ -213,13 +180,4 @@ if __name__ == '__main__':
     recorder = Recorder(storage=storage)
     recorder.start_thread()
 
-    # start http server
-    host, port = parse_addr(config['node']['listen'])
-    app = web.Application()
-    app.add_routes(routes)
-    app.middlewares.append(errors_handler_middleware)
-
-    web.run_app(app,
-                host=host,
-                port=port,
-                handle_signals=True)
+    http.serve(parse_addr(config['node']['listen']), routes)

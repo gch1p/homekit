@@ -1,5 +1,5 @@
 [Unit]
-Description=MyHomeKit's Sound Bot for Telegram
+Description=HomeKit Sound Bot for Telegram
 After=network-online.target
 
 [Service]

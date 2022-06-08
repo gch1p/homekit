@@ -1,12 +1,12 @@
 [Unit]
-Description=HomeKit Sound Sensor Central Server
+Description=HomeKit IPCam Server
 After=network-online.target
 
 [Service]
 User=user
 Group=user
 Restart=on-failure
-ExecStart=/home/user/homekit/src/sound_sensor_server.py
+ExecStart=/home/user/homekit/src/ipcam_server.py
 WorkingDirectory=/home/user
 
 [Install]

@@ -5,12 +5,7 @@ set -e
 DIR="$( cd "$( dirname "$(realpath "${BASH_SOURCE[0]}")" )" &> /dev/null && pwd )"
 PROGNAME="$0"
 
-BOLD=$(tput bold)
-RST=$(tput sgr0)
-RED=$(tput setaf 1)
-GREEN=$(tput setaf 2)
-YELLOW=$(tput setaf 3)
-CYAN=$(tput setaf 6)
+. "$DIR/lib.bash"
 
 input=
 output=
@@ -18,45 +13,10 @@ command=
 motion_threshold=1
 ffmpeg_args="-nostats -loglevel error"
 dvr_scan_args="-q"
-verbose=
 config_dir=$HOME/.config/video-util
 config_dir_set=
 write_data_prefix=
 write_data_time=
-
-_time_started=
-
-time_start() {
-	_time_started=$(date +%s)
-}
-
-time_elapsed() {
-	local _time_finished=$(date +%s)
-	echo $(( _time_finished - _time_started ))
-}
-
-debug() {
-	if [ -n "$verbose" ]; then
-		>&2 echo "$@"
-	fi
-}
-
-echoinfo() {
-	>&2 echo "${CYAN}$@${RST}"
-}
-
-echoerr() {
-	>&2 echo "${RED}${BOLD}error:${RST}${RED} $@${RST}"
-}
-
-echowarn() {
-	>&2 echo "${YELLOW}${BOLD}warning:${RST}${YELLOW} $@${RST}"
-}
-
-die() {
-    echoerr "$@"
-    exit 1
-}
 
 file_in_use() {
 	[ -n "$(lsof "$1")" ]
@@ -223,44 +183,6 @@ do_mass_fix_mtime() {
 	done
 }
 
-do_motion() {
-	local input="$1"
-	local timecodes=()
-	local roi_file="$config_dir/roi.txt"
-	if ! [ -f "$roi_file" ]; then
-		timecodes+=($(dvr_scan "$input"))
-	else
-		echoinfo "using roi sets from file: ${BOLD}$roi_file"
-		while read line; do
-			if ! [[ "$line" =~ ^#.*  ]]; then
-				timecodes+=("$(dvr_scan "$input" "$line")")
-			fi
-		done < <(cat "$roi_file")
-	fi
-
-	timecodes="${timecodes[@]}"
-	timecodes=${timecodes// /,}
-
-	if [ -z "$timecodes" ]; then
-		debug "do_motion: no motion detected"
-	else
-		debug "do_motion: detected timecodes: $timecodes"
-
-		local output_dir="$(dirname "$input")/motion"
-		if ! [ -d "$output_dir" ]; then
-			mkdir "$output_dir" || die "do_motion: mkdir($output_dir) failed"
-			debug "do_motion: created $output_dir directory"
-		fi
-
-		local fragment
-		while read line; do
-			fragment=($line)
-			debug "do_motion: writing fragment start=${fragment[0]} duration=${fragment[1]} filename=$output_dir/${fragment[2]}"
-			ffmpeg $ffmpeg_args -i "$input" -ss ${fragment[0]} -t ${fragment[1]} -c copy -y "$output_dir/${fragment[2]}" </dev/null
-		done < <($DIR/process-motion-timecodes.py --source-filename "$input" --timecodes "$timecodes")
-	fi
-}
-
 do_mass_motion() {
 	local input="$1"
 	local saved_time=$(config_get_prev_mtime motion)
@@ -284,20 +206,6 @@ do_mass_motion() {
 #dvr_scan_fake() {
 #	echo "00:05:06.930,00:05:24.063"
 #}
-
-dvr_scan() {
-	local input="$1"
-	local args=
-	if [ ! -z "$2" ]; then
-		args="-roi $2"
-		echoinfo "dvr_scan(${BOLD}${input}${RST}${CYAN}): roi=($2), mt=$motion_threshold"
-	else
-		echoinfo "dvr_scan(${BOLD}${input}${RST}${CYAN}): no roi, mt=$motion_threshold"
-	fi
-	time_start
-	dvr-scan $dvr_scan_args -i "$input" -so --min-event-length 3s -df 3 --frame-skip 2 -t $motion_threshold $args | tail -1
-	debug "dvr_scan: finished in $(time_elapsed)s"
-}
 
 [[ $# -lt 1 ]] && usage
 

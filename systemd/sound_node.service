@@ -1,5 +1,5 @@
 [Unit]
-Description=MyHomeKit Sound Node (ALSA HTTP Frontend)
+Description=HomeKit Sound Node (ALSA HTTP Frontend)
 After=network-online.target
 
 [Service]

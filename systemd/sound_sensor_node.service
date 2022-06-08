@@ -1,5 +1,5 @@
 [Unit]
-Description=MyHomeKit Sound Sensor Node
+Description=HomeKit Sound Sensor Node
 After=network-online.target
 
 [Service]

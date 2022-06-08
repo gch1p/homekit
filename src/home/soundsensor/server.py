@@ -4,13 +4,10 @@ import logging
 import threading
 
 from ..config import config
-from aiohttp import web
-from aiohttp.web_exceptions import (
-    HTTPNotFound
-)
+from .. import http
 
 from typing import Type
-from ..util import Addr, stringify, format_tb
+from ..util import Addr
 
 logger = logging.getLogger(__name__)
 
@@ -74,52 +71,22 @@ class SoundSensorServer:
         loop.run_forever()
 
     def run_guard_server(self):
-        routes = web.RouteTableDef()
-
-        def ok(data=None):
-            if data is None:
-                data = 1
-            response = {'response': data}
-            return web.json_response(response, dumps=stringify)
-
-        @web.middleware
-        async def errors_handler_middleware(request, handler):
-            try:
-                response = await handler(request)
-                return response
-            except HTTPNotFound:
-                return web.json_response({'error': 'not found'}, status=404)
-            except Exception as exc:
-                data = {
-                    'error': exc.__class__.__name__,
-                    'message': exc.message if hasattr(exc, 'message') else str(exc)
-                }
-                tb = format_tb(exc)
-                if tb:
-                    data['stacktrace'] = tb
-
-                return web.json_response(data, status=500)
+        routes = http.routes()
 
         @routes.post('/guard/enable')
         async def guard_enable(request):
             self.set_recording(True)
-            return ok()
+            return http.ok()
 
         @routes.post('/guard/disable')
         async def guard_disable(request):
             self.set_recording(False)
-            return ok()
+            return http.ok()
 
         @routes.get('/guard/status')
         async def guard_status(request):
-            return ok({'enabled': self.is_recording_enabled()})
+            return http.ok({'enabled': self.is_recording_enabled()})
 
         asyncio.set_event_loop(asyncio.new_event_loop())  # need to create new event loop in new thread
-        app = web.Application()
-        app.add_routes(routes)
-        app.middlewares.append(errors_handler_middleware)
+        http.serve(self.addr, routes, handle_signals=False)  # handle_signals=True doesn't work in separate thread
 
-        web.run_app(app,
-                    host=self.addr[0],
-                    port=self.addr[1],
-                    handle_signals=False)  # handle_signals=True doesn't work in separate thread

@@ -8,6 +8,7 @@ import logging
 import string
 import random
 
+from enum import Enum
 from .config import config
 from datetime import datetime
 from typing import Tuple, Optional
@@ -28,6 +29,8 @@ def json_serial(obj):
     """JSON serializer for datetime objects"""
     if isinstance(obj, datetime):
         return obj.timestamp()
+    if isinstance(obj, Enum):
+        return obj.value
     raise TypeError("Type %s not serializable" % type(obj))
 
 

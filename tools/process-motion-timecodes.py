@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os.path
+from src.home.camera.util import dvr_scan_timecodes
 
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
@@ -39,31 +40,10 @@ if __name__ == '__main__':
     if arg.padding < 0:
         raise ValueError('invalid padding')
 
-    timecodes = arg.timecodes.split(',')
-    if len(timecodes) % 2 != 0:
-        raise ValueError('invalid number of timecodes')
-
-    timecodes = list(map(time2seconds, timecodes))
-    timecodes = list(chunks(timecodes, 2))
-
-    # sort out invalid fragments (dvr-scan returns them sometimes, idk why...)
-    timecodes = list(filter(lambda f: f[0] < f[1], timecodes))
-    if not timecodes:
-        raise ValueError('no valid timecodes')
-
+    fragments = dvr_scan_timecodes(arg.timecodes)
     file_dt = filename_to_datetime(arg.source_filename)
 
-    # https://stackoverflow.com/a/43600953
-    timecodes.sort(key=lambda interval: interval[0])
-    merged = [timecodes[0]]
-    for current in timecodes:
-        previous = merged[-1]
-        if current[0] <= previous[1]:
-            previous[1] = max(previous[1], current[1])
-        else:
-            merged.append(current)
-
-    for fragment in merged:
+    for fragment in fragments:
         start, end = fragment
 
         start -= arg.padding

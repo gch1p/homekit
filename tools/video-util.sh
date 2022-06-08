@@ -15,13 +15,14 @@ CYAN=$(tput setaf 6)
 input=
 output=
 command=
-roi_file=
 motion_threshold=1
 ffmpeg_args="-nostats -loglevel error"
 dvr_scan_args="-q"
 verbose=
 config_dir=$HOME/.config/video-util
 config_dir_set=
+write_data_prefix=
+write_data_time=
 
 _time_started=
 
@@ -53,7 +54,7 @@ echowarn() {
 }
 
 die() {
-    >&2 echo "error: $@"
+    echoerr "$@"
     exit 1
 }
 
@@ -119,24 +120,35 @@ config_set_prev_mtime() {
 }
 
 usage() {
-	cat <<-_EOF 
-	usage: $PROGNAME OPTIONS command
+	cat <<EOF
+usage: $PROGNAME OPTIONS command
 
-	Options:
-	    -i|--input    input file/directory
-	    -o|--output   output file/directory
-	    --roi-file    path to file with ROI sets
-	    -mt           motion threshold
-	    -v, -vv, vx   be verbose
-	    --config-dir  config directory
+Options:
+	-i|--input  FILE  input file/directory
+	-o|--output FILE  output file/directory
+	--name NAME       camera name, affects config directory.
+	                  default is $config_dir, specifying --name will make it 
+	                  ${config_dir}-\$name
+	-mt VALUE         motion threshold, default is $motion_threshold
+	--write-data PREFIX FILENAME|UNIXTIME
+	                  use with write-mtime-config command.
+	                  second value may be filename (starting with record_)
+	                  or number (unix timestamp).
+	-v, -vv, vx       be verbose.
+	                  -v enables debug logs.
+	                  -vv also enables verbose output of ffmpeg and dvr-scan.
+	                  -vx does \`set -x\`, may be used to debug the script.
 
-	Commands:
-	    fix, mass-fix  fix video timestamps
-	    mass-fix-mtime fix mtimes of recordings
-	    motion         detect motion
-	    snapshot       take video snapshot
+Commands:
+	fix             fix video timestamps
+	mass-fix        fix timestamps of all videos in directory
+	mass-fix-mtime  fix mtimes of recordings
+	motion          detect motion
+	mass-motion     detect motion
+	snapshot        take video snapshot
+	write-mtime-config
 
-	_EOF
+EOF
 	exit 1
 }
 
@@ -212,11 +224,12 @@ do_mass_fix_mtime() {
 }
 
 do_motion() {
+	local input="$1"
 	local timecodes=()
-	if [ -z "$roi_file" ]; then
+	local roi_file="$config_dir/roi.txt"
+	if ! [ -f "$roi_file" ]; then
 		timecodes+=($(dvr_scan "$input"))
 	else
-		[ -f "$roi_file" ] || die "specified ROI sets file does not exists"
 		echoinfo "using roi sets from file: ${BOLD}$roi_file"
 		while read line; do
 			if ! [[ "$line" =~ ^#.*  ]]; then
@@ -248,6 +261,26 @@ do_motion() {
 	fi
 }
 
+do_mass_motion() {
+	local input="$1"
+	local saved_time=$(config_get_prev_mtime motion)
+	debug "do_mass_motion: saved_time=$saved_time"
+
+	local file_time
+	local file
+
+	while read file; do
+		file_time="$(filename_as_unixtime "$(basename "$file")")"
+		#debug "do_mass_motion: time of ${BOLD}${file}${RST} is ${BOLD}${file_time}${RST}"
+		(( file_time <= saved_time )) && continue
+
+		debug "do_mass_motion: processing $file"
+		do_motion "$file"
+
+		config_set_prev_mtime motion $file_time
+	done < <(find "$input" -type f -name "record_*.mp4" | sort)
+}
+
 #dvr_scan_fake() {
 #	echo "00:05:06.930,00:05:24.063"
 #}
@@ -270,6 +303,11 @@ dvr_scan() {
 
 while [[ $# -gt 0 ]]; do
 	case $1 in
+		fix|mass-fix|motion|snapshot|mass-fix-mtime|mass-motion|write-mtime-config)
+			command="$1"
+			shift
+			;;
+
 		-i|--input)
 			input="$2"
 			shift; shift
@@ -280,19 +318,15 @@ while [[ $# -gt 0 ]]; do
 			shift; shift
 			;;
 
-		--roi-file)
-			roi_file="$2"
-			shift; shift
-			;;
-
 		-mt)
 			motion_threshold="$2"
 			shift; shift
 			;;
 
-		fix|mass-fix|motion|snapshot|mass-fix-mtime)
-			command="$1"
-			shift
+		--write-data)
+			write_data_prefix="$2"
+			write_data_time="$3"
+			shift; shift; shift
 			;;
 
 		-v)
@@ -313,8 +347,8 @@ while [[ $# -gt 0 ]]; do
 			shift
 			;;
 
-		--config-dir)
-			config_dir="$2"
+		--name)
+			config_dir="$config_dir-$2"
 			config_dir_set=1
 			shift; shift
 			;;
@@ -326,9 +360,13 @@ while [[ $# -gt 0 ]]; do
 	esac
 done
 
-[ -z "$config_dir_set" ] && echowarn "no --config-dir specified, using default ($config_dir)"
-if [ ! -d "$config_dir" ]; then
-	mkdir "$config_dir" || die "failed to create config directory ($config_dir)"
+if [ -z "$config_dir_set" ]; then
+	echowarn "no --name specified, using default ($config_dir)"
+else
+	if [ ! -d "$config_dir" ]; then
+		mkdir "$config_dir" || die "failed to create config directory ($config_dir)"
+	fi
+	>&2 echo "using ${BOLD}$config_dir${RST} as config directory"
 fi
 
 [ -z "$command" ] && die "command not specified"
@@ -351,7 +389,12 @@ case "$command" in
 
 	motion)
 		check_input_file
-		do_motion
+		do_motion "$input"
+		;;
+
+	mass-motion)
+		check_input_dir
+		do_mass_motion "$input"
 		;;
 
 	snapshot)
@@ -362,6 +405,21 @@ case "$command" in
 		}
 		ffmpeg $ffmpeg_args -i "$input" -frames:v 1 -q:v 2 "$output" </dev/null
 		echoinfo "saved to $output"
+		;;
+
+	write-mtime-config)
+		if [ -z "$write_data_prefix" ] || [ -z "$write_data_time" ]; then
+			die "--write-data is required, see usage"
+		fi
+
+		if [[ $write_data_time == record_* ]]; then
+			write_data_time=$(filename_as_unixtime "$write_data_time")
+			[ -z "$write_data_time" ] && die "invalid filename"
+		elif ! [[ $write_data_time =~ '^[0-9]+$' ]] ; then
+			die "invalid timestamp or filename"
+		fi
+
+		config_set_prev_mtime "$write_data_prefix" "$write_data_time"
 		;;
 
 	*)

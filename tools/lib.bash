@@ -120,3 +120,11 @@ download() {
 		die "neither curl nor wget found, can't proceed"
 	fi
 }
+
+file_in_use() {
+	[ -n "$(lsof "$1")" ]
+}
+
+file_mtime() {
+	stat -c %Y "$1"
+}

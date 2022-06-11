@@ -10,74 +10,9 @@ PROGNAME="$0"
 input=
 output=
 command=
-motion_threshold=1
 ffmpeg_args="-nostats -loglevel error"
-dvr_scan_args="-q"
 config_dir=$HOME/.config/video-util
 config_dir_set=
-write_data_prefix=
-write_data_time=
-
-file_in_use() {
-	[ -n "$(lsof "$1")" ]
-}
-
-get_mtime() {
-	stat -c %Y "$1"
-}
-
-# converts date in format yyyy-mm-dd-hh.ii.ss to unixtime
-date_to_unixtime() {
-	local date="$1"
-	date=${date//./-}
-	date=${date//-/ }
-
-	local nums=($date)
-	
-	local y=${nums[0]}
-	local m=${nums[1]}
-	local d=${nums[2]}
-	local h=${nums[3]}
-	local i=${nums[4]}
-	local s=${nums[5]}
-
-	date --date="$y-$m-$d $h:$i:$s" +"%s"
-}
-
-filename_as_unixtime() {
-	local name="$1"
-	name="$(basename "$name")"
-	name="${name/record_/}"
-	name="${name/.mp4/}"
-	date_to_unixtime "$name"
-}
-
-config_get_prev_mtime() {
-	local prefix="$1"
-	[ -z "$prefix" ] && die "config_get_prev_mtime: no prefix"
-
-	local file="$config_dir/${prefix}_mtime"
-	if [ -f "$file" ]; then
-		debug "config_get_prev_mtime: $(cat "$file")"
-		cat "$file"
-	else
-		debug "config_get_prev_mtime: 0"
-		echo "0"
-	fi
-}
-
-config_set_prev_mtime() {
-	local prefix="$1"
-	[ -z "$prefix" ] && die "config_set_prev_mtime: no prefix"
-
-	local mtime="$2"
-	[ -z "$mtime" ] && die "config_set_prev_mtime: no mtime"
-
-	local file="$config_dir/${prefix}_mtime"
-	
-	debug "config_set_prev_mtime: writing '$mtime' to '$file'"
-	echo "$mtime" > "$file"
-}
 
 usage() {
 	cat <<EOF
@@ -89,24 +24,13 @@ Options:
 	--name NAME       camera name, affects config directory.
 	                  default is $config_dir, specifying --name will make it 
 	                  ${config_dir}-\$name
-	-mt VALUE         motion threshold, default is $motion_threshold
-	--write-data PREFIX FILENAME|UNIXTIME
-	                  use with write-mtime-config command.
-	                  second value may be filename (starting with record_)
-	                  or number (unix timestamp).
 	-v, -vv, vx       be verbose.
 	                  -v enables debug logs.
-	                  -vv also enables verbose output of ffmpeg and dvr-scan.
+	                  -vv also enables verbose output of ffmpeg.
 	                  -vx does \`set -x\`, may be used to debug the script.
 
 Commands:
-	fix             fix video timestamps
-	mass-fix        fix timestamps of all videos in directory
-	mass-fix-mtime  fix mtimes of recordings
-	motion          detect motion
-	mass-motion     detect motion
 	snapshot        take video snapshot
-	write-mtime-config
 
 EOF
 	exit 1
@@ -122,96 +46,11 @@ check_input_dir() {
 	[ -d "$input" ] || die "input directory '$input' doesn't exist"
 }
 
-fix_video_timestamps() {
-	local input="$1"
-	local dir=$(dirname "$input")
-	local temp="$dir/.temporary_fixing.mp4"
-
-	local mtime=$(get_mtime "$input")
-
-	# debug "fix_video_timestamps: ffmpeg $ffmpeg_args -i \"$input\" -y -c copy \"$temp\""
-	ffmpeg $ffmpeg_args -i "$input" -y -c copy "$temp" </dev/null
-	rm "$input"
-	mv "$temp" "$input"
-
-	local unixtime=$(filename_as_unixtime "$input")
-	touch --date=@$unixtime "$input"
-}
-
-do_mass_fix() {
-	local mtime=$(config_get_prev_mtime "fix")
-	local tmpfile=$(mktemp)
-	debug "do_mass_fix: created temporary file $tmpfile"
-	
-	touch --date=@$mtime "$tmpfile"
-	debug "do_mass_fix: mtime of temp file: $(get_mtime $tmpfile)"
-	
-	[ -f "$input/.temporary_fixing.mp4" ] && {
-		echowarn "do_mass_fix: '$input/.temporary_fixing.mp4' exists, deleting"
-		rm "$input/.temporary_fixing.mp4"
-	}
-
-	# find all files in $input directory, newer than $tmpfile's time,
-	# sort them in ascending order, and finally remove timestamps
-	# leaving only file names. Then loop through each line
-	find "$input" -type f -newer "$tmpfile" -printf "%T+ %p\n" | sort | awk '{print $2}' | while read file; do
-		if ! file_in_use "$file"; then
-			debug "do_mass_fix: calling fix_video_timestamps($file)"
-			
-			fix_video_timestamps "$file"
-			echoinfo "fixed $file"
-		
-			config_set_prev_mtime "fix" "$(filename_as_unixtime "$file")"
-		else
-			echowarn "file '$file' is in use"
-		fi
-	done
-
-	rm "$tmpfile"
-}
-
-do_mass_fix_mtime() {
-	local time
-	find "$input" -type f -name "*.mp4" | while read file; do
-		if [[ "$(basename "$file")" =~ ^record_.* ]]; then
-			time="$(filename_as_unixtime "$file")"
-			debug "$file: $time"
-			touch --date=@$time "$file"
-		else
-			echowarn "unrecognized file: $file"
-		fi
-	done
-}
-
-do_mass_motion() {
-	local input="$1"
-	local saved_time=$(config_get_prev_mtime motion)
-	debug "do_mass_motion: saved_time=$saved_time"
-
-	local file_time
-	local file
-
-	while read file; do
-		file_time="$(filename_as_unixtime "$(basename "$file")")"
-		#debug "do_mass_motion: time of ${BOLD}${file}${RST} is ${BOLD}${file_time}${RST}"
-		(( file_time <= saved_time )) && continue
-
-		debug "do_mass_motion: processing $file"
-		do_motion "$file"
-
-		config_set_prev_mtime motion $file_time
-	done < <(find "$input" -type f -name "record_*.mp4" | sort)
-}
-
-#dvr_scan_fake() {
-#	echo "00:05:06.930,00:05:24.063"
-#}
-
 [[ $# -lt 1 ]] && usage
 
 while [[ $# -gt 0 ]]; do
 	case $1 in
-		fix|mass-fix|motion|snapshot|mass-fix-mtime|mass-motion|write-mtime-config)
+		snapshot)
 			command="$1"
 			shift
 			;;
@@ -224,17 +63,6 @@ while [[ $# -gt 0 ]]; do
 		-o|--output)
 			output="$2"
 			shift; shift
-			;;
-
-		-mt)
-			motion_threshold="$2"
-			shift; shift
-			;;
-
-		--write-data)
-			write_data_prefix="$2"
-			write_data_time="$3"
-			shift; shift; shift
 			;;
 
 		-v)
@@ -251,7 +79,6 @@ while [[ $# -gt 0 ]]; do
 		-vv)
 			verbose=1
 			ffmpeg_args="-loglevel info"
-			dvr_scan_args=""
 			shift
 			;;
 
@@ -279,32 +106,6 @@ fi
 
 [ -z "$command" ] && die "command not specified"
 case "$command" in
-	fix)
-		check_input_file
-		fix_video_timestamps "$input"
-		echo "done"
-		;;
-
-	mass-fix)
-		check_input_dir
-		do_mass_fix
-		;;
-
-	mass-fix-mtime)
-		check_input_dir
-		do_mass_fix_mtime
-		;;
-
-	motion)
-		check_input_file
-		do_motion "$input"
-		;;
-
-	mass-motion)
-		check_input_dir
-		do_mass_motion "$input"
-		;;
-
 	snapshot)
 		check_input_file
 		[ -z "$output" ] && {
@@ -313,21 +114,6 @@ case "$command" in
 		}
 		ffmpeg $ffmpeg_args -i "$input" -frames:v 1 -q:v 2 "$output" </dev/null
 		echoinfo "saved to $output"
-		;;
-
-	write-mtime-config)
-		if [ -z "$write_data_prefix" ] || [ -z "$write_data_time" ]; then
-			die "--write-data is required, see usage"
-		fi
-
-		if [[ $write_data_time == record_* ]]; then
-			write_data_time=$(filename_as_unixtime "$write_data_time")
-			[ -z "$write_data_time" ] && die "invalid filename"
-		elif ! [[ $write_data_time =~ '^[0-9]+$' ]] ; then
-			die "invalid timestamp or filename"
-		fi
-
-		config_set_prev_mtime "$write_data_prefix" "$write_data_time"
 		;;
 
 	*)

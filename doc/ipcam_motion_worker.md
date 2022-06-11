@@ -14,7 +14,6 @@ Local worker config example:
 ```
 api_url=http://ip:port
 camera=1
-threshold=1
 ```
 
 Remote worker config example:
@@ -22,14 +21,18 @@ Remote worker config example:
 remote=1
 api_url=http://ip:port
 camera=1
-threshold=1
 fs_root=/var/ipcam_motion_fs
 fs_max_filesize=146800640
 ```
 
-Optional fields:
+Optional fields (dvr-scan options):
 ```
 roi_file=roi.txt
+threshold=1
+min_event_length=3s
+downscale_factor=3
+frame_skip=2
+dvr_scan_path=
 ```
 
 `api_url` must point to `ipcam_server` instance.

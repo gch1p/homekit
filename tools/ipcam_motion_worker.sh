@@ -157,12 +157,12 @@ do_motion() {
 
 	local timecodes=()
 	if [ -z "$roi_file" ]; then
-		timecodes+=($(dvr_scan "$input"))
+		timecodes+=($(do_dvr_scan "$input"))
 	else
 		echoinfo "using roi sets from file: ${BOLD}$roi_file"
 		while read line; do
 			if ! [[ "$line" =~ ^#.*  ]]; then
-				timecodes+=("$(dvr_scan "$input" "$line")")
+				timecodes+=("$(do_dvr_scan "$input" "$line")")
 			fi
 		done < <(cat "$roi_file")
 	fi
@@ -174,6 +174,10 @@ do_motion() {
 }
 
 dvr_scan() {
+	"${config[dvr_scan_path]}" "$@"
+}
+
+do_dvr_scan() {
 	local input="$1"
 	local args=
 	if [ ! -z "$2" ]; then
@@ -183,7 +187,11 @@ dvr_scan() {
 		echoinfo "dvr_scan(${BOLD}${input}${RST}${CYAN}): no roi, mt=${config[threshold]}"
 	fi
 	time_start
-	dvr-scan -q -i "$input" -so --min-event-length 3s -df 3 --frame-skip 2 -t ${config[threshold]} $args | tail -1
+	dvr_scan -q -i "$input" -so \
+		--min-event-length ${config[min_event_length]} \
+		-df ${config[downscale_factor]} \
+		--frame-skip ${config[frame_skip]} \
+		-t ${config[threshold]} $args | tail -1
 	debug "dvr_scan: finished in $(time_elapsed)s"
 }
 
@@ -224,11 +232,16 @@ if [ -z "$allow_multiple" ] && pidof -o %PPID -x "$(basename "${BASH_SOURCE[0]}"
 fi
 
 read_config "$config_file" config
-check_config config "api_url camera threshold"
-
+check_config config "api_url camera"
 if [ -n "${config[remote]}" ]; then
 	check_config config "fs_root fs_max_filesize"
 fi
+
+[ -z "${config[threshold]}" ] && config[threshold]=1
+[ -z "${conifg[min_event_length]}" ] && config[min_event_length]="3s"
+[ -z "${conifg[frame_skip]}" ] && config[frame_skip]=2
+[ -z "${conifg[downscale_factor]}" ] && config[downscale_factor]=3
+[ -z "${conifg[dvr_scan_path]}" ] && config[dvr_scan_path]="dvr-scan"
 
 if [ -z "${config[remote]}" ]; then
 	process_local

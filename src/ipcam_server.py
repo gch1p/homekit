@@ -345,6 +345,12 @@ async def motion_notify_tg(camera: int,
     text += _tg_links(TelegramLinkType.ORIGINAL_FILE, camera, filename)
 
     for start, end in fragments:
+        start -= config['motion']['padding']
+        end += config['motion']['padding']
+
+        if start < 0:
+            start = 0
+
         duration = end - start
         if duration < 0:
             duration = 0
@@ -352,7 +358,7 @@ async def motion_notify_tg(camera: int,
         dt1 = dt_file + timedelta(seconds=start)
         dt2 = dt_file + timedelta(seconds=end)
 
-        text += f'\nFragment: <b>{duration}s</b>, {dt1.strftime(fmt)} - {dt2.strftime(fmt)} '
+        text += f'\nFragment: <b>{duration}s</b>, {dt1.strftime(fmt)}-{dt2.strftime(fmt)} '
         text += _tg_links(TelegramLinkType.FRAGMENT, camera, f'{dt1.strftime(datetime_format)}__{dt2.strftime(datetime_format)}.mp4')
 
     await send_telegram_aio(text)

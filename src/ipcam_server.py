@@ -7,7 +7,7 @@ import time
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from home.config import config
-from home.util import parse_addr
+from home.util import parse_addr, send_telegram_aio
 from home import http
 from home.database.sqlite import SQLiteBase
 from home.camera import util as camutil
@@ -20,6 +20,11 @@ from datetime import datetime, timedelta
 class TimeFilterType(Enum):
     FIX = 'fix'
     MOTION = 'motion'
+
+
+class TelegramLinkType(Enum):
+    FRAGMENT = 'fragment'
+    ORIGINAL_FILE = 'original_file'
 
 
 def valid_recording_name(filename: str) -> bool:
@@ -324,6 +329,46 @@ async def process_fragments(camera: int,
                                  output=os.path.join(motion_dir, f'{dt1}__{dt2}.mp4'),
                                  start_pos=start,
                                  duration=duration)
+
+    try:
+        if fragments and config['motion']['telegram']:
+            asyncio.ensure_future(motion_notify_tg(camera, filename, fragments))
+    except KeyError:
+        pass
+
+
+async def motion_notify_tg(camera: int,
+                           filename: str,
+                           fragments: list[tuple[int, int]]):
+    dt_file = filename_to_datetime(filename)
+    fmt = '%H:%M:%S'
+
+    text = f'Camera: <b>{camera}</b>\n'
+    text += f'Original file: <b>{filename}</b> '
+    text += _tg_links(TelegramLinkType.ORIGINAL_FILE, camera, filename)
+
+    for start, end in fragments:
+        duration = end - start
+        if duration < 0:
+            duration = 0
+
+        dt1 = dt_file + timedelta(seconds=start)
+        dt2 = dt_file + timedelta(seconds=end)
+
+        text += f'\nFragment: <b>{duration}s</b>, {dt1.strftime(fmt)} - {dt2.strftime(fmt)} '
+        text += _tg_links(TelegramLinkType.FRAGMENT, camera, f'{dt1.strftime(datetime_format)}__{dt2.strftime(datetime_format)}.mp4')
+
+    await send_telegram_aio(text)
+
+
+def _tg_links(link_type: TelegramLinkType,
+              camera: int,
+              file: str) -> str:
+    links = []
+    for link_name, link_template in config['telegram'][f'{link_type.value}_url_templates']:
+        link = link_template.replace('{camera}', str(camera)).replace('{file}', file)
+        links.append(f'<a href="{link}">{link_name}</a>')
+    return ' '.join(links)
 
 
 async def fix_job() -> None:

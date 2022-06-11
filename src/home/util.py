@@ -1,3 +1,4 @@
+import functools
 import json
 import socket
 import time
@@ -7,6 +8,7 @@ import traceback
 import logging
 import string
 import random
+import asyncio
 
 from enum import Enum
 from .config import config
@@ -100,8 +102,31 @@ def send_datagram(message: str, addr: Addr) -> None:
 
 def send_telegram(text: str,
                   parse_mode: str = None,
-                  disable_web_page_preview: bool = False,
-                  ):
+                  disable_web_page_preview: bool = False):
+    data, token = _send_telegram_data(text, parse_mode, disable_web_page_preview)
+    r = requests.post('https://api.telegram.org/bot%s/sendMessage' % token, data=data)
+    if r.status_code != 200:
+        logger.error(r.text)
+        raise RuntimeError("telegram returned %d" % r.status_code)
+
+
+async def send_telegram_aio(text: str,
+                            parse_mode: str = None,
+                            disable_web_page_preview: bool = False):
+    loop = asyncio.get_event_loop()
+    data, token = _send_telegram_data(text, parse_mode, disable_web_page_preview)
+    r = await loop.run_in_executor(None,
+                                   functools.partial(requests.post,
+                                                     'https://api.telegram.org/bot%s/sendMessage' % token,
+                                                     data=data))
+    if r.status_code != 200:
+        logger.error(r.text)
+        raise RuntimeError("telegram returned %d" % r.status_code)
+
+
+def _send_telegram_data(text: str,
+                        parse_mode: str = None,
+                        disable_web_page_preview: bool = False) -> tuple[dict, str]:
     data = {
         'chat_id': config['telegram']['chat_id'],
         'text': text
@@ -115,11 +140,7 @@ def send_telegram(text: str,
     if disable_web_page_preview or 'disable_web_page_preview' in config['telegram']:
         data['disable_web_page_preview'] = 1
 
-    r = requests.post('https://api.telegram.org/bot%s/sendMessage' % config['telegram']['token'], data=data)
-
-    if r.status_code != 200:
-        logger.error(r.text)
-        raise RuntimeError("telegram returned %d" % r.status_code)
+    return data, config['telegram']['token']
 
 
 def format_tb(exc) -> Optional[list[str]]:

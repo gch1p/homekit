@@ -21,11 +21,15 @@ camera:
 
 motion:
   padding: 2
+  telegram: true
 
 logging:
   verbose: true
-  
-motion_threshold: 1
+
+telegram:
+  token: ""
+  chat_id: ""
+  parse_mode: HTML
 ```
 
 ## Usage

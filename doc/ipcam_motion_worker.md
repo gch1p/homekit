@@ -58,7 +58,7 @@ When launching by cron, set `TERM=xterm` and `PATH` (to your `$PATH`) variables 
 
 ```
 apt-get install python3-opencv
-pip3 install drv-scan
+pip3 install dvr-scan
 ```
 
 Then add to `~/.local/bin` to `$PATH`.

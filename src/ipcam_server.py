@@ -372,9 +372,13 @@ if __name__ == '__main__':
 
     loop = asyncio.get_event_loop()
 
-    scheduler = AsyncIOScheduler(event_loop=loop)
-    scheduler.add_job(fix_job, 'interval', seconds=config['fix_interval'])
-    scheduler.start()
+    try:
+        if config['fix_enabled']:
+            scheduler = AsyncIOScheduler(event_loop=loop)
+            scheduler.add_job(fix_job, 'interval', seconds=config['fix_interval'])
+            scheduler.start()
+    except KeyError:
+        pass
 
     server = IPCamWebServer(parse_addr(config['server']['listen']))
     server.run()

@@ -330,11 +330,8 @@ async def process_fragments(camera: int,
                                  start_pos=start,
                                  duration=duration)
 
-    try:
-        if fragments and config['motion']['telegram']:
-            asyncio.ensure_future(motion_notify_tg(camera, filename, fragments))
-    except KeyError:
-        pass
+    if fragments and 'telegram' in config['motion'] and config['motion']['telegram']:
+        asyncio.ensure_future(motion_notify_tg(camera, filename, fragments))
 
 
 async def motion_notify_tg(camera: int,

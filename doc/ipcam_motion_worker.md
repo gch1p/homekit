@@ -52,6 +52,8 @@ This script just consequentially runs `ipcam_motion_worker.sh` with `-c ~/.confi
 ipcam_worker_worker_multiple.sh -v NAME NAME NAME ...
 ```
 
+When launching by cron, set `TERM=xterm` and `PATH` (to your `$PATH`) variables in crontab.
+
 # Dependencies
 
 ```

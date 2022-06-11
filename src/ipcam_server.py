@@ -327,24 +327,35 @@ async def process_fragments(camera: int,
 
 
 async def fix_job() -> None:
+    global fix_job_running
     logger.debug('fix_job: starting')
 
-    for cam in config['camera'].keys():
-        files = get_recordings_files(cam, TimeFilterType.FIX)
-        if not files:
-            logger.debug(f'fix_job: no files for camera {cam}')
-            continue
+    if fix_job_running:
+        logger.error('fix_job: already running')
+        return
 
-        logger.debug(f'fix_job: got %d files for camera {cam}' % (len(files),))
+    try:
+        fix_job_running = True
+        for cam in config['camera'].keys():
+            files = get_recordings_files(cam, TimeFilterType.FIX)
+            if not files:
+                logger.debug(f'fix_job: no files for camera {cam}')
+                continue
 
-        for file in files:
-            fullpath = os.path.join(get_recordings_path(cam), file['name'])
-            await camutil.ffmpeg_recreate(fullpath)
-            timestamp = filename_to_datetime(file['name'])
-            if timestamp:
-                db.set_timestamp(cam, TimeFilterType.FIX, timestamp)
+            logger.debug(f'fix_job: got %d files for camera {cam}' % (len(files),))
+
+            for file in files:
+                fullpath = os.path.join(get_recordings_path(cam), file['name'])
+                await camutil.ffmpeg_recreate(fullpath)
+                timestamp = filename_to_datetime(file['name'])
+                if timestamp:
+                    db.set_timestamp(cam, TimeFilterType.FIX, timestamp)
+
+    finally:
+        fix_job_running = False
 
 
+fix_job_running = False
 datetime_format = '%Y-%m-%d-%H.%M.%S'
 db: Optional[IPCamServerDatabase] = None
 server: Optional[IPCamWebServer] = None

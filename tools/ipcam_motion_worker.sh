@@ -7,6 +7,7 @@ PROGNAME="$0"
 
 . "$DIR/lib.bash"
 
+curl_opts="-s --connect-timeout 5 --retry 5 --max-time 10 --retry-delay 0 --retry-max-time 40"
 allow_multiple=
 config_file="$HOME/.config/ipcam_motion_worker/config.txt"
 declare -A config=()
@@ -26,21 +27,21 @@ EOF
 }
 
 get_recordings_dir() {
-	curl -s "${config[api_url]}/api/camera/list" \
+	curl $curl_opts "${config[api_url]}/api/camera/list" \
 		| jq ".response.\"${config[camera]}\".recordings_path" | tr -d '"'
 }
 
 # returns two words per line:
 # filename filesize
 get_recordings_list() {
-	curl -s "${config[api_url]}/api/recordings/${config[camera]}?filter=motion" \
+	curl $curl_opts "${config[api_url]}/api/recordings/${config[camera]}?filter=motion" \
 		| jq '.response.files[] | [.name, .size] | join(" ")' | tr -d '"'
 }
 
 report_failure() {
 	local file="$1"
 	local message="$2"
-	local response=$(curl -s -X POST "${config[api_url]}/api/motion/fail/${config[camera]}" \
+	local response=$(curl $curl_opts -X POST "${config[api_url]}/api/motion/fail/${config[camera]}" \
 		-F "filename=$file" \
 		-F "message=$message")
 	print_response_error "$response" "report_failure"
@@ -49,7 +50,7 @@ report_failure() {
 report_timecodes() {
 	local file="$1"
 	local timecodes="$2"
-	local response=$(curl -s -X POST "${config[api_url]}/api/motion/done/${config[camera]}" \
+	local response=$(curl $curl_opts -X POST "${config[api_url]}/api/motion/done/${config[camera]}" \
 		-F "filename=$file" \
 		-F "timecodes=$timecodes")
 	print_response_error "$response" "report_timecodes"
@@ -79,7 +80,7 @@ get_roi_file() {
 
 		debug "get_roi_file: detected file $file"
 		[ -f "$file" ] || die "invalid roi_file: $file: no such file"
-		
+
 		echo "$file"
 	fi
 }
@@ -109,7 +110,7 @@ process_remote() {
 	local words
 	local file
 	local size
-	
+
 	pushd "${config[fs_root]}" >/dev/null || die "failed to change to ${config[fs_root]}"
 	touch tmp || die "directory '${config[fs_root]}' is not writable"
 	rm tmp
@@ -225,7 +226,7 @@ fi
 read_config "$config_file" config
 check_config config "api_url camera threshold"
 
-if [ -n "${config[remote]}" ]; then 
+if [ -n "${config[remote]}" ]; then
 	check_config config "fs_root fs_max_filesize"
 fi
 

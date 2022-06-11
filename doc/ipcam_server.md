@@ -1,4 +1,8 @@
-config example (yaml)
+# ipcam_server.py
+
+## Configuration
+
+Config example (`yaml`)
 
 ```
 server:
@@ -20,5 +24,10 @@ motion:
 
 logging:
   verbose: true
-
+  
+motion_threshold: 1
 ```
+
+## Usage
+
+Use provided systemd unit file.

@@ -63,9 +63,11 @@ async def ffmpeg_cut(input: str,
 
 
 def dvr_scan_timecodes(timecodes: str) -> list[tuple[int, int]]:
+    tc_backup = timecodes
+
     timecodes = timecodes.split(',')
     if len(timecodes) % 2 != 0:
-        raise ValueError('invalid number of timecodes')
+        raise DVRScanInvalidTimecodes(f'invalid number of timecodes. input: {tc_backup}')
 
     timecodes = list(map(time2seconds, timecodes))
     timecodes = list(chunks(timecodes, 2))
@@ -73,7 +75,7 @@ def dvr_scan_timecodes(timecodes: str) -> list[tuple[int, int]]:
     # sort out invalid fragments (dvr-scan returns them sometimes, idk why...)
     timecodes = list(filter(lambda f: f[0] < f[1], timecodes))
     if not timecodes:
-        raise ValueError('no valid timecodes')
+        raise DVRScanInvalidTimecodes(f'no valid timecodes. input: {tc_backup}')
 
     # https://stackoverflow.com/a/43600953
     timecodes.sort(key=lambda interval: interval[0])
@@ -86,6 +88,10 @@ def dvr_scan_timecodes(timecodes: str) -> list[tuple[int, int]]:
             merged.append(current)
 
     return merged
+
+
+class DVRScanInvalidTimecodes(Exception):
+    pass
 
 
 def has_handle(fpath):

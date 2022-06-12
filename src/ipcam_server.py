@@ -176,9 +176,10 @@ class IPCamWebServer(http.HTTPServer):
             db.set_timestamp(camera, TimeFilterType.MOTION, time)
             return self.ok()
 
-        except ValueError as e:
+        except camutil.DVRScanInvalidTimecodes as e:
+            db.add_motion_failure(camera, filename, str(e))
             db.set_timestamp(camera, TimeFilterType.MOTION, time)
-            raise e
+            return self.ok('invalid timecodes')
 
     async def submit_motion_failure(self, req: http.Request):
         camera = int(req.match_info['name'])

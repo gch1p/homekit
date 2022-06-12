@@ -157,6 +157,8 @@ do_motion() {
 	local tc
 
 	local timecodes=()
+
+	time_start
 	if [ -z "$roi_file" ]; then
 		timecodes+=($(do_dvr_scan "$input"))
 	else
@@ -171,6 +173,8 @@ do_motion() {
 		done < <(cat "$roi_file")
 	fi
 
+	debug "do_motion: finished in $(time_elapsed)"
+
 	timecodes="$(echo "${timecodes[@]}" | sed 's/  */ /g' | xargs)"
 	timecodes="${timecodes// /,}"
 
@@ -184,19 +188,19 @@ dvr_scan() {
 do_dvr_scan() {
 	local input="$1"
 	local args=
+	
 	if [ ! -z "$2" ]; then
 		args="-roi $2"
 		echoinfo "dvr_scan(${BOLD}${input}${RST}${CYAN}): roi=($2), mt=${config[threshold]}"
 	else
 		echoinfo "dvr_scan(${BOLD}${input}${RST}${CYAN}): no roi, mt=${config[threshold]}"
 	fi
-	time_start
+	
 	dvr_scan -q -i "$input" -so \
 		--min-event-length ${config[min_event_length]} \
 		-df ${config[downscale_factor]} \
 		--frame-skip ${config[frame_skip]} \
 		-t ${config[threshold]} $args | tail -1
-	debug "dvr_scan: finished in $(time_elapsed)s"
 }
 
 [[ $# -lt 1 ]] && usage

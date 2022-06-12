@@ -7,6 +7,9 @@ from aiohttp.web_exceptions import HTTPNotFound
 from ..util import stringify, format_tb, Addr
 
 
+_logger = logging.getLogger(__name__)
+
+
 @web.middleware
 async def errors_handler_middleware(request, handler):
     try:
@@ -17,6 +20,7 @@ async def errors_handler_middleware(request, handler):
         return web.json_response({'error': 'not found'}, status=404)
 
     except Exception as exc:
+        _logger.exception(exc)
         data = {
             'error': exc.__class__.__name__,
             'message': exc.message if hasattr(exc, 'message') else str(exc)

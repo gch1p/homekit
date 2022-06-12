@@ -168,7 +168,7 @@ do_motion() {
 	fi
 
 	timecodes="${timecodes[@]}"
-	timecodes=${timecodes// /,}
+	timecodes="${timecodes// /,}"
 
 	echo "$timecodes"
 }

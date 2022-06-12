@@ -173,7 +173,7 @@ do_motion() {
 		done < <(cat "$roi_file")
 	fi
 
-	debug "do_motion: finished in $(time_elapsed)"
+	debug "do_motion: finished in $(time_elapsed)s"
 
 	timecodes="$(echo "${timecodes[@]}" | sed 's/  */ /g' | xargs)"
 	timecodes="${timecodes// /,}"

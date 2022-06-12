@@ -452,7 +452,7 @@ class InverterBot(Wrapper):
 if __name__ == '__main__':
     config.load('inverter_bot')
 
-    inverter.schema_init(host=config['inverter']['ip'], port=config['inverter']['port'])
+    inverter.init(host=config['inverter']['ip'], port=config['inverter']['port'])
 
     monitor = InverterMonitor()
     monitor.set_charging_event_handler(monitor_charging)

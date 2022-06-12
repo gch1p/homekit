@@ -347,8 +347,8 @@ def main():
     charger.start()
 
     # init inverterd wrapper
-    inverter.schema_init(host=config['inverter']['host'],
-                         port=config['inverter']['port'])
+    inverter.init(host=config['inverter']['host'],
+                  port=config['inverter']['port'])
 
     # start monitor
     mon = InverterMonitor()

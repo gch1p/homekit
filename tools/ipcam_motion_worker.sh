@@ -154,6 +154,7 @@ process_remote() {
 do_motion() {
 	local input="$1"
 	local roi_file="$(get_roi_file)"
+	local tc
 
 	local timecodes=()
 	if [ -z "$roi_file" ]; then
@@ -162,12 +163,15 @@ do_motion() {
 		echoinfo "using roi sets from file: ${BOLD}$roi_file"
 		while read line; do
 			if ! [[ "$line" =~ ^#.*  ]]; then
-				timecodes+=("$(do_dvr_scan "$input" "$line")")
+				tc="$(do_dvr_scan "$input" "$line")"
+				if [ -n "$tc" ]; then
+					timecodes+=("$tc")
+				fi
 			fi
 		done < <(cat "$roi_file")
 	fi
 
-	timecodes="${timecodes[@]}"
+	timecodes="$(echo "${timecodes[@]}" | sed 's/  */ /g' | xargs)"
 	timecodes="${timecodes// /,}"
 
 	echo "$timecodes"

@@ -1,31 +1,33 @@
 #!/usr/bin/env python3
 import logging
 import threading
-import os
 
 from time import sleep
 from typing import Optional
+from functools import partial
 from home.config import config
 from home.util import parse_addr
 from home.api import WebAPIClient, RequestParams
 from home.api.types import SoundSensorLocation
 from home.soundsensor import SoundSensorServer, SoundSensorHitHandler
-from home.sound import RecordClient
+from home.media import MediaNodeType, SoundRecordClient, CameraRecordClient, RecordClient
 
 interrupted = False
 logger = logging.getLogger(__name__)
 server: SoundSensorServer
 
 
-def get_related_sound_nodes(sensor_name: str) -> list[str]:
-    if sensor_name not in config['sensor_to_sound_nodes_relations']:
+def get_related_nodes(node_type: MediaNodeType,
+                      sensor_name: str) -> list[str]:
+    if sensor_name not in config[f'sensor_to_{node_type.name.lower()}_nodes_relations']:
         raise ValueError(f'unexpected sensor name {sensor_name}')
-    return config['sensor_to_sound_nodes_relations'][sensor_name]
+    return config[f'sensor_to_{node_type.name.lower()}_nodes_relations'][sensor_name]
 
 
-def get_sound_node_config(name: str) -> Optional[dict]:
-    if name in config['sound_nodes']:
-        cfg = config['sound_nodes'][name]
+def get_node_config(node_type: MediaNodeType,
+                    name: str) -> Optional[dict]:
+    if name in config[f'{node_type.name.lower()}_nodes']:
+        cfg = config[f'{node_type.name.lower()}_nodes'][name]
         if 'min_hits' not in cfg:
             cfg['min_hits'] = 1
         return cfg
@@ -66,38 +68,43 @@ class HitHandler(SoundSensorHitHandler):
             logger.error(f'invalid sensor name: {name}')
             return
 
-        try:
-            nodes = get_related_sound_nodes(name)
-        except ValueError:
-            logger.error(f'config for node {name} not found')
-            return
-
         should_continue = False
-        for node in nodes:
-            node_config = get_sound_node_config(node)
-            if node_config is None:
-                logger.error(f'config for node {node} not found')
-                continue
-            if hits < node_config['min_hits']:
-                continue
-            should_continue = True
+        for node_type in MediaNodeType:
+            try:
+                nodes = get_related_nodes(node_type, name)
+            except ValueError:
+                logger.error(f'config for {node_type.name.lower()} node {name} not found')
+                return
+
+            for node in nodes:
+                node_config = get_node_config(node_type, node)
+                if node_config is None:
+                    logger.error(f'config for {node_type.name.lower()} node {node} not found')
+                    continue
+                if hits < node_config['min_hits']:
+                    continue
+                should_continue = True
 
         if not should_continue:
             return
 
         hc.add(name, hits)
 
-        if server.is_recording_enabled():
+        if not server.is_recording_enabled():
+            return
+        for node_type in MediaNodeType:
             try:
+                nodes = get_related_nodes(node_type, name)
                 for node in nodes:
-                    node_config = get_sound_node_config(node)
+                    node_config = get_node_config(node_type, node)
                     if node_config is None:
-                        logger.error(f'node config for {node} not found')
+                        logger.error(f'node config for {node_type.name.lower()} node {node} not found')
                         continue
 
                     durations = node_config['durations']
                     dur = durations[1] if hits > node_config['min_hits'] else durations[0]
-                    record.record(node, dur*60, {'node': node})
+                    record_clients[node_type].record(node, dur*60, {'node': node})
+
             except ValueError as exc:
                 logger.exception(exc)
 
@@ -112,22 +119,26 @@ def hits_sender():
 
 api: Optional[WebAPIClient] = None
 hc: Optional[HitCounter] = None
-record: Optional[RecordClient] = None
+record_clients: dict[MediaNodeType, RecordClient] = {}
 
 
 # record callbacks
-
 # ----------------
 
-def record_error(info: dict, userdata: dict):
+def record_error(type: MediaNodeType,
+                 info: dict,
+                 userdata: dict):
     node = userdata['node']
-    logger.error('recording ' + str(dict) + ' from node ' + node + ' failed')
+    logger.error('recording ' + str(dict) + f' from {type.name.lower()} node ' + node + ' failed')
 
-    record.forget(node, info['id'])
+    record_clients[type].forget(node, info['id'])
 
 
-def record_finished(info: dict, fn: str, userdata: dict):
-    logger.debug('record finished: ' + str(info))
+def record_finished(type: MediaNodeType,
+                    info: dict,
+                    fn: str,
+                    userdata: dict):
+    logger.debug(f'{type.name.lower()} record finished: ' + str(info))
 
     # audio could have been requested by other user (telegram bot, for example)
     # so we shouldn't 'forget' it here
@@ -140,30 +151,8 @@ def record_finished(info: dict, fn: str, userdata: dict):
 # --------------------
 
 def api_error_handler(exc, name, req: RequestParams):
-    if name == 'upload_recording':
-        logger.error('failed to upload recording, exception below')
-        logger.exception(exc)
-
-    else:
-        logger.error(f'api call ({name}, params={req.params}) failed, exception below')
-        logger.exception(exc)
-
-
-def api_success_handler(response, name, req: RequestParams):
-    if name == 'upload_recording':
-        node = req.params['node']
-        rid = req.params['record_id']
-
-        logger.debug(f'successfully uploaded recording (node={node}, record_id={rid}), api response:' + str(response))
-
-        # deleting temp file
-        try:
-            os.unlink(req.files['file'])
-        except OSError as exc:
-            logger.error(f'error while deleting temp file:')
-            logger.exception(exc)
-
-        record.forget(node, rid)
+    logger.error(f'api call ({name}, params={req.params}) failed, exception below')
+    logger.exception(exc)
 
 
 if __name__ == '__main__':
@@ -171,25 +160,35 @@ if __name__ == '__main__':
 
     hc = HitCounter()
     api = WebAPIClient(timeout=(10, 60))
-    api.enable_async(error_handler=api_error_handler,
-                     success_handler=api_success_handler)
+    api.enable_async(error_handler=api_error_handler)
 
     t = threading.Thread(target=hits_sender)
     t.daemon = True
     t.start()
 
-    nodes = {}
+    sound_nodes = {}
     for nodename, nodecfg in config['sound_nodes'].items():
-        nodes[nodename] = parse_addr(nodecfg['addr'])
+        sound_nodes[nodename] = parse_addr(nodecfg['addr'])
 
-    record = RecordClient(nodes,
-                          error_handler=record_error,
-                          finished_handler=record_finished)
+    camera_nodes = {}
+    for nodename, nodecfg in config['camera_nodes'].items():
+        camera_nodes[nodename] = parse_addr(nodecfg['addr'])
+
+    if sound_nodes:
+        record_clients[MediaNodeType.SOUND] = SoundRecordClient(sound_nodes,
+                                                                error_handler=partial(record_error, MediaNodeType.SOUND),
+                                                                finished_handler=partial(record_finished, MediaNodeType.SOUND))
+
+    if camera_nodes:
+        record_clients[MediaNodeType.CAMERA] = CameraRecordClient(camera_nodes,
+                                                                  error_handler=partial(record_error, MediaNodeType.CAMERA),
+                                                                  finished_handler=partial(record_finished, MediaNodeType.CAMERA))
 
     try:
         server = SoundSensorServer(parse_addr(config['server']['listen']), HitHandler)
         server.run()
     except KeyboardInterrupt:
         interrupted = True
-        record.stop()
+        for c in record_clients.values():
+            c.stop()
         logging.info('keyboard interrupt, exiting...')

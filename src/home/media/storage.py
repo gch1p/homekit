@@ -10,7 +10,12 @@ from ..util import strgen
 logger = logging.getLogger(__name__)
 
 
+# record file
+# -----------
+
 class RecordFile:
+    EXTENSION = None
+
     start_time: Optional[datetime]
     stop_time: Optional[datetime]
     record_id: Optional[int]
@@ -23,14 +28,26 @@ class RecordFile:
     human_date_dmt = '%d.%m.%y'
     human_time_fmt = '%H:%M:%S'
 
+    @staticmethod
+    def create(filename: str, *args, **kwargs):
+        if filename.endswith(f'.{SoundRecordFile.EXTENSION}'):
+            return SoundRecordFile(filename, *args, **kwargs)
+        elif filename.endswith(f'.{CameraRecordFile.EXTENSION}'):
+            return CameraRecordFile(filename, *args, **kwargs)
+        else:
+            raise RuntimeError(f'unsupported file extension: {filename}')
+
     def __init__(self, filename: str, remote=False, remote_filesize=None, storage_root='/'):
+        if self.EXTENSION is None:
+            raise RuntimeError('this is abstract class')
+
         self.name = filename
         self.storage_root = storage_root
 
         self.remote = remote
         self.remote_filesize = remote_filesize
 
-        m = re.match(r'^(\d{6}-\d{6})_(\d{6}-\d{6})_id(\d+)(_\w+)?\.mp3$', filename)
+        m = re.match(r'^(\d{6}-\d{6})_(\d{6}-\d{6})_id(\d+)(_\w+)?\.'+self.EXTENSION+'$', filename)
         if m:
             self.start_time = datetime.strptime(m.group(1), RecordStorage.time_fmt)
             self.stop_time = datetime.strptime(m.group(2), RecordStorage.time_fmt)
@@ -99,24 +116,40 @@ class RecordFile:
         }
 
 
+class SoundRecordFile(RecordFile):
+    EXTENSION = 'mp3'
+
+
+class CameraRecordFile(RecordFile):
+    EXTENSION = 'mp4'
+
+
+# record storage
+# --------------
+
 class RecordStorage:
+    EXTENSION = None
+
     time_fmt = '%d%m%y-%H%M%S'
 
     def __init__(self, root: str):
+        if self.EXTENSION is None:
+            raise RuntimeError('this is abstract class')
+
         self.root = root
 
     def getfiles(self, as_objects=False) -> Union[list[str], list[RecordFile]]:
         files = []
         for name in os.listdir(self.root):
             path = os.path.join(self.root, name)
-            if os.path.isfile(path) and name.endswith('.mp3'):
-                files.append(name if not as_objects else RecordFile(name, storage_root=self.root))
+            if os.path.isfile(path) and name.endswith(f'.{self.EXTENSION}'):
+                files.append(name if not as_objects else RecordFile.create(name, storage_root=self.root))
         return files
 
     def find(self, file_id: str) -> Optional[RecordFile]:
         for name in os.listdir(self.root):
-            if os.path.isfile(os.path.join(self.root, name)) and name.endswith('.mp3'):
-                item = RecordFile(name, storage_root=self.root)
+            if os.path.isfile(os.path.join(self.root, name)) and name.endswith(f'.{self.EXTENSION}'):
+                item = RecordFile.create(name, storage_root=self.root)
                 if item.file_id == file_id:
                     return item
         return None
@@ -148,8 +181,17 @@ class RecordStorage:
         dst_fn = f'{start_time_s}_{stop_time_s}_id{record_id}'
         if os.path.exists(os.path.join(self.root, dst_fn)):
             dst_fn += strgen(4)
-        dst_fn += '.mp3'
+        dst_fn += f'.{self.EXTENSION}'
         dst_path = os.path.join(self.root, dst_fn)
 
         shutil.move(fn, dst_path)
-        return RecordFile(dst_fn, storage_root=self.root)
+        return RecordFile.create(dst_fn, storage_root=self.root)
+
+
+class SoundRecordStorage(RecordStorage):
+    EXTENSION = 'mp3'
+
+
+class CameraRecordStorage(RecordStorage):
+    EXTENSION = 'mp4'
+

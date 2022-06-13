@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import sys, os.path
 sys.path.extend([
-    os.path.realpath(os.path.join(os.path.dirname(os.path.join(__file__)), '..', '..')),
+    os.path.realpath(os.path.join(os.path.dirname(os.path.join(__file__)), '..')),
 ])
 
 from argparse import ArgumentParser
 from src.home.config import config
-from src.home.sound import amixer
+from src.home.audio import amixer
 
 
 def validate_control(input: str):

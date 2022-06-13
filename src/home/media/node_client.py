@@ -1,43 +1,18 @@
 import requests
-import logging
 import shutil
+import logging
 
-from ..util import Addr
-from ..api.errors import ApiResponseError
 from typing import Optional, Union
-from .record import RecordFile
+from .storage import RecordFile
+from ..util import Addr
+from ..camera.types import CameraType
+from ..api.errors import ApiResponseError
 
 
-class SoundNodeClient:
+class MediaNodeClient:
     def __init__(self, addr: Addr):
         self.endpoint = f'http://{addr[0]}:{addr[1]}'
         self.logger = logging.getLogger(self.__class__.__name__)
-
-    def amixer_get_all(self):
-        return self._call('amixer/get-all/')
-
-    def amixer_get(self, control: str):
-        return self._call(f'amixer/get/{control}/')
-
-    def amixer_incr(self, control: str, step: Optional[int] = None):
-        params = {'step': step} if step is not None else None
-        return self._call(f'amixer/incr/{control}/', params=params)
-
-    def amixer_decr(self, control: str, step: Optional[int] = None):
-        params = {'step': step} if step is not None else None
-        return self._call(f'amixer/decr/{control}/', params=params)
-
-    def amixer_mute(self, control: str):
-        return self._call(f'amixer/mute/{control}/')
-
-    def amixer_unmute(self, control: str):
-        return self._call(f'amixer/unmute/{control}/')
-
-    def amixer_cap(self, control: str):
-        return self._call(f'amixer/cap/{control}/')
-
-    def amixer_nocap(self, control: str):
-        return self._call(f'amixer/nocap/{control}/')
 
     def record(self, duration: int):
         return self._call('record/', params={"duration": duration})
@@ -68,7 +43,7 @@ class SoundNodeClient:
                 kwargs['remote_filesize'] = f['filesize']
             else:
                 name = f
-            item = RecordFile(name, **kwargs)
+            item = RecordFile.create(name, **kwargs)
             new_files.append(item)
         return new_files
 
@@ -82,7 +57,6 @@ class SoundNodeClient:
               method: str,
               params: dict = None,
               save_to: Optional[str] = None):
-
         kwargs = {}
         if isinstance(params, dict):
             kwargs['params'] = params
@@ -107,3 +81,40 @@ class SoundNodeClient:
             return True
 
         return r.json()['response']
+
+
+class SoundNodeClient(MediaNodeClient):
+    def amixer_get_all(self):
+        return self._call('amixer/get-all/')
+
+    def amixer_get(self, control: str):
+        return self._call(f'amixer/get/{control}/')
+
+    def amixer_incr(self, control: str, step: Optional[int] = None):
+        params = {'step': step} if step is not None else None
+        return self._call(f'amixer/incr/{control}/', params=params)
+
+    def amixer_decr(self, control: str, step: Optional[int] = None):
+        params = {'step': step} if step is not None else None
+        return self._call(f'amixer/decr/{control}/', params=params)
+
+    def amixer_mute(self, control: str):
+        return self._call(f'amixer/mute/{control}/')
+
+    def amixer_unmute(self, control: str):
+        return self._call(f'amixer/unmute/{control}/')
+
+    def amixer_cap(self, control: str):
+        return self._call(f'amixer/cap/{control}/')
+
+    def amixer_nocap(self, control: str):
+        return self._call(f'amixer/nocap/{control}/')
+
+
+class CameraNodeClient(MediaNodeClient):
+    def capture(self,
+                save_to: str,
+                with_flash: bool = False):
+        return self._call('capture/',
+                          {'with_flash': int(with_flash)},
+                          save_to=save_to)

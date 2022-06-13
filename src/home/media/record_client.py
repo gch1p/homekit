@@ -5,15 +5,17 @@ import os.path
 
 from tempfile import gettempdir
 from .record import RecordStatus
-from .node_client import SoundNodeClient
+from .node_client import SoundNodeClient, MediaNodeClient, CameraNodeClient
 from ..util import Addr
 from typing import Optional, Callable
 
 
 class RecordClient:
+    DOWNLOAD_EXTENSION = None
+
     interrupted: bool
     logger: logging.Logger
-    clients: dict[str, SoundNodeClient]
+    clients: dict[str, MediaNodeClient]
     awaiting: dict[str, dict[int, Optional[dict]]]
     error_handler: Optional[Callable]
     finished_handler: Optional[Callable]
@@ -24,20 +26,21 @@ class RecordClient:
                  error_handler: Optional[Callable] = None,
                  finished_handler: Optional[Callable] = None,
                  download_on_finish=False):
+        if self.DOWNLOAD_EXTENSION is None:
+            raise RuntimeError('this is abstract class')
+
         self.interrupted = False
         self.logger = logging.getLogger(self.__class__.__name__)
         self.clients = {}
         self.awaiting = {}
-        self.download_on_finish = download_on_finish
 
+        self.download_on_finish = download_on_finish
         self.error_handler = error_handler
         self.finished_handler = finished_handler
 
         self.awaiting_lock = threading.Lock()
 
-        for node, addr in nodes.items():
-            self.clients[node] = SoundNodeClient(addr)
-            self.awaiting[node] = {}
+        self.make_clients(nodes)
 
         try:
             t = threading.Thread(target=self.loop)
@@ -47,13 +50,14 @@ class RecordClient:
             self.stop()
             self.logger.exception(exc)
 
+    def make_clients(self, nodes: dict[str, Addr]):
+        pass
+
     def stop(self):
         self.interrupted = True
 
     def loop(self):
         while not self.interrupted:
-            # self.logger.debug('loop: tick')
-
             for node in self.awaiting.keys():
                 with self.awaiting_lock:
                     record_ids = list(self.awaiting[node].keys())
@@ -125,7 +129,7 @@ class RecordClient:
                 self.awaiting[node][record_id] = userdata
 
     def download(self, node: str, record_id: int, fileid: str):
-        dst = os.path.join(gettempdir(), f'{node}_{fileid}.mp3')
+        dst = os.path.join(gettempdir(), f'{node}_{fileid}.{self.DOWNLOAD_EXTENSION}')
         cl = self.getclient(node)
         cl.record_download(record_id, dst)
         return dst
@@ -140,3 +144,23 @@ class RecordClient:
     def _report_error(self, *args):
         if self.error_handler:
             self.error_handler(*args)
+
+
+class SoundRecordClient(RecordClient):
+    DOWNLOAD_EXTENSION = 'mp3'
+    # clients: dict[str, SoundNodeClient]
+
+    def make_clients(self, nodes: dict[str, Addr]):
+        for node, addr in nodes.items():
+            self.clients[node] = SoundNodeClient(addr)
+            self.awaiting[node] = {}
+
+
+class CameraRecordClient(RecordClient):
+    DOWNLOAD_EXTENSION = 'mp4'
+    # clients: dict[str, CameraNodeClient]
+
+    def make_clients(self, nodes: dict[str, Addr]):
+        for node, addr in nodes.items():
+            self.clients[node] = CameraNodeClient(addr)
+            self.awaiting[node] = {}

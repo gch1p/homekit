@@ -31,3 +31,9 @@ label_en = "There"
 [logging]
 verbose = false
 ```
+
+## Dependencies
+
+```
+apt install python3-matplotlib
+```

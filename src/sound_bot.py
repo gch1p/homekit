@@ -8,16 +8,15 @@ from enum import Enum
 from datetime import datetime, timedelta
 from html import escape
 from typing import Optional
+
 from home.config import config
 from home.bot import Wrapper, Context, text_filter, user_any_name
-from home.api.types import BotType
-from home.api.errors import ApiResponseError
-from home.sound import SoundNodeClient, RecordClient, RecordFile
-from home.soundsensor import SoundSensorServerGuardClient
-from home.camera import esp32
-from home.util import parse_addr, chunks, filesize_fmt
 from home.api import WebAPIClient
-from home.api.types import SoundSensorLocation
+from home.api.types import SoundSensorLocation, BotType
+from home.api.errors import ApiResponseError
+from home.media import SoundNodeClient, SoundRecordClient, SoundRecordFile, CameraNodeClient
+from home.soundsensor import SoundSensorServerGuardClient
+from home.util import parse_addr, chunks, filesize_fmt
 
 from telegram.error import TelegramError
 from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton, User
@@ -30,10 +29,10 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 RenderedContent = tuple[str, Optional[InlineKeyboardMarkup]]
-record_client: Optional[RecordClient] = None
+record_client: Optional[SoundRecordClient] = None
 bot: Optional[Wrapper] = None
 node_client_links: dict[str, SoundNodeClient] = {}
-cam_client_links: dict[str, esp32.WebClient] = {}
+cam_client_links: dict[str, CameraNodeClient] = {}
 
 
 def node_client(node: str) -> SoundNodeClient:
@@ -42,9 +41,9 @@ def node_client(node: str) -> SoundNodeClient:
     return node_client_links[node]
 
 
-def camera_client(cam: str) -> esp32.WebClient:
+def camera_client(cam: str) -> CameraNodeClient:
     if cam not in node_client_links:
-        cam_client_links[cam] = esp32.WebClient(parse_addr(config['cameras'][cam]['addr']))
+        cam_client_links[cam] = CameraNodeClient(parse_addr(config['cameras'][cam]['addr']))
     return cam_client_links[cam]
 
 
@@ -243,7 +242,7 @@ class FilesRenderer(Renderer):
         return html, cls.places_markup(ctx, callback_prefix='f0')
 
     @classmethod
-    def filelist(cls, ctx: Context, files: list[RecordFile]) -> RenderedContent:
+    def filelist(cls, ctx: Context, files: list[SoundRecordFile]) -> RenderedContent:
         node, = callback_unpack(ctx)
 
         html_files = map(lambda file: cls.file(ctx, file, node), files)
@@ -255,7 +254,7 @@ class FilesRenderer(Renderer):
         return html, InlineKeyboardMarkup(buttons)
 
     @classmethod
-    def file(cls, ctx: Context, file: RecordFile, node: str) -> str:
+    def file(cls, ctx: Context, file: SoundRecordFile, node: str) -> str:
         html = ctx.lang('file_line', file.start_humantime, file.stop_humantime, filesize_fmt(file.filesize))
         if file.file_id is not None:
             html += f'/audio_{node}_{file.file_id}'
@@ -437,22 +436,11 @@ def camera_capture(ctx: Context) -> None:
     ctx.answer()
 
     client = camera_client(cam)
-    if client.syncsettings(camera_settings(cam)) is True:
-        logger.debug('some settings were changed, sleeping for 0.4 sec')
-        time.sleep(0.4)
-
-    client.setflash(True if flash else False)
-    time.sleep(0.2)
-
     fd = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
     fd.close()
 
     client.capture(fd.name)
     logger.debug(f'captured photo ({cam}), saved to {fd.name}')
-
-    # disable flash led
-    if flash:
-        client.setflash(False)
 
     camera_config = config['cameras'][cam]
     if 'rotate' in camera_config:
@@ -972,10 +960,10 @@ if __name__ == '__main__':
     for nodename, nodecfg in config['nodes'].items():
         nodes[nodename] = parse_addr(nodecfg['addr'])
 
-    record_client = RecordClient(nodes,
-                                 error_handler=record_onerror,
-                                 finished_handler=record_onfinished,
-                                 download_on_finish=True)
+    record_client = SoundRecordClient(nodes,
+                                      error_handler=record_onerror,
+                                      finished_handler=record_onfinished,
+                                      download_on_finish=True)
 
     bot = SoundBot()
     if 'api' in config:

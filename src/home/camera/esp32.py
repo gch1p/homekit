@@ -1,10 +1,12 @@
 import logging
-import shutil
 import requests
 import json
+import asyncio
+import aioshutil
 
+from io import BytesIO
+from functools import partial
 from typing import Union, Optional
-from time import sleep
 from enum import Enum
 from ..api.errors import ApiResponseError
 from ..util import Addr
@@ -41,14 +43,15 @@ def _assert_bounds(n: int, min: int, max: int):
 
 
 class WebClient:
-    def __init__(self, addr: Addr):
+    def __init__(self,
+                 addr: Addr):
         self.endpoint = f'http://{addr[0]}:{addr[1]}'
         self.logger = logging.getLogger(self.__class__.__name__)
         self.delay = 0
         self.isfirstrequest = True
 
-    def syncsettings(self, settings) -> bool:
-        status = self.getstatus()
+    async def syncsettings(self, settings) -> bool:
+        status = await self.getstatus()
         self.logger.debug(f'syncsettings: status={status}')
 
         changed_anything = False
@@ -82,7 +85,7 @@ class WebClient:
                 func = getattr(self, f'set{name}')
                 self.logger.debug(f'syncsettings: calling set{name}({value})')
 
-                func(value)
+                await func(value)
 
                 changed_anything = True
             except AttributeError as exc:
@@ -94,99 +97,106 @@ class WebClient:
     def setdelay(self, delay: int):
         self.delay = delay
 
-    def capture(self, save_to: str):
-        self._call('capture', save_to=save_to)
+    async def capture(self, output: Optional[str] = None) -> Union[BytesIO, bool]:
+        kw = {}
+        if output:
+            kw['save_to'] = output
+        else:
+            kw['as_bytes'] = True
+        return await self._call('capture', **kw)
 
-    def getstatus(self):
-        return json.loads(self._call('status'))
+    async def getstatus(self):
+        return json.loads(await self._call('status'))
 
-    def setflash(self, enable: bool):
-        self._control('flash', int(enable))
+    async def setflash(self, enable: bool):
+        await self._control('flash', int(enable))
 
-    def setframesize(self, fs: Union[int, FrameSize]):
+    async def setframesize(self, fs: Union[int, FrameSize]):
         if type(fs) is int:
             fs = FrameSize(fs)
-        self._control('framesize', fs.value)
+        await self._control('framesize', fs.value)
 
-    def sethmirror(self, enable: bool):
-        self._control('hmirror', int(enable))
+    async def sethmirror(self, enable: bool):
+        await self._control('hmirror', int(enable))
 
-    def setvflip(self, enable: bool):
-        self._control('vflip', int(enable))
+    async def setvflip(self, enable: bool):
+        await self._control('vflip', int(enable))
 
-    def setawb(self, enable: bool):
-        self._control('awb', int(enable))
+    async def setawb(self, enable: bool):
+        await self._control('awb', int(enable))
 
-    def setawbgain(self, enable: bool):
-        self._control('awb_gain', int(enable))
+    async def setawbgain(self, enable: bool):
+        await self._control('awb_gain', int(enable))
 
-    def setwbmode(self, mode: WBMode):
-        self._control('wb_mode', mode.value)
+    async def setwbmode(self, mode: WBMode):
+        await self._control('wb_mode', mode.value)
 
-    def setaecsensor(self, enable: bool):
-        self._control('aec', int(enable))
+    async def setaecsensor(self, enable: bool):
+        await self._control('aec', int(enable))
 
-    def setaecdsp(self, enable: bool):
-        self._control('aec2', int(enable))
+    async def setaecdsp(self, enable: bool):
+        await self._control('aec2', int(enable))
 
-    def setagc(self, enable: bool):
-        self._control('agc', int(enable))
+    async def setagc(self, enable: bool):
+        await self._control('agc', int(enable))
 
-    def setagcgain(self, gain: int):
+    async def setagcgain(self, gain: int):
         _assert_bounds(gain, 1, 31)
-        self._control('agc_gain', gain)
+        await self._control('agc_gain', gain)
 
-    def setgainceiling(self, gainceiling: int):
+    async def setgainceiling(self, gainceiling: int):
         _assert_bounds(gainceiling, 2, 128)
-        self._control('gainceiling', gainceiling)
+        await self._control('gainceiling', gainceiling)
 
-    def setbpc(self, enable: bool):
-        self._control('bpc', int(enable))
+    async def setbpc(self, enable: bool):
+        await self._control('bpc', int(enable))
 
-    def setwpc(self, enable: bool):
-        self._control('wpc', int(enable))
+    async def setwpc(self, enable: bool):
+        await self._control('wpc', int(enable))
 
-    def setrawgma(self, enable: bool):
-        self._control('raw_gma', int(enable))
+    async def setrawgma(self, enable: bool):
+        await self._control('raw_gma', int(enable))
 
-    def setlenscorrection(self, enable: bool):
-        self._control('lenc', int(enable))
+    async def setlenscorrection(self, enable: bool):
+        await self._control('lenc', int(enable))
 
-    def setdcw(self, enable: bool):
-        self._control('dcw', int(enable))
+    async def setdcw(self, enable: bool):
+        await self._control('dcw', int(enable))
 
-    def setcolorbar(self, enable: bool):
-        self._control('colorbar', int(enable))
+    async def setcolorbar(self, enable: bool):
+        await self._control('colorbar', int(enable))
 
-    def setquality(self, q: int):
+    async def setquality(self, q: int):
         _assert_bounds(q, 4, 63)
-        self._control('quality', q)
+        await self._control('quality', q)
 
-    def setbrightness(self, brightness: int):
+    async def setbrightness(self, brightness: int):
         _assert_bounds(brightness, -2, -2)
-        self._control('brightness', brightness)
+        await self._control('brightness', brightness)
 
-    def setcontrast(self, contrast: int):
+    async def setcontrast(self, contrast: int):
         _assert_bounds(contrast, -2, 2)
-        self._control('contrast', contrast)
+        await self._control('contrast', contrast)
 
-    def setsaturation(self, saturation: int):
+    async def setsaturation(self, saturation: int):
         _assert_bounds(saturation, -2, 2)
-        self._control('saturation', saturation)
+        await self._control('saturation', saturation)
 
-    def _control(self, var: str, value: Union[int, str]):
-        self._call('control', params={'var': var, 'val': value})
+    async def _control(self, var: str, value: Union[int, str]):
+        return await self._call('control', params={'var': var, 'val': value})
 
-    def _call(self,
-              method: str,
-              params: Optional[dict] = None,
-              save_to: Optional[str] = None):
+    async def _call(self,
+                    method: str,
+                    params: Optional[dict] = None,
+                    save_to: Optional[str] = None,
+                    as_bytes=False) -> Union[str, bool, BytesIO]:
+        loop = asyncio.get_event_loop()
 
         if not self.isfirstrequest and self.delay > 0:
             sleeptime = self.delay / 1000
             self.logger.debug(f'sleeping for {sleeptime}')
 
-            sleep(sleeptime)
+            await asyncio.sleep(sleeptime)
 
         self.isfirstrequest = False
 
@@ -199,14 +209,18 @@ class WebClient:
         if save_to:
             kwargs['stream'] = True
 
-        r = requests.get(url, **kwargs)
+        r = await loop.run_in_executor(None,
+                                       partial(requests.get, url, **kwargs))
         if r.status_code != 200:
             raise ApiResponseError(status_code=r.status_code)
+
+        if as_bytes:
+            return BytesIO(r.content)
 
         if save_to:
             r.raise_for_status()
             with open(save_to, 'wb') as f:
-                shutil.copyfileobj(r.raw, f)
+                await aioshutil.copyfileobj(r.raw, f)
             return True
 
         return r.text

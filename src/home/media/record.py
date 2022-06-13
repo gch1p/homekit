@@ -1,26 +1,20 @@
+import os
 import threading
+import logging
 import time
 import subprocess
 import signal
-import os
-import logging
 
-from enum import Enum, auto
 from typing import Optional
+from ..util import find_child_processes, Addr
 from ..config import config
-from ..util import find_child_processes
 from .storage import RecordFile, RecordStorage
+from .types import RecordStatus
+from ..camera.types import CameraType
 
 
 _history_item_timeout = 7200
 _history_cleanup_freq = 3600
-
-
-class RecordStatus(Enum):
-    WAITING = auto()
-    RECORDING = auto()
-    FINISHED = auto()
-    ERROR = auto()
 
 
 class RecordHistoryItem:
@@ -122,21 +116,26 @@ class RecordHistory:
 
 
 class Recording:
+    RECORDER_PROGRAM = None
+
     start_time: float
     stop_time: float
     duration: int
     record_id: int
-    arecord_pid: Optional[int]
+    recorder_program_pid: Optional[int]
     process: Optional[subprocess.Popen]
 
     g_record_id = 1
 
     def __init__(self):
+        if self.RECORDER_PROGRAM is None:
+            raise RuntimeError('this is abstract class')
+
         self.start_time = 0
         self.stop_time = 0
         self.duration = 0
         self.process = None
-        self.arecord_pid = None
+        self.recorder_program_pid = None
         self.record_id = Recording.next_id()
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -187,52 +186,51 @@ class Recording:
         self.start_time = cur
         self.stop_time = cur + self.duration
 
-        arecord = config['arecord']['bin']
-        lame = config['lame']['bin']
-        b = config['lame']['bitrate']
-
-        cmd = f'{arecord} -f S16 -r 44100 -t raw 2>/dev/null | {lame} -r -s 44.1 -b {b} -m m - {output} >/dev/null 2>/dev/null'
+        cmd = self.get_command(output)
         self.logger.debug(f'start: running `{cmd}`')
         self.process = subprocess.Popen(cmd, shell=True, stdin=None, stdout=None, stderr=None, close_fds=True)
 
         sh_pid = self.process.pid
         self.logger.debug(f'start: started, pid of shell is {sh_pid}')
 
-        arecord_pid = self.find_arecord_pid(sh_pid)
-        if arecord_pid is not None:
-            self.arecord_pid = arecord_pid
-            self.logger.debug(f'start: pid of arecord is {arecord_pid}')
+        pid = self.find_recorder_program_pid(sh_pid)
+        if pid is not None:
+            self.recorder_program_pid = pid
+            self.logger.debug(f'start: pid of {self.RECORDER_PROGRAM} is {pid}')
+
+    def get_command(self, output: str) -> str:
+        pass
 
     def stop(self):
         if self.process:
-            if self.arecord_pid is None:
-                self.arecord_pid = self.find_arecord_pid(self.process.pid)
+            if self.recorder_program_pid is None:
+                self.recorder_program_pid = self.find_recorder_program_pid(self.process.pid)
 
-            if self.arecord_pid is not None:
-                os.kill(self.arecord_pid, signal.SIGINT)
+            if self.recorder_program_pid is not None:
+                os.kill(self.recorder_program_pid, signal.SIGINT)
                 timeout = config['node']['process_wait_timeout']
 
-                self.logger.debug(f'stop: sent SIGINT to {self.arecord_pid}. now waiting up to {timeout} seconds...')
+                self.logger.debug(f'stop: sent SIGINT to {self.recorder_program_pid}. now waiting up to {timeout} seconds...')
                 try:
                     self.process.wait(timeout=timeout)
                 except subprocess.TimeoutExpired:
                     self.logger.warning(f'stop: wait({timeout}): timeout expired, calling terminate()')
                     self.process.terminate()
             else:
-                self.logger.warning('stop: pid of arecord is unknown, calling terminate()')
+                self.logger.warning(f'stop: pid of {self.RECORDER_PROGRAM} is unknown, calling terminate()')
                 self.process.terminate()
 
             rc = self.process.returncode
             self.logger.debug(f'stop: rc={rc}')
 
             self.process = None
-            self.arecord_pid = 0
+            self.recorder_program_pid = 0
 
         self.duration = 0
         self.start_time = 0
         self.stop_time = 0
 
-    def find_arecord_pid(self, sh_pid: int):
+    def find_recorder_program_pid(self, sh_pid: int):
         try:
             children = find_child_processes(sh_pid)
         except OSError as exc:
@@ -240,7 +238,7 @@ class Recording:
             return None
 
         for child in children:
-            if 'arecord' in child.cmd:
+            if self.RECORDER_PROGRAM in child.cmd:
                 return child.pid
 
         return None
@@ -256,6 +254,8 @@ class Recording:
 
 
 class Recorder:
+    TEMP_NAME = None
+
     interrupted: bool
     lock: threading.Lock
     history_lock: threading.Lock
@@ -265,9 +265,14 @@ class Recorder:
     next_history_cleanup_time: float
     storage: RecordStorage
 
-    def __init__(self, storage: RecordStorage):
+    def __init__(self,
+                 storage: RecordStorage,
+                 recording: Recording):
+        if self.TEMP_NAME is None:
+            raise RuntimeError('this is abstract class')
+
         self.storage = storage
-        self.recording = Recording()
+        self.recording = recording
         self.interrupted = False
         self.lock = threading.Lock()
         self.history_lock = threading.Lock()
@@ -282,7 +287,7 @@ class Recorder:
         t.start()
 
     def loop(self) -> None:
-        tempname = os.path.join(self.storage.root, 'temp.mp3')
+        tempname = os.path.join(self.storage.root, self.TEMP_NAME)
 
         while not self.interrupted:
             cur = time.time()
@@ -398,3 +403,51 @@ class Recorder:
     def get_max_record_time() -> int:
         return config['node']['record_max_time']
 
+
+class SoundRecorder(Recorder):
+    TEMP_NAME = 'temp.mp3'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(recording=SoundRecording(),
+                         *args, **kwargs)
+
+
+class CameraRecorder(Recorder):
+    TEMP_NAME = 'temp.mp4'
+
+    def __init__(self,
+                 camera_type: CameraType,
+                 *args, **kwargs):
+        if camera_type == CameraType.ESP32:
+            recording = ESP32CameraRecording(stream_addr=kwargs['stream_addr'])
+            del kwargs['stream_addr']
+        else:
+            raise RuntimeError(f'unsupported camera type {camera_type}')
+
+        super().__init__(recording=recording,
+                         *args, **kwargs)
+
+
+class SoundRecording(Recording):
+    RECORDER_PROGRAM = 'arecord'
+
+    def get_command(self, output: str) -> str:
+        arecord = config['arecord']['bin']
+        lame = config['lame']['bin']
+        b = config['lame']['bitrate']
+
+        return f'{arecord} -f S16 -r 44100 -t raw 2>/dev/null | {lame} -r -s 44.1 -b {b} -m m - {output} >/dev/null 2>/dev/null'
+
+
+class ESP32CameraRecording(Recording):
+    RECORDER_PROGRAM = 'esp32_capture.py'
+
+    stream_addr: Addr
+
+    def __init__(self, stream_addr: Addr):
+        super().__init__()
+        self.stream_addr = stream_addr
+
+    def get_command(self, output: str) -> str:
+        bin = config['esp32_capture']['bin']
+        return f'{bin} --addr {self.stream_addr[0]}:{self.stream_addr[1]} --output-directory {output} >/dev/null 2>/dev/null'

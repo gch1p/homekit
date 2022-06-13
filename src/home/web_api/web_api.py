@@ -12,7 +12,7 @@ from ..config import config, is_development_mode
 from ..database import BotsDatabase, SensorsDatabase
 from ..util import stringify, format_tb
 from ..api.types import BotType, TemperatureSensorLocation, SoundSensorLocation
-from ..sound import RecordStorage
+from ..media import SoundRecordStorage
 
 db: Optional[BotsDatabase] = None
 sensors_db: Optional[SensorsDatabase] = None
@@ -136,7 +136,7 @@ def recordings_list():
     if not os.path.isdir(root):
         raise ValueError(f'invalid node {node}: no such directory')
 
-    storage = RecordStorage(root)
+    storage = SoundRecordStorage(root)
     files = storage.getfiles(as_objects=extended)
     if extended:
         files = list(map(lambda file: file.__dict__(), files))

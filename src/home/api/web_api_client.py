@@ -13,7 +13,7 @@ from .errors import ApiResponseError
 from .types import *
 from ..config import config
 from ..util import stringify
-from ..sound import RecordFile, SoundNodeClient
+from ..media import RecordFile, MediaNodeClient
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +103,7 @@ class WebAPIClient:
     def recordings_list(self, extended=False, as_objects=False) -> Union[list[str], list[dict], list[RecordFile]]:
         files = self._get('recordings/list/', {'extended': int(extended)})['data']
         if as_objects:
-            return SoundNodeClient.record_list_from_serialized(files)
+            return MediaNodeClient.record_list_from_serialized(files)
         return files
 
     def _process_sound_sensor_hits_data(self, data: list[dict]) -> list[dict]:

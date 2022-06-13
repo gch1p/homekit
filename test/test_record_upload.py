@@ -12,7 +12,7 @@ import time
 
 from src.home.api import WebAPIClient, RequestParams
 from src.home.config import config
-from src.home.sound import RecordClient
+from src.home.media import SoundRecordClient
 from src.home.util import parse_addr
 
 logger = logging.getLogger(__name__)
@@ -69,10 +69,10 @@ if __name__ == '__main__':
     nodes = {}
     for name, addr in config['nodes'].items():
         nodes[name] = parse_addr(addr)
-    record = RecordClient(nodes,
-                          error_handler=record_error,
-                          finished_handler=record_finished,
-                          download_on_finish=True)
+    record = SoundRecordClient(nodes,
+                               error_handler=record_error,
+                               finished_handler=record_finished,
+                               download_on_finish=True)
 
     api = WebAPIClient()
     api.enable_async(error_handler=api_error_handler,

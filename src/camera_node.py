@@ -51,7 +51,7 @@ class ESP32CameraNodeServer(MediaNodeServer):
         await self.sync_settings_if_needed()
 
         # sync settings
-        return super().do_record(request)
+        return await super().do_record(request)
 
     async def sync_settings_if_needed(self):
         if self.last_settings_sync != 0 and time.time() - self.last_settings_sync < 300:

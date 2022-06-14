@@ -5,7 +5,6 @@ import logging
 from typing import Optional, Union
 from .storage import RecordFile
 from ..util import Addr
-from ..camera.types import CameraType
 from ..api.errors import ApiResponseError
 
 

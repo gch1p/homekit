@@ -71,7 +71,7 @@ if __name__ == '__main__':
     recorder_kwargs = {}
     camera_type = CameraType(config['camera']['type'])
     if camera_type == CameraType.ESP32:
-        recorder_kwargs['stream_addr'] = parse_addr(config['camera']['stream_addr'])
+        recorder_kwargs['stream_addr'] = parse_addr(config['camera']['web_addr'])  # this is not a mistake, we don't use stream_addr for esp32-cam anymore
     else:
         raise RuntimeError(f'unsupported camera type {camera_type}')
 

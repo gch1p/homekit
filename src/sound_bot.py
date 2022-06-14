@@ -439,7 +439,7 @@ def camera_capture(ctx: Context) -> None:
     fd = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
     fd.close()
 
-    client.capture(fd.name)
+    client.capture(fd.name, with_flash=bool(flash))
     logger.debug(f'captured photo ({cam}), saved to {fd.name}')
 
     camera_config = config['cameras'][cam]

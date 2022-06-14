@@ -420,7 +420,7 @@ def camera_options(ctx: Context) -> None:
         return
 
     ctx.answer()
-    flash_available = 'flash' in config['cameras'][cam] and config['cameras'][cam]['flash'] is True
+    flash_available = 'flash_available' in config['cameras'][cam] and config['cameras'][cam]['flash_available'] is True
 
     text, markup = CamerasRenderer.camera(ctx, flash_available)
     ctx.edit(text, markup)

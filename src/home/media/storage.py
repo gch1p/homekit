@@ -120,7 +120,11 @@ class PseudoRecordFile(RecordFile):
     EXTENSION = 'null'
 
     def __init__(self):
-        super().__init__('/pseudo/file')
+        super().__init__('pseudo.null')
+
+    @property
+    def filesize(self):
+        return 0
 
 
 class SoundRecordFile(RecordFile):

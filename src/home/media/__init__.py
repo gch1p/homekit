@@ -6,7 +6,7 @@ __map__ = {
     'record_client': ['SoundRecordClient', 'CameraRecordClient', 'RecordClient'],
     'node_server': ['MediaNodeServer'],
     'node_client': ['SoundNodeClient', 'CameraNodeClient', 'MediaNodeClient'],
-    'storage': ['SoundRecordStorage', 'CameraRecordStorage', 'SoundRecordFile', 'CameraRecordFile', 'RecordFile'],
+    'storage': ['SoundRecordStorage', 'ESP32CameraRecordStorage', 'SoundRecordFile', 'CameraRecordFile', 'RecordFile'],
     'record': ['SoundRecorder', 'CameraRecorder']
 }
 

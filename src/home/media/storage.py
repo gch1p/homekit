@@ -116,6 +116,13 @@ class RecordFile:
         }
 
 
+class PseudoRecordFile(RecordFile):
+    EXTENSION = 'null'
+
+    def __init__(self):
+        super().__init__('/pseudo/file')
+
+
 class SoundRecordFile(RecordFile):
     EXTENSION = 'mp3'
 
@@ -192,6 +199,8 @@ class SoundRecordStorage(RecordStorage):
     EXTENSION = 'mp3'
 
 
-class CameraRecordStorage(RecordStorage):
-    EXTENSION = 'mp4'
+class ESP32CameraRecordStorage(RecordStorage):
+    EXTENSION = 'jpg'  # not used anyway
 
+    def save(self, *args, **kwargs):
+        return PseudoRecordFile()

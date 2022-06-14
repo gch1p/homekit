@@ -3,7 +3,7 @@ import asyncio
 import time
 
 from home.config import config
-from home.media import MediaNodeServer, CameraRecordStorage, CameraRecorder
+from home.media import MediaNodeServer, ESP32CameraRecordStorage, CameraRecorder
 from home.camera import CameraType, esp32
 from home.util import parse_addr, Addr
 from home import http
@@ -66,12 +66,11 @@ class ESP32CameraNodeServer(MediaNodeServer):
 if __name__ == '__main__':
     config.load('camera_node')
 
-    storage = CameraRecordStorage(config['node']['storage'])
-
     recorder_kwargs = {}
     camera_type = CameraType(config['camera']['type'])
     if camera_type == CameraType.ESP32:
         recorder_kwargs['stream_addr'] = parse_addr(config['camera']['web_addr'])  # this is not a mistake, we don't use stream_addr for esp32-cam anymore
+        storage = ESP32CameraRecordStorage(config['node']['storage'])
     else:
         raise RuntimeError(f'unsupported camera type {camera_type}')
 

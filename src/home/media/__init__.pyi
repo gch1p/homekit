@@ -16,7 +16,7 @@ from .node_client import (
 )
 from .storage import (
     SoundRecordStorage as SoundRecordStorage,
-    CameraRecordStorage as CameraRecordStorage,
+    ESP32CameraRecordStorage as ESP32CameraRecordStorage,
     SoundRecordFile as SoundRecordFile,
     CameraRecordFile as CameraRecordFile,
     RecordFile as RecordFile

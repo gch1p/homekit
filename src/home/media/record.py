@@ -451,3 +451,7 @@ class ESP32CameraRecording(Recording):
     def get_command(self, output: str) -> str:
         bin = config['esp32_capture']['bin']
         return f'{bin} --addr {self.stream_addr[0]}:{self.stream_addr[1]} --output-directory {output} >/dev/null 2>/dev/null'
+
+    def start(self, output: str):
+        output = os.path.dirname(output)
+        return super().start(output)

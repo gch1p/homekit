@@ -214,8 +214,12 @@ class Recording:
                 try:
                     self.process.wait(timeout=timeout)
                 except subprocess.TimeoutExpired:
-                    self.logger.warning(f'stop: wait({timeout}): timeout expired, calling terminate()')
-                    self.process.terminate()
+                    self.logger.warning(f'stop: wait({timeout}): timeout expired, killing it')
+                    try:
+                        os.kill(self.recorder_program_pid, signal.SIGKILL)
+                        self.process.terminate()
+                    except Exception as exc:
+                        self.logger.exception(exc)
             else:
                 self.logger.warning(f'stop: pid of {self.RECORDER_PROGRAM} is unknown, calling terminate()')
                 self.process.terminate()

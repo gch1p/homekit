@@ -1,6 +1,6 @@
 ## Dependencies
 
-**pyssim**, which can be installed from pypi:
+[**pyssim**](https://github.com/jterrace/pyssim), which can be installed from pypi:
 ```
 pip3 install pyssim
 ```
@@ -23,4 +23,13 @@ server_addr = "127.0.0.1:8311"
 
 [logging]
 verbose = true
+```
+
+To enable Telegram notifications when **pyssim** returned `score` is less then `threshold`,
+add following section to the config:
+
+```
+[telegram]
+chat_id = "..."
+token = "..."
 ```

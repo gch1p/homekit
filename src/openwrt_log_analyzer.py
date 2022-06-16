@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
+import home.telegram as telegram
+
 from home.config import config
 from home.database import BotsDatabase, SimpleState
-from home.util import send_telegram
 
 """
 config.toml example:
@@ -44,7 +45,7 @@ def main(mac: str, title: str) -> int:
             max_id = log.id
 
     text = '\n'.join(map(lambda s: str(s), data))
-    send_telegram(f'<b>{title}</b>\n\n' + text)
+    telegram.send_message(f'<b>{title}</b>\n\n' + text)
 
     return max_id
 

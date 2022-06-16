@@ -3,6 +3,7 @@ import asyncio
 import logging
 import os.path
 import tempfile
+import home.telegram.aio as telegram
 
 from home.config import config
 from home.camera.esp32 import WebClient
@@ -53,11 +54,18 @@ class ESP32CamCaptureDiffNode:
 
         self.nextpic = 1 if self.nextpic == 2 else 2
         if not self.first:
-            score = await pyssim(filename, os.path.join(self.directory, self.getfilename()))
-            logger.debug(f'pyssim: diff={score}')
+            second_filename = os.path.join(self.directory, self.getfilename())
+            score = await pyssim(filename, second_filename)
+            logger.debug(f'pyssim: score={score}')
             if score < config['pyssim']['threshold']:
                 logger.info(f'score = {score}, informing central server')
                 send_datagram(stringify([config['node']['name'], 2]), self.server_addr)
+
+                # send to telegram
+                if 'telegram' in config:
+                    await telegram.send_message(f'pyssim: score={score}')
+                    await telegram.send_photo(filename)
+                    await telegram.send_photo(second_filename)
 
         self.first = False
 

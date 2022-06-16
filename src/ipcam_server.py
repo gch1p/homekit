@@ -3,11 +3,12 @@ import logging
 import os
 import asyncio
 import time
+import home.telegram.aio as telegram
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from home.config import config
-from home.util import parse_addr, send_telegram_aio
+from home.util import parse_addr
 from home import http
 from home.database.sqlite import SQLiteBase
 from home.camera import util as camutil
@@ -362,7 +363,7 @@ async def motion_notify_tg(camera: int,
         text += f'\nFragment: <b>{duration}s</b>, {dt1.strftime(fmt)}-{dt2.strftime(fmt)} '
         text += _tg_links(TelegramLinkType.FRAGMENT, camera, f'{dt1.strftime(datetime_format)}__{dt2.strftime(datetime_format)}.mp4')
 
-    await send_telegram_aio(text)
+    await telegram.send_message(text)
 
 
 def _tg_links(link_type: TelegramLinkType,

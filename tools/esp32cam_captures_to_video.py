@@ -93,6 +93,7 @@ def merge(groups: list[FileList],
                         '-preset', 'veryslow',
                         # '-crf', '23',
                         # '-vb', '448k',
+                        '-pix_fmt', 'yuv420p',
                         '-filter:v', 'fps=2']
 
             cmd = [ffmpeg, '-y',

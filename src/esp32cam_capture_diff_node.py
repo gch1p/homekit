@@ -15,7 +15,12 @@ cam: Optional[WebClient] = None
 
 
 async def pyssim(fn1: str, fn2: str) -> float:
-    args = [config['pyssim_path'], fn1, fn2]
+    args = [config['pyssim']['bin']]
+    if 'width' in config['pyssim']:
+        args.extend(['--width', str(config['pyssim']['width'])])
+    if 'height' in config['pyssim']:
+        args.extend(['--height', str(config['pyssim']['height'])])
+    args.extend([fn1, fn2])
     proc = await asyncio.create_subprocess_exec(*args,
                                                 stdout=asyncio.subprocess.PIPE,
                                                 stderr=asyncio.subprocess.PIPE)
@@ -48,16 +53,12 @@ class ESP32CamCaptureDiffNode:
 
         self.nextpic = 1 if self.nextpic == 2 else 2
         if not self.first:
-            diff = await pyssim(filename, os.path.join(self.directory, self.getfilename()))
-            logger.debug(f'pyssim: diff={diff}')
-            n = 0
-            if diff < 0.93:
-                n = 3
-            elif n < 0.955:
-                n = 1
-            if n > 0:
-                logger.info(f'diff = {diff}, informing central server')
-                send_datagram(stringify([config['node']['name'], n]), self.server_addr)
+            score = await pyssim(filename, os.path.join(self.directory, self.getfilename()))
+            logger.debug(f'pyssim: diff={score}')
+            if score < config['pyssim']['threshold']:
+                logger.info(f'score = {score}, informing central server')
+                send_datagram(stringify([config['node']['name'], 2]), self.server_addr)
+
         self.first = False
 
         logger.debug('capture: done')

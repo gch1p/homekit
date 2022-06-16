@@ -22,7 +22,7 @@ Options:
 	-i|--input  FILE  input file/directory
 	-o|--output FILE  output file/directory
 	--name NAME       camera name, affects config directory.
-	                  default is $config_dir, specifying --name will make it 
+	                  default is $config_dir, specifying --name will make it
 	                  ${config_dir}-\$name
 	-v, -vv, vx       be verbose.
 	                  -v enables debug logs.

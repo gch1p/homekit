@@ -33,14 +33,14 @@ def get_files(source_directory: str) -> FileList:
     return files
 
 
-def group_files(files: FileList) -> list[FileList]:
+def group_files(files: FileList, timedelta_val: int) -> list[FileList]:
     groups = []
     group_idx = None
 
     for file in files:
         if group_idx is None or \
                 not groups[group_idx] or \
-                file['time'] - groups[group_idx][-1]['time'] <= timedelta(seconds=10):
+                file['time'] - groups[group_idx][-1]['time'] <= timedelta(seconds=timedelta_val):
             if group_idx is None:
                 groups.append([])
                 group_idx = 0
@@ -55,7 +55,8 @@ def group_files(files: FileList) -> list[FileList]:
 def merge(groups: list[FileList],
           output_directory: str,
           delete_source_files=False,
-          cedrus=False) -> None:
+          cedrus=False,
+          rotate=0) -> None:
     for g in groups:
         success = False
 
@@ -91,10 +92,15 @@ def merge(groups: list[FileList],
                 env = {}
                 args = ['-c:v', 'libx264',
                         '-preset', 'veryslow',
-                        # '-crf', '23',
+                        '-crf', '34',
                         # '-vb', '448k',
                         '-pix_fmt', 'yuv420p',
-                        '-filter:v', 'fps=2']
+                        '-movflags', '+faststart'
+                        # '-filter:v', 'fps=2'
+                        ]
+
+            if rotate != 0:
+                args.extend(['-map_metadata', '0', '-metadata:s:v', f'rotate="{rotate}"', '-codec', 'copy'])
 
             cmd = [ffmpeg, '-y',
                    '-f', 'concat',
@@ -130,8 +136,10 @@ if __name__ == '__main__':
                         help='Directory with files')
     parser.add_argument('--output-directory', '-o', type=str, required=True,
                         help='Output directory')
+    parser.add_argument('--timedelta', type=int, default=10)
     parser.add_argument('-D', '--delete-source-files', action='store_true')
     parser.add_argument('--cedrus', action='store_true')
+    parser.add_argument('--rotate', type=int, choices=(90, 180, 270), default=0)
     # parser.add_argument('--vbr', action='store_true',
     #                     help='Re-encode using VBR (-q:a 4)')
     arg = parser.parse_args()
@@ -144,10 +152,11 @@ if __name__ == '__main__':
         print(f"No jpeg files found in {arg.input_directory}.")
         sys.exit()
 
-    groups = group_files(files)
+    groups = group_files(files, timedelta_val=arg.timedelta)
     # print_groups(groups)
 
     merge(groups,
           os.path.realpath(arg.output_directory),
           delete_source_files=arg.delete_source_files,
-          cedrus=arg.cedrus)
+          cedrus=arg.cedrus,
+          rotate=arg.rotate)

@@ -89,7 +89,7 @@ def merge(groups: list[FileList],
             else:
                 ffmpeg = 'ffmpeg'
                 env = {}
-                args = ['-c:v', 'x264',
+                args = ['-c:v', 'libx264',
                         # '-preset', 'veryfast',
                         '-crf', '23',
                         # '-vb', '448k',

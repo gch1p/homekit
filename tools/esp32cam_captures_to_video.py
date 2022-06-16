@@ -102,6 +102,9 @@ def merge(groups: list[FileList],
             if rotate != 0:
                 args.extend(['-map_metadata', '0', '-metadata:s:v', f'rotate="{rotate}"'])
 
+            if rotate != 0:
+                args.extend(['-map_metadata', '0', '-metadata:s:v', f'rotate="{rotate}"', '-codec', 'copy'])
+
             cmd = [ffmpeg, '-y',
                    '-f', 'concat',
                    '-safe', '0',

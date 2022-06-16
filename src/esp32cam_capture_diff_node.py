@@ -49,14 +49,15 @@ class ESP32CamCaptureDiffNode:
         self.nextpic = 1 if self.nextpic == 2 else 2
         if not self.first:
             diff = await pyssim(filename, os.path.join(self.directory, self.getfilename()))
+            logger.debug(f'pyssim: diff={diff}')
             n = 0
             if diff < 0.93:
                 n = 3
             elif n < 0.955:
                 n = 1
             if n > 0:
+                logger.info(f'diff = {diff}, informing central server')
                 send_datagram(stringify([config['node']['name'], n]), self.server_addr)
-                logger.info(f'diff = {diff}')
         self.first = False
 
         logger.debug('capture: done')

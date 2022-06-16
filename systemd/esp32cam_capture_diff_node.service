@@ -1,0 +1,13 @@
+[Unit]
+Description=HomeKit ESP32-CAM Capture Diff Node
+After=network-online.target
+
+[Service]
+User=user
+Group=user
+Restart=on-failure
+ExecStart=/home/user/homekit/src/esp32cam_capture_diff_node.py
+WorkingDirectory=/home/user
+
+[Install]
+WantedBy=multi-user.target

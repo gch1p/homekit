@@ -19,3 +19,8 @@ scikit-image~=0.19.3
 # following can be installed from debian repositories
 # matplotlib~=3.5.0
 
+Pillow~=9.1.1
+
+# for polaris kettle protocol implementation
+cryptography~=37.0.2
+zeroconf~=0.38.7

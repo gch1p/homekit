@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: BSD-3-Clause
+
 import logging
-# import os
 import sys
+import time
 import paho.mqtt.client as mqtt
 
 # from datetime import datetime
 # from html import escape
 from argparse import ArgumentParser
+from queue import SimpleQueue
 # from home.bot import Wrapper, Context
 # from home.api.types import BotType
 # from home.util import parse_addr
 from home.mqtt import MQTTBase
 from home.config import config
-from polaris import Kettle
+from polaris import Kettle, Message, FrameType, PowerType
 
 # from telegram.error import TelegramError
 # from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
@@ -24,6 +27,7 @@ from polaris import Kettle
 
 
 logger = logging.getLogger(__name__)
+control_tasks = SimpleQueue()
 
 # bot: Optional[Wrapper] = None
 # RenderedContent = tuple[str, Optional[InlineKeyboardMarkup]]
@@ -88,6 +92,24 @@ class MQTTServer(MQTTBase):
 #         ]
 #         return ReplyKeyboardMarkup(buttons, one_time_keyboard=False)
 
+def kettle_connection_established(k: Kettle, response: Message):
+    try:
+        assert response.frame.head.type == FrameType.ACK, f'ACK expected, but received: {response}'
+    except AssertionError:
+        k.stop_server()
+        return
+
+    def next_task(k, response):
+        if not control_tasks.empty():
+            task = control_tasks.get()
+            f, args = task(k)
+            args.append(next_task)
+            f(*args)
+        else:
+            k.stop_server()
+
+    next_task(k, response)
+
 
 def main():
     tempmin = 30
@@ -98,7 +120,8 @@ def main():
     parser.add_argument('-m', dest='mode', required=True, type=str, choices=('mqtt', 'control'))
     parser.add_argument('--on', action='store_true')
     parser.add_argument('--off', action='store_true')
-    parser.add_argument('-t', '--temperature', dest='temp', type=int, choices=range(tempmin, tempmax+tempstep, tempstep))
+    parser.add_argument('-t', '--temperature', dest='temp', type=int, default=tempmax,
+                        choices=range(tempmin, tempmax+tempstep, tempstep))
 
     arg = config.load('polaris_kettle_bot', use_cli=True, parser=parser)
 
@@ -113,27 +136,20 @@ def main():
         if arg.on and arg.off:
             raise RuntimeError('--on and --off are mutually exclusive')
 
-        k = Kettle(mac='40f52018dec1', token='3a5865f015950cae82cd120e76a80d28')
-        k.find()
-        print('device found')
+        if arg.off:
+            control_tasks.put(lambda k: (k.set_power, [PowerType.OFF]))
+        else:
+            if arg.temp == tempmax:
+                control_tasks.put(lambda k: (k.set_power, [PowerType.ON]))
+            else:
+                control_tasks.put(lambda k: (k.set_target_temperature, [arg.temp]))
+                control_tasks.put(lambda k: (k.set_power, [PowerType.CUSTOM]))
 
-        k.genkeys()
-        k.genshared()
-        k.handshake()
+        k = Kettle(mac='40f52018dec1', device_token='3a5865f015950cae82cd120e76a80d28')
+        info = k.find()
+        print('found service:', info)
 
-        if arg.on:
-            k.setpower(True)
-        elif arg.off:
-            k.setpower(False)
-        elif arg.temp:
-            k.settemperature(arg.temp)
-
-        # k.sendfirst()
-
-        # print('shared key:', key_to_hex(k.sharedkey))
-        # print('shared hash:', key_to_hex(k.sharedsha256))
-
-        # print(len(k.sharedsha256))
+        k.start_server(kettle_connection_established)
 
     return 0
 

@@ -3,6 +3,7 @@ import os.path
 import logging
 import psutil
 
+from typing import List, Tuple
 from ..util import chunks
 from ..config import config
 
@@ -62,7 +63,7 @@ async def ffmpeg_cut(input: str,
         _logger.info(f'ffmpeg_cut({input}): OK')
 
 
-def dvr_scan_timecodes(timecodes: str) -> list[tuple[int, int]]:
+def dvr_scan_timecodes(timecodes: str) -> List[Tuple[int, int]]:
     tc_backup = timecodes
 
     timecodes = timecodes.split(',')

@@ -8,6 +8,7 @@ from telegram import (
     ReplyKeyboardMarkup,
     CallbackQuery,
     User,
+    Message,
 )
 from telegram.ext import (
     Updater,
@@ -22,7 +23,7 @@ from telegram.ext import (
 )
 from telegram.error import TimedOut
 from ..config import config
-from typing import Optional, Union
+from typing import Optional, Union, List, Tuple
 from .store import Store
 from .lang import LangPack
 from ..api.types import BotType
@@ -110,7 +111,7 @@ class Context:
         kwargs = dict(parse_mode=ParseMode.HTML)
         if not isinstance(markup, IgnoreMarkup):
             kwargs['reply_markup'] = markup
-        self._update.message.reply_text(text, **kwargs)
+        return self._update.message.reply_text(text, **kwargs)
 
     def reply_exc(self, e: Exception) -> None:
         self.reply(exc2text(e))
@@ -133,7 +134,7 @@ class Context:
         return self._update.callback_query
 
     @property
-    def args(self) -> Optional[list[str]]:
+    def args(self) -> Optional[List[str]]:
         return self._callback_context.args
 
     @property
@@ -155,6 +156,25 @@ class Context:
 
     def is_callback_context(self) -> bool:
         return self._update.callback_query and self._update.callback_query.data and self._update.callback_query.data != ''
+
+
+def handlermethod(f: callable):
+    def _handler(self, update: Update, context: CallbackContext, *args, **kwargs):
+        ctx = Context(update,
+                      callback_context=context,
+                      markup_getter=self.markup,
+                      lang=self.lang,
+                      store=self.store)
+        try:
+            return f(self, ctx, *args, **kwargs)
+        except Exception as e:
+            if not self.exception_handler(e, ctx) and not isinstance(e, TimedOut):
+                logger.exception(e)
+                if not ctx.is_callback_context():
+                    ctx.reply_exc(e)
+                else:
+                    self.notify_user(ctx.user_id, exc2text(e))
+    return _handler
 
 
 class Wrapper:
@@ -252,7 +272,7 @@ class Wrapper:
     def exception_handler(self, e: Exception, ctx: Context) -> Optional[bool]:
         pass
 
-    def notify_all(self, text_getter: callable, exclude: tuple[int] = ()) -> None:
+    def notify_all(self, text_getter: callable, exclude: Tuple[int] = ()) -> None:
         if 'notify_users' not in config['bot']:
             logger.error('notify_all() called but no notify_users directive found in the config')
             return
@@ -279,6 +299,12 @@ class Wrapper:
 
     def send_file(self, user_id, **kwargs):
         self.updater.bot.send_document(chat_id=user_id, **kwargs)
+
+    def edit_message_text(self, user_id, message_id, *args, **kwargs):
+        self.updater.bot.edit_message_text(chat_id=user_id, message_id=message_id, parse_mode='HTML', *args, **kwargs)
+
+    def delete_message(self, user_id, message_id):
+        self.updater.bot.delete_message(chat_id=user_id, message_id=message_id)
 
     #
     # Language Selection

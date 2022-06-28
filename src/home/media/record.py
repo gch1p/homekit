@@ -5,7 +5,7 @@ import time
 import subprocess
 import signal
 
-from typing import Optional
+from typing import Optional, List, Dict
 from ..util import find_child_processes, Addr
 from ..config import config
 from .storage import RecordFile, RecordStorage
@@ -22,7 +22,7 @@ class RecordHistoryItem:
     request_time: float
     start_time: float
     stop_time: float
-    relations: list[int]
+    relations: List[int]
     status: RecordStatus
     error: Optional[Exception]
     file: Optional[RecordFile]
@@ -76,7 +76,7 @@ class RecordingNotFoundError(Exception):
 
 
 class RecordHistory:
-    history: dict[int, RecordHistoryItem]
+    history: Dict[int, RecordHistoryItem]
 
     def __init__(self):
         self.history = {}

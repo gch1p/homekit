@@ -12,6 +12,7 @@ from time import sleep
 from src.home.config import config
 from src.home.api import WebAPIClient
 from src.home.api.types import SoundSensorLocation
+from typing import List, Tuple
 
 interrupted = False
 
@@ -33,7 +34,7 @@ class HitCounter:
         with self.lock:
             self.sensors[name] += hits
 
-    def get_all(self) -> list[tuple[str, int]]:
+    def get_all(self) -> List[Tuple[str, int]]:
         vals = []
         with self.lock:
             for name, hits in self.sensors.items():

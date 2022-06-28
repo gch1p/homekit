@@ -1,6 +1,7 @@
 import requests
 import logging
 
+from typing import Tuple
 from ..config import config
 
 
@@ -29,7 +30,7 @@ def send_photo(filename: str):
 
 def _send_telegram_data(text: str,
                         parse_mode: str = None,
-                        disable_web_page_preview: bool = False) -> tuple[dict, str]:
+                        disable_web_page_preview: bool = False) -> Tuple[dict, str]:
     data = {
         'chat_id': config['telegram']['chat_id'],
         'text': text

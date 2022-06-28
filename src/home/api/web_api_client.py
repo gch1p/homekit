@@ -6,7 +6,7 @@ import logging
 from collections import namedtuple
 from datetime import datetime
 from enum import Enum, auto
-from typing import Optional, Callable, Union
+from typing import Optional, Callable, Union, List, Tuple, Dict
 from requests.auth import HTTPBasicAuth
 
 from .errors import ApiResponseError
@@ -28,13 +28,13 @@ class HTTPMethod(Enum):
 
 class WebAPIClient:
     token: str
-    timeout: Union[float, tuple[float, float]]
+    timeout: Union[float, Tuple[float, float]]
     basic_auth: Optional[HTTPBasicAuth]
     do_async: bool
     async_error_handler: Optional[Callable]
     async_success_handler: Optional[Callable]
 
-    def __init__(self, timeout: Union[float, tuple[float, float]] = 5):
+    def __init__(self, timeout: Union[float, Tuple[float, float]] = 5):
         self.token = config['api']['token']
         self.timeout = timeout
         self.basic_auth = None
@@ -66,7 +66,7 @@ class WebAPIClient:
         })
 
     def log_openwrt(self,
-                    lines: list[tuple[int, str]]):
+                    lines: List[Tuple[int, str]]):
         return self._post('logs/openwrt', {
             'logs': stringify(lines)
         })
@@ -81,14 +81,14 @@ class WebAPIClient:
         return [(datetime.fromtimestamp(date), temp, hum) for date, temp, hum in data]
 
     def add_sound_sensor_hits(self,
-                              hits: list[tuple[str, int]]):
+                              hits: List[Tuple[str, int]]):
         return self._post('sound_sensors/hits/', {
             'hits': stringify(hits)
         })
 
     def get_sound_sensor_hits(self,
                               location: SoundSensorLocation,
-                              after: datetime) -> list[dict]:
+                              after: datetime) -> List[dict]:
         return self._process_sound_sensor_hits_data(self._get('sound_sensors/hits/', {
             'after': int(after.timestamp()),
             'location': location.value
@@ -100,13 +100,13 @@ class WebAPIClient:
             'location': location.value
         }))
 
-    def recordings_list(self, extended=False, as_objects=False) -> Union[list[str], list[dict], list[RecordFile]]:
+    def recordings_list(self, extended=False, as_objects=False) -> Union[List[str], List[dict], List[RecordFile]]:
         files = self._get('recordings/list/', {'extended': int(extended)})['data']
         if as_objects:
             return MediaNodeClient.record_list_from_serialized(files)
         return files
 
-    def _process_sound_sensor_hits_data(self, data: list[dict]) -> list[dict]:
+    def _process_sound_sensor_hits_data(self, data: List[dict]) -> List[dict]:
         for item in data:
             item['time'] = datetime.fromtimestamp(item['time'])
         return data
@@ -124,7 +124,7 @@ class WebAPIClient:
               name: str,
               params: dict,
               method: HTTPMethod,
-              files: Optional[dict[str, str]] = None):
+              files: Optional[Dict[str, str]] = None):
         if not self.do_async:
             return self._make_request(name, params, method, files)
         else:
@@ -136,7 +136,7 @@ class WebAPIClient:
                       name: str,
                       params: dict,
                       method: HTTPMethod = HTTPMethod.GET,
-                      files: Optional[dict[str, str]] = None) -> Optional[any]:
+                      files: Optional[Dict[str, str]] = None) -> Optional[any]:
         domain = config['api']['host']
         kwargs = {}
 

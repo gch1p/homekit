@@ -9,7 +9,7 @@ import random
 
 from enum import Enum
 from datetime import datetime
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 Addr = Tuple[str, int]  # network address type (host, port)
 
@@ -96,7 +96,7 @@ def send_datagram(message: str, addr: Addr) -> None:
     sock.sendto(message.encode(), addr)
 
 
-def format_tb(exc) -> Optional[list[str]]:
+def format_tb(exc) -> Optional[List[str]]:
     tb = traceback.format_tb(exc.__traceback__)
     if not tb:
         return None
@@ -120,7 +120,7 @@ class ChildProcessInfo:
         self.cmd = cmd
 
 
-def find_child_processes(ppid: int) -> list[ChildProcessInfo]:
+def find_child_processes(ppid: int) -> List[ChildProcessInfo]:
     p = subprocess.run(['pgrep', '-P', str(ppid), '--list-full'], capture_output=True)
     if p.returncode != 0:
         raise OSError(f'pgrep returned {p.returncode}')

@@ -7,6 +7,7 @@ import sys
 
 from datetime import datetime, timedelta
 from argparse import ArgumentParser
+from typing import List
 
 
 input_fmt = '%Y-%m-%d-%H:%M:%S.%f'
@@ -14,7 +15,7 @@ output_fmt = '%Y-%m-%d-%H:%M:%S'
 
 # declare types
 File = dict
-FileList = list[File]
+FileList = List[File]
 
 
 def get_files(source_directory: str) -> FileList:
@@ -33,7 +34,7 @@ def get_files(source_directory: str) -> FileList:
     return files
 
 
-def group_files(files: FileList, timedelta_val: int) -> list[FileList]:
+def group_files(files: FileList, timedelta_val: int) -> List[FileList]:
     groups = []
     group_idx = None
 
@@ -52,7 +53,7 @@ def group_files(files: FileList, timedelta_val: int) -> list[FileList]:
     return groups
 
 
-def merge(groups: list[FileList],
+def merge(groups: List[FileList],
           output_directory: str,
           delete_source_files=False,
           cedrus=False,

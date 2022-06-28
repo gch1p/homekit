@@ -3,7 +3,7 @@ import re
 import shutil
 import logging
 
-from typing import Optional, Union
+from typing import Optional, Union, List
 from datetime import datetime
 from ..util import strgen
 
@@ -149,7 +149,7 @@ class RecordStorage:
 
         self.root = root
 
-    def getfiles(self, as_objects=False) -> Union[list[str], list[RecordFile]]:
+    def getfiles(self, as_objects=False) -> Union[List[str], List[RecordFile]]:
         files = []
         for name in os.listdir(self.root):
             path = os.path.join(self.root, name)

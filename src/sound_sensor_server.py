@@ -3,7 +3,7 @@ import logging
 import threading
 
 from time import sleep
-from typing import Optional
+from typing import Optional, List, Dict, Tuple
 from functools import partial
 from home.config import config
 from home.util import parse_addr
@@ -18,7 +18,7 @@ server: SoundSensorServer
 
 
 def get_related_nodes(node_type: MediaNodeType,
-                      sensor_name: str) -> list[str]:
+                      sensor_name: str) -> List[str]:
     if sensor_name not in config[f'sensor_to_{node_type.name.lower()}_nodes_relations']:
         raise ValueError(f'unexpected sensor name {sensor_name}')
     return config[f'sensor_to_{node_type.name.lower()}_nodes_relations'][sensor_name]
@@ -52,7 +52,7 @@ class HitCounter:
         with self.lock:
             self.sensors[name] += hits
 
-    def get_all(self) -> list[tuple[str, int]]:
+    def get_all(self) -> List[Tuple[str, int]]:
         vals = []
         with self.lock:
             for name, hits in self.sensors.items():
@@ -119,7 +119,7 @@ def hits_sender():
 
 api: Optional[WebAPIClient] = None
 hc: Optional[HitCounter] = None
-record_clients: dict[MediaNodeType, RecordClient] = {}
+record_clients: Dict[MediaNodeType, RecordClient] = {}
 
 
 # record callbacks

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 
 class ApiResponseError(Exception):
@@ -6,7 +6,7 @@ class ApiResponseError(Exception):
                  status_code: int,
                  error_type: str,
                  error_message: str,
-                 error_stacktrace: Optional[list[str]] = None):
+                 error_stacktrace: Optional[List[str]] = None):
         super().__init__()
         self.status_code = status_code
         self.error_message = error_message

@@ -5,6 +5,7 @@ from datetime import datetime
 from home.config import config
 from home.database import SimpleState
 from home.api import WebAPIClient
+from typing import Tuple
 
 log_file = '/var/log/openwrt.log'
 
@@ -24,7 +25,7 @@ $UDPServerRun 514
 """
 
 
-def parse_line(line: str) -> tuple[int, str]:
+def parse_line(line: str) -> Tuple[int, str]:
     space_pos = line.index(' ')
 
     date = line[:space_pos]
@@ -58,7 +59,7 @@ if __name__ == '__main__':
         state['seek'] = f.tell()
         state['size'] = fsize
 
-        lines: list[tuple[int, str]] = []
+        lines: List[Tuple[int, str]] = []
 
         if content != '':
             for line in content.strip().split('\n'):

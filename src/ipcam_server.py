@@ -14,7 +14,7 @@ from home.database.sqlite import SQLiteBase
 from home.camera import util as camutil
 
 from enum import Enum
-from typing import Optional, Union
+from typing import Optional, Union, List
 from datetime import datetime, timedelta
 
 
@@ -273,7 +273,7 @@ def get_motion_path(cam: int) -> str:
 
 
 def get_recordings_files(cam: int,
-                         time_filter_type: Optional[TimeFilterType] = None) -> list[dict]:
+                         time_filter_type: Optional[TimeFilterType] = None) -> List[dict]:
     from_time = 0
     to_time = int(time.time())
 
@@ -305,7 +305,7 @@ def get_recordings_files(cam: int,
 
 async def process_fragments(camera: int,
                             filename: str,
-                            fragments: list[tuple[int, int]]) -> None:
+                            fragments: List[Tuple[int, int]]) -> None:
     time = filename_to_datetime(filename)
 
     rec_dir = get_recordings_path(camera)
@@ -338,7 +338,7 @@ async def process_fragments(camera: int,
 
 async def motion_notify_tg(camera: int,
                            filename: str,
-                           fragments: list[tuple[int, int]]):
+                           fragments: List[Tuple[int, int]]):
     dt_file = filename_to_datetime(filename)
     fmt = '%H:%M:%S'
 

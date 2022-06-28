@@ -7,7 +7,7 @@ from tempfile import gettempdir
 from .record import RecordStatus
 from .node_client import SoundNodeClient, MediaNodeClient, CameraNodeClient
 from ..util import Addr
-from typing import Optional, Callable
+from typing import Optional, Callable, Dict
 
 
 class RecordClient:
@@ -15,14 +15,14 @@ class RecordClient:
 
     interrupted: bool
     logger: logging.Logger
-    clients: dict[str, MediaNodeClient]
-    awaiting: dict[str, dict[int, Optional[dict]]]
+    clients: Dict[str, MediaNodeClient]
+    awaiting: Dict[str, Dict[int, Optional[dict]]]
     error_handler: Optional[Callable]
     finished_handler: Optional[Callable]
     download_on_finish: bool
 
     def __init__(self,
-                 nodes: dict[str, Addr],
+                 nodes: Dict[str, Addr],
                  error_handler: Optional[Callable] = None,
                  finished_handler: Optional[Callable] = None,
                  download_on_finish=False):
@@ -50,7 +50,7 @@ class RecordClient:
             self.stop()
             self.logger.exception(exc)
 
-    def make_clients(self, nodes: dict[str, Addr]):
+    def make_clients(self, nodes: Dict[str, Addr]):
         pass
 
     def stop(self):
@@ -148,9 +148,9 @@ class RecordClient:
 
 class SoundRecordClient(RecordClient):
     DOWNLOAD_EXTENSION = 'mp3'
-    # clients: dict[str, SoundNodeClient]
+    # clients: Dict[str, SoundNodeClient]
 
-    def make_clients(self, nodes: dict[str, Addr]):
+    def make_clients(self, nodes: Dict[str, Addr]):
         for node, addr in nodes.items():
             self.clients[node] = SoundNodeClient(addr)
             self.awaiting[node] = {}
@@ -158,9 +158,9 @@ class SoundRecordClient(RecordClient):
 
 class CameraRecordClient(RecordClient):
     DOWNLOAD_EXTENSION = 'mp4'
-    # clients: dict[str, CameraNodeClient]
+    # clients: Dict[str, CameraNodeClient]
 
-    def make_clients(self, nodes: dict[str, Addr]):
+    def make_clients(self, nodes: Dict[str, Addr]):
         for node, addr in nodes.items():
             self.clients[node] = CameraNodeClient(addr)
             self.awaiting[node] = {}

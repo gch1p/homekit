@@ -5,7 +5,7 @@ from ..api.types import (
     BotType,
     SoundSensorLocation
 )
-from typing import Optional
+from typing import Optional, List, Tuple
 from datetime import datetime
 from html import escape
 
@@ -37,7 +37,7 @@ class BotsDatabase(MySQLDatabase):
         self.commit()
 
     def add_openwrt_logs(self,
-                         lines: list[tuple[datetime, str]]):
+                         lines: List[Tuple[datetime, str]]):
         now = datetime.now()
         with self.cursor() as cursor:
             for line in lines:
@@ -47,7 +47,7 @@ class BotsDatabase(MySQLDatabase):
         self.commit()
 
     def add_sound_hits(self,
-                       hits: list[tuple[SoundSensorLocation, int]],
+                       hits: List[Tuple[SoundSensorLocation, int]],
                        time: datetime):
         with self.cursor() as cursor:
             for loc, count in hits:
@@ -58,7 +58,7 @@ class BotsDatabase(MySQLDatabase):
     def get_sound_hits(self,
                        location: SoundSensorLocation,
                        after: Optional[datetime] = None,
-                       last: Optional[int] = None) -> list[dict]:
+                       last: Optional[int] = None) -> List[dict]:
         with self.cursor(dictionary=True) as cursor:
             sql = "SELECT `time`, hits FROM sound_hits WHERE location=%s"
             args = [location.name.lower()]
@@ -84,7 +84,7 @@ class BotsDatabase(MySQLDatabase):
     def get_openwrt_logs(self,
                          filter_text: str,
                          min_id: int,
-                         limit: int = None) -> list[OpenwrtLogRecord]:
+                         limit: int = None) -> List[OpenwrtLogRecord]:
         tz = pytz.timezone('Europe/Moscow')
         with self.cursor(dictionary=True) as cursor:
             sql = "SELECT * FROM openwrt WHERE text LIKE %s AND id > %s"

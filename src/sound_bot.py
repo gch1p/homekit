@@ -6,7 +6,7 @@ import tempfile
 from enum import Enum
 from datetime import datetime, timedelta
 from html import escape
-from typing import Optional
+from typing import Optional, List, Dict, Tuple
 
 from home.config import config
 from home.bot import Wrapper, Context, text_filter, user_any_name
@@ -27,11 +27,11 @@ from telegram.ext import (
 from PIL import Image
 
 logger = logging.getLogger(__name__)
-RenderedContent = tuple[str, Optional[InlineKeyboardMarkup]]
+RenderedContent = Tuple[str, Optional[InlineKeyboardMarkup]]
 record_client: Optional[SoundRecordClient] = None
 bot: Optional[Wrapper] = None
-node_client_links: dict[str, SoundNodeClient] = {}
-cam_client_links: dict[str, CameraNodeClient] = {}
+node_client_links: Dict[str, SoundNodeClient] = {}
+cam_client_links: Dict[str, CameraNodeClient] = {}
 
 
 def node_client(node: str) -> SoundNodeClient:
@@ -73,7 +73,7 @@ def interval_defined(interval: int) -> bool:
     return interval in config['bot']['record_intervals']
 
 
-def callback_unpack(ctx: Context) -> list[str]:
+def callback_unpack(ctx: Context) -> List[str]:
     return ctx.callback_query.data[3:].split('/')
 
 
@@ -115,7 +115,7 @@ class SettingsRenderer(Renderer):
 
     @classmethod
     def node(cls, ctx: Context,
-             controls: list[dict]) -> RenderedContent:
+             controls: List[dict]) -> RenderedContent:
         node, = callback_unpack(ctx)
 
         html = []
@@ -169,7 +169,7 @@ class RecordRenderer(Renderer):
         return html, cls.places_markup(ctx, callback_prefix='r0')
 
     @classmethod
-    def node(cls, ctx: Context, durations: list[int]) -> RenderedContent:
+    def node(cls, ctx: Context, durations: List[int]) -> RenderedContent:
         node, = callback_unpack(ctx)
 
         html = ctx.lang('select_interval')
@@ -241,7 +241,7 @@ class FilesRenderer(Renderer):
         return html, cls.places_markup(ctx, callback_prefix='f0')
 
     @classmethod
-    def filelist(cls, ctx: Context, files: list[SoundRecordFile]) -> RenderedContent:
+    def filelist(cls, ctx: Context, files: List[SoundRecordFile]) -> RenderedContent:
         node, = callback_unpack(ctx)
 
         html_files = map(lambda file: cls.file(ctx, file, node), files)
@@ -935,7 +935,6 @@ class SoundBot(Wrapper):
 
         # cheese
         self.add_handler(CallbackQueryHandler(self.wrap(camera_capture), pattern=r'^c1/.*'))
-
 
     def markup(self, ctx: Optional[Context]) -> Optional[ReplyKeyboardMarkup]:
         buttons = [

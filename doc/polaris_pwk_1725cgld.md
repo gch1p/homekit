@@ -44,7 +44,7 @@ From `devices.json`:
 
 ### Random notes
 
-All commands, from `com/polaris/iot/api/comments`:
+All commands, from `com/polaris/iot/api/commands`:
 ```
 $ grep -A1 -r "public byte getType()" .
 ./CmdAccessControl.java:   public byte getType() {
@@ -168,4 +168,43 @@ $ grep -A1 -r "public byte getType()" .
 ./CmdChildLock.java-      return 30;
 ```
 
-See also `com/syncleoiot/**/commands`.
+From `com/syncleoiot/iottransport/udp/commands`:
+```
+$ grep -A1 -r "public byte getType()" .
+./CmdDeviceDiagnostics.java:   public byte getType() {
+./CmdDeviceDiagnostics.java-      return -111;
+--
+./CmdHandshake.java:   public byte getType() {
+./CmdHandshake.java-      return 0;
+--
+./CmdUdpFirmware.java:   public byte getType() {
+./CmdUdpFirmware.java-      return -3;
+--
+./CmdTimeSync.java:   public byte getType() {
+./CmdTimeSync.java-      return -128;
+--
+./CmdPing.java:   public byte getType() {
+./CmdPing.java-      return -1;
+```
+
+From `com/syncleoiot/iottransport/commands`:
+```
+$ grep -A1 -r "public byte getType()" .
+./CmdCrossConfig.java:   public byte getType() {
+./CmdCrossConfig.java-      return -125;
+--
+./CmdWifiConfiguration.java:   public byte getType() {
+./CmdWifiConfiguration.java-      return -126;
+--
+./CmdDiagnostics.java:   public byte getType() {
+./CmdDiagnostics.java-      return -115;
+--
+./CmdWifiStatus.java:   public byte getType() {
+./CmdWifiStatus.java-      return -126;
+--
+./CmdHardware.java:   public byte getType() {
+./CmdHardware.java-      return 0;
+--
+./CmdWifiList.java:   public byte getType() {
+./CmdWifiList.java-      return -127;
+```

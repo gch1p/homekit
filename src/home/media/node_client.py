@@ -2,7 +2,7 @@ import requests
 import shutil
 import logging
 
-from typing import Optional, Union
+from typing import Optional, Union, List
 from .storage import RecordFile
 from ..util import Addr
 from ..api.errors import ApiResponseError
@@ -25,7 +25,7 @@ class MediaNodeClient:
     def record_download(self, record_id: int, output: str):
         return self._call(f'record/download/{record_id}/', save_to=output)
 
-    def storage_list(self, extended=False, as_objects=False) -> Union[list[str], list[dict], list[RecordFile]]:
+    def storage_list(self, extended=False, as_objects=False) -> Union[List[str], List[dict], List[RecordFile]]:
         r = self._call('storage/list/', params={'extended': int(extended)})
         files = r['files']
         if as_objects:
@@ -33,7 +33,7 @@ class MediaNodeClient:
         return files
 
     @staticmethod
-    def record_list_from_serialized(files: Union[list[str], list[dict]]):
+    def record_list_from_serialized(files: Union[List[str], List[dict]]):
         new_files = []
         for f in files:
             kwargs = {'remote': True}

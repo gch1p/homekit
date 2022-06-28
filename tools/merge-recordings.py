@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 import sys
 
+from typing import List
 from datetime import datetime, timedelta
 from argparse import ArgumentParser
 
@@ -12,7 +13,7 @@ from argparse import ArgumentParser
 fmt = '%d%m%y-%H%M%S'
 
 File = dict
-FileList = list[File]
+FileList = List[File]
 
 
 def get_files(source_directory: str) -> FileList:
@@ -31,7 +32,7 @@ def get_files(source_directory: str) -> FileList:
     return files
 
 
-def group_files(files: FileList) -> list[FileList]:
+def group_files(files: FileList) -> List[FileList]:
     groups = []
     group_idx = None
     
@@ -55,7 +56,7 @@ def group_files(files: FileList) -> list[FileList]:
     return groups
 
 
-def merge(groups: list[FileList],
+def merge(groups: List[FileList],
           output_directory: str,
           delete_source_files=False,
           vbr=False) -> None:

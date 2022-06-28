@@ -2,7 +2,7 @@ import subprocess
 
 from ..config import config
 from threading import Lock
-from typing import Union
+from typing import Union, List
 
 
 _lock = Lock()
@@ -16,7 +16,7 @@ def has_control(s: str) -> bool:
     return False
 
 
-def get_caps(s: str) -> list[str]:
+def get_caps(s: str) -> List[str]:
     for control in config['amixer']['controls']:
         if control['name'] == s:
             return control['caps']

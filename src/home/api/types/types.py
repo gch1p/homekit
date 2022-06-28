@@ -7,6 +7,7 @@ class BotType(Enum):
     SENSORS = auto()
     ADMIN = auto()
     SOUND = auto()
+    POLARIS_KETTLE = auto()
 
 
 class TemperatureSensorLocation(Enum):

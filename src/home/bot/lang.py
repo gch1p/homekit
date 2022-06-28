@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import logging
 
-from typing import Union, Optional
+from typing import Union, Optional, List, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +26,7 @@ class LangStrings(dict):
 
 
 class LangPack:
-    strings: dict[str, LangStrings[str, str]]
+    strings: Dict[str, LangStrings[str, str]]
     default_lang: str
 
     def __init__(self):
@@ -57,11 +59,14 @@ class LangPack:
         return result
 
     @property
-    def languages(self) -> list[str]:
+    def languages(self) -> List[str]:
         return list(self.strings.keys())
 
     def get(self, key: str, lang: str, *args) -> str:
-        return self.strings[lang][key] % args
+        if args:
+            return self.strings[lang][key] % args
+        else:
+            return self.strings[lang][key]
 
     def __call__(self, *args, **kwargs):
         return self.strings[self.default_lang][args[0]]

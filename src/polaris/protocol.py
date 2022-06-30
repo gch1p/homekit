@@ -477,9 +477,9 @@ class HandshakeResponseMessage(CmdIncomingMessage):
 
 
 # Apparently, some hardware info.
-# On the other hand, if you look at com.syncleiot.iottransport.commands.CmdHardware, its mqtt topic is "mcu_firmware".
-# My device returns 1.1.1. The thing uses on ESP8266 MCU under the hood (or, more precisely, under a piece of cheap
-# plastic), so maybe 1.1.1 is the MCU fw revision.
+# On the other hand, if you look at com.syncleiot.iottransport.commands.CmdHardware, its mqtt topic says "mcu_firmware".
+# My device returns 1.1.1. The kettle uses on ESP8266 ESP-12F MCU under the hood (or, more precisely, under a piece of
+# cheap plastic), so maybe 1.1.1 is some MCU ROM version.
 class DeviceHardwareMessage(CmdIncomingMessage):
     TYPE = 143  # -113
 

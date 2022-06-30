@@ -1,3 +1,29 @@
+## Bot configuration
+
+```
+[bot]
+token = "bot token"
+users = [ id1, id2 ]
+#notify_users = [ 1, 2 ]
+
+[mqtt]
+host = "192.168.88.49"
+port = 1883
+client_id = "kettle_bot"
+
+[logging]
+verbose = true
+default_fmt = true
+
+[kettle]
+mac = 'kettle mac'
+token = 'kettle token'
+temp_max = 100
+temp_min = 30
+temp_step = 5
+```
+
+
 ## Random research notes
 
 ### Device features
@@ -42,9 +68,9 @@ From `devices.json`:
     },
 ```
 
-### Random notes
+### Protocol commands
 
-All commands, from `com/polaris/iot/api/commands`:
+From `com/polaris/iot/api/commands`:
 ```
 $ grep -A1 -r "public byte getType()" .
 ./CmdAccessControl.java:   public byte getType() {
@@ -208,3 +234,5 @@ $ grep -A1 -r "public byte getType()" .
 ./CmdWifiList.java:   public byte getType() {
 ./CmdWifiList.java-      return -127;
 ```
+
+See also class `com/syncleiot/iottransport/commands/CmdHardware`.

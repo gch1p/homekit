@@ -12,6 +12,7 @@ from home.bot import Wrapper, Context, text_filter, handlermethod
 from home.api.types import BotType
 from home.mqtt import MQTTBase
 from home.config import config
+from home.util import chunks
 from polaris import (
     Kettle,
     PowerType,
@@ -21,7 +22,7 @@ from polaris import (
     ConnectionStatus
 )
 import polaris.protocol as kettle_proto
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Union
 from collections import namedtuple
 from functools import partial
 from datetime import datetime
@@ -42,8 +43,43 @@ from telegram.ext import (
 logger = logging.getLogger(__name__)
 kc: Optional[KettleController] = None
 bot: Optional[Wrapper] = None
-RenderedContent = Tuple[str, Optional[InlineKeyboardMarkup]]
+RenderedContent = Tuple[str, Optional[Union[InlineKeyboardMarkup, ReplyKeyboardMarkup]]]
 tasks_lock = threading.Lock()
+
+
+def run_tasks(tasks: queue.SimpleQueue, done: callable):
+    def next_task(r: Optional[kettle_proto.MessageResponse]):
+        if r is not None:
+            try:
+                assert r is not False, 'server error'
+            except AssertionError as exc:
+                logger.exception(exc)
+                tasks_lock.release()
+                return done(False)
+
+        if not tasks.empty():
+            task = tasks.get()
+            args = task[1:]
+            args.append(next_task)
+            f = getattr(kc.kettle, task[0])
+            f(*args)
+        else:
+            tasks_lock.release()
+            return done(True)
+
+    tasks_lock.acquire()
+    next_task(None)
+
+
+def temperature_emoji(temp: int) -> str:
+    if temp > 90:
+        return '🔥'
+    elif temp >= 40:
+        return '♨️'
+    elif temp >= 35:
+        return '🌡'
+    else:
+        return '❄️'
 
 
 class KettleInfoListener:
@@ -331,6 +367,14 @@ class Renderer:
         return html, None
 
     @classmethod
+    def temp(cls, ctx: Context, choices) -> RenderedContent:
+        buttons = []
+        for chunk in chunks(choices, 5):
+            buttons.append([f'{temperature_emoji(n)} {n}' for n in chunk])
+        buttons.append([ctx.lang('back')])
+        return ctx.lang('select_temperature'), ReplyKeyboardMarkup(buttons)
+
+    @classmethod
     def turned_on(cls, ctx: Context,
                   target_temp: int,
                   current_temp: int,
@@ -342,11 +386,15 @@ class Renderer:
             html = ctx.lang('enabling')
         else:
             if not reached:
-                emoji = '♨️' if current_temp <= 90 else '🔥'
-                html = ctx.lang('enabled', emoji, target_temp)
+                html = ctx.lang('enabled')
+
+                # target temperature
+                html += '\n'
+                html += ctx.lang('enabled_target', temperature_emoji(target_temp), target_temp)
 
                 # current temperature
                 html += '\n'
+                html += temperature_emoji(current_temp) + ' '
                 html += ctx.lang('status_current_temp', current_temp)
             else:
                 html = ctx.lang('enabled_reached', current_temp)
@@ -401,30 +449,6 @@ class Renderer:
                 InlineKeyboardButton(ctx.lang('please_wait'), callback_data='wait')
             ]
         ])
-
-
-def run_tasks(tasks: queue.SimpleQueue, done: callable):
-    def next_task(r: Optional[kettle_proto.MessageResponse]):
-        if r is not None:
-            try:
-                assert r is not False, 'server error'
-            except AssertionError as exc:
-                logger.exception(exc)
-                tasks_lock.release()
-                return done(False)
-
-        if not tasks.empty():
-            task = tasks.get()
-            args = task[1:]
-            args.append(next_task)
-            f = getattr(kc.kettle, task[0])
-            f(*args)
-        else:
-            tasks_lock.release()
-            return done(True)
-
-    tasks_lock.acquire()
-    next_task(None)
 
 
 MUTUpdate = namedtuple('MUTUpdate', 'message_id, user_id, finished, changed, delete, html, markup')
@@ -532,25 +556,26 @@ class KettleBot(Wrapper):
             start_message="Выберите команду на клавиатуре",
             unknown_command="Неизвестная команда",
             unexpected_callback_data="Ошибка: неверные данные",
-            enable_70="♨️ 70 °C",
-            enable_80="♨️ 80 °C",
-            enable_90="♨️ 90 °C",
-            enable_100="🔥 100 °C",
             disable="❌ Выключить",
             server_error="Ошибка сервера",
+            back="🔙 Назад",
 
             # /status
             status_not_connected="😟 Связь с чайником не установлена",
-            status_on="✅ Чайник <b>включён</b> (до <b>%d °C</b>)",
-            status_off="❌ Чайник <b>выключен</b>",
+            status_on="🟢 Чайник <b>включён</b> (до <b>%d °C</b>)",
+            status_off="🔴 Чайник <b>выключен</b>",
             status_current_temp="Сейчас: <b>%d °C</b>",
             status_update_time="<i>Обновлено %s</i>",
             status_update_time_fmt="%d %b в %H:%M:%S",
 
-            # enable
+            # /temp
+            select_temperature="Выберите температуру:",
+
+            # enable/disable
             enabling="💤 Чайник включается...",
             disabling="💤 Чайник выключается...",
-            enabled="%s Чайник <b>включён</b>.\nЦель: <b>%d °C</b>",
+            enabled="🟢 Чайник <b>включён</b>.",
+            enabled_target="%s Цель: <b>%d °C</b>",
             enabled_reached="✅ <b>Готово!</b> Чайник вскипел, температура <b>%d °C</b>.",
             disabled="✅ Чайник <b>выключен</b>.",
             please_wait="⏳ Ожидайте..."
@@ -560,42 +585,56 @@ class KettleBot(Wrapper):
             start_message="Select command on the keyboard",
             unknown_command="Unknown command",
             unexpected_callback_data="Unexpected callback data",
-            enable_70="♨️ 70 °C",
-            enable_80="♨️ 80 °C",
-            enable_90="♨️ 90 °C",
-            enable_100="🔥 100 °C",
             disable="❌ Turn OFF",
             server_error="Server error",
+            back="🔙 Back",
 
             # /status
-            not_connected="😟 Connection has not been established",
-            status_on="✅ Turned <b>ON</b>! Target: <b>%d °C</b>",
-            status_off="❌ Turned <b>OFF</b>",
+            not_connected="😟 No connection",
+            status_on="🟢 Turned <b>ON</b>! Target: <b>%d °C</b>",
+            status_off="🔴 Turned <b>OFF</b>",
             status_current_temp="Now: <b>%d °C</b>",
             status_update_time="<i>Updated on %s</i>",
             status_update_time_fmt="%b %d, %Y at %H:%M:%S",
 
-            # enable
+            # /temp
+            select_temperature="Select a temperature:",
+
+            # enable/disable
             enabling="💤 Turning on...",
             disabling="💤 Turning off...",
-            enabled="%s The kettle is <b>turned ON</b>.\nTarget: <b>%d °C</b>",
-            enabled_reached="✅ It's <b>done</b>! The kettle has boiled, the temperature is <b>%d °C</b>.",
+            enabled="🟢 The kettle is <b>turned ON</b>.",
+            enabled_target="%s Target: <b>%d °C</b>",
+            enabled_reached="✅ <b>Done</b>! The kettle has boiled, the temperature is <b>%d °C</b>.",
             disabled="✅ The kettle is <b>turned OFF</b>.",
             please_wait="⏳ Please wait..."
         )
 
+        self.primary_choices = (70, 80, 90, 100)
+        self.all_choices = range(
+            config['kettle']['temp_min'],
+            config['kettle']['temp_max']+1,
+            config['kettle']['temp_step'])
+
         # commands
         self.add_handler(CommandHandler('status', self.status))
+        self.add_handler(CommandHandler('temp', self.temp))
 
-        # messages
-        for temp in (70, 80, 90, 100):
-            self.add_handler(MessageHandler(text_filter(self.lang.all(f'enable_{temp}')), self.wrap(partial(self.on, temp))))
+        # enable messages
+        for temp in self.primary_choices:
+            self.add_handler(MessageHandler(text_filter(f'{temperature_emoji(temp)} {temp}'), self.wrap(partial(self.on, temp))))
+        for temp in self.all_choices:
+            self.add_handler(MessageHandler(text_filter(f'{temperature_emoji(temp)} {temp}'), self.wrap(partial(self.on, temp))))
 
+        # disable message
         self.add_handler(MessageHandler(text_filter(self.lang.all('disable')), self.off))
+
+        # back message
+        self.add_handler(MessageHandler(text_filter(self.lang.all('back')), self.back))
 
     def markup(self, ctx: Optional[Context]) -> Optional[ReplyKeyboardMarkup]:
         buttons = [
-            [ctx.lang(f'enable_{x}') for x in (70, 80, 90, 100)],
+            [f'{temperature_emoji(n)} {n}' for n in self.primary_choices],
             [ctx.lang('disable')]
         ]
         return ReplyKeyboardMarkup(buttons, one_time_keyboard=False)
@@ -668,6 +707,16 @@ class KettleBot(Wrapper):
                                        target_temp=kc.info.target_temperature,
                                        update_time=kc.info.update_time)
         return ctx.reply(text, markup=markup)
+
+    @handlermethod
+    def temp(self, ctx: Context):
+        text, markup = Renderer.temp(
+            ctx, choices=self.all_choices)
+        return ctx.reply(text, markup=markup)
+
+    @handlermethod
+    def back(self, ctx: Context):
+        self.start(ctx)
 
 
 if __name__ == '__main__':

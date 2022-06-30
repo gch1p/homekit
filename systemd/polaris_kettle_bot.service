@@ -1,0 +1,12 @@
+[Unit]
+Description=HomeKit Polaris PWK 1725CGLD smart kettle Telegram bot
+After=network-online.target
+
+[Service]
+Restart=on-failure
+User=user
+WorkingDirectory=/home/user
+ExecStart=/home/user/homekit/src/polaris_kettle_bot.py
+
+[Install]
+WantedBy=multi-user.target

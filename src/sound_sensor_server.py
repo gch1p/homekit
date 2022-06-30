@@ -167,12 +167,14 @@ if __name__ == '__main__':
     t.start()
 
     sound_nodes = {}
-    for nodename, nodecfg in config['sound_nodes'].items():
-        sound_nodes[nodename] = parse_addr(nodecfg['addr'])
+    if 'sound_nodes' in config:
+        for nodename, nodecfg in config['sound_nodes'].items():
+            sound_nodes[nodename] = parse_addr(nodecfg['addr'])
 
     camera_nodes = {}
-    for nodename, nodecfg in config['camera_nodes'].items():
-        camera_nodes[nodename] = parse_addr(nodecfg['addr'])
+    if 'camera_nodes' in config:
+        for nodename, nodecfg in config['camera_nodes'].items():
+            camera_nodes[nodename] = parse_addr(nodecfg['addr'])
 
     if sound_nodes:
         record_clients[MediaNodeType.SOUND] = SoundRecordClient(sound_nodes,

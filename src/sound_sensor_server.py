@@ -19,9 +19,12 @@ server: SoundSensorServer
 
 def get_related_nodes(node_type: MediaNodeType,
                       sensor_name: str) -> List[str]:
-    if sensor_name not in config[f'sensor_to_{node_type.name.lower()}_nodes_relations']:
-        raise ValueError(f'unexpected sensor name {sensor_name}')
-    return config[f'sensor_to_{node_type.name.lower()}_nodes_relations'][sensor_name]
+    try:
+        if sensor_name not in config[f'sensor_to_{node_type.name.lower()}_nodes_relations']:
+            raise ValueError(f'unexpected sensor name {sensor_name}')
+        return config[f'sensor_to_{node_type.name.lower()}_nodes_relations'][sensor_name]
+    except KeyError:
+        return []
 
 
 def get_node_config(node_type: MediaNodeType,

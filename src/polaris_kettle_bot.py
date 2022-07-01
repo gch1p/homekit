@@ -664,14 +664,15 @@ class KettleBot(Wrapper):
                                                   current_temp=kc.info.temperature,
                                                   mode=kc.info.mode)
             message = ctx.reply(html, markup=markup)
-            logger.info(f'ctx.reply returned message: {message}')
+            logger.debug(f'ctx.reply returned message: {message}')
 
-            mut = MessageUpdatingTarget(ctx, message,
-                                        initial_power_mode=kc.info.mode,
-                                        user_enabled_power_mode=power_mode,
-                                        user_target_temp=temp)
-            mut.set_rendered_content((html, markup))
-            kc.add_updating_message(mut)
+            if ok:
+                mut = MessageUpdatingTarget(ctx, message,
+                                            initial_power_mode=kc.info.mode,
+                                            user_enabled_power_mode=power_mode,
+                                            user_target_temp=temp)
+                mut.set_rendered_content((html, markup))
+                kc.add_updating_message(mut)
 
         run_tasks(tasks, done)
 
@@ -688,13 +689,14 @@ class KettleBot(Wrapper):
             else:
                 html, markup = Renderer.turned_off(ctx, mode=kc.info.mode)
             message = ctx.reply(html, markup=markup)
-            logger.info(f'ctx.reply returned message: {message}')
+            logger.debug(f'ctx.reply returned message: {message}')
 
-            mut = MessageUpdatingTarget(ctx, message,
-                                        initial_power_mode=kc.info.mode,
-                                        user_enabled_power_mode=PowerType.OFF)
-            mut.set_rendered_content((html, markup))
-            kc.add_updating_message(mut)
+            if ok:
+                mut = MessageUpdatingTarget(ctx, message,
+                                            initial_power_mode=kc.info.mode,
+                                            user_enabled_power_mode=PowerType.OFF)
+                mut.set_rendered_content((html, markup))
+                kc.add_updating_message(mut)
 
         tasks = queue.SimpleQueue()
         tasks.put(['set_power', PowerType.OFF])

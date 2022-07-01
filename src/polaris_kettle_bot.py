@@ -683,16 +683,21 @@ class KettleBot(Wrapper):
             return
 
         def done(ok: bool):
+            mode = kc.info.mode
             if not ok:
                 html, markup = Renderer.smth_went_wrong(ctx)
             else:
-                html, markup = Renderer.turned_off(ctx, mode=kc.info.mode)
+                kw = {}
+                if mode == PowerType.OFF:
+                    kw['reached'] = True
+                    kw['no_keyboard'] = True
+                html, markup = Renderer.turned_off(ctx, mode=mode, **kw)
             message = ctx.reply(html, markup=markup)
             logger.debug(f'ctx.reply returned message: {message}')
 
-            if ok:
+            if ok and mode != PowerType.OFF:
                 mut = MessageUpdatingTarget(ctx, message,
-                                            initial_power_mode=kc.info.mode,
+                                            initial_power_mode=mode,
                                             user_enabled_power_mode=PowerType.OFF)
                 mut.set_rendered_content((html, markup))
                 kc.add_updating_message(mut)

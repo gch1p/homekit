@@ -206,22 +206,11 @@ class KettleController(threading.Thread,
 
     def run(self):
         while not self._stopped:
-            # do_restart_srv = False
-            #
-            # with self._lock:
-            #     if self._restart_server_at != 0 and time.time() - self._restart_server_at:
-            #         self._restart_server_at = 0
-            #         do_restart_srv = True
-            #
-            # if do_restart_srv:
-            #     self.kettle_connect()
-
             updates = []
             deletions = []
             forget = []
 
             with self._muts_lock and self._info_lock:
-                # self._logger.debug('muts size: '+str(len(self._muts)))
                 if self._muts and self._accumulated_updates and (self._info_flushed_time == 0 or time.time() - self._info_flushed_time >= 1):
                     deletions = []
 

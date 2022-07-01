@@ -236,9 +236,22 @@ class KettleController(threading.Thread,
             for mut, upd in updates:
                 self._logger.debug(f'loop: got update: {upd}')
                 try:
-                    bot.edit_message_text(upd.user_id, upd.message_id,
-                                          text=upd.html,
-                                          reply_markup=upd.markup)
+                    do_edit = True
+                    if upd.finished:
+                        # try to delete the old message and send a new one, to notify user more effectively
+                        try:
+                            bot.delete_message(upd.user_id, upd.message_id)
+                            do_edit = False
+                        except TelegramError as exc:
+                            self._logger.error(f'loop: failed to delete old message (in order to send a new one)')
+                            self._logger.exception(exc)
+
+                    if do_edit:
+                        bot.edit_message_text(upd.user_id, upd.message_id,
+                                              text=upd.html,
+                                              reply_markup=upd.markup)
+                    else:
+                        bot.notify_user(upd.user_id, upd.html, reply_markup=upd.markup)
                 except TelegramError as exc:
                     if "Message can't be edited" in exc.message:
                         self._logger.warning("message can't be edited, adding it to forget list")

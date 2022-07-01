@@ -286,10 +286,10 @@ class Wrapper:
                                           text=text,
                                           parse_mode='HTML')
 
-    def notify_user(self, user_id: int, text: Union[str, Exception]) -> None:
+    def notify_user(self, user_id: int, text: Union[str, Exception], **kwargs) -> None:
         if isinstance(text, Exception):
             text = exc2text(text)
-        self.updater.bot.send_message(chat_id=user_id, text=text, parse_mode='HTML')
+        self.updater.bot.send_message(chat_id=user_id, text=text, parse_mode='HTML', **kwargs)
 
     def send_photo(self, user_id, **kwargs):
         self.updater.bot.send_photo(chat_id=user_id, **kwargs)

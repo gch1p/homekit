@@ -147,7 +147,7 @@ class Message:
     @staticmethod
     def next_id():
         _id = Message._global_id
-        Message._global_id += 1
+        Message._global_id = (Message._global_id + 1) % 100000
         return _id
 
     @staticmethod

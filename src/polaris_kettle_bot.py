@@ -218,10 +218,11 @@ class KettleController(threading.Thread,
 
             updates = []
             deletions = []
+            forget = []
+
             with self._muts_lock and self._info_lock:
                 # self._logger.debug('muts size: '+str(len(self._muts)))
                 if self._muts and self._accumulated_updates and (self._info_flushed_time == 0 or time.time() - self._info_flushed_time >= 1):
-                    forget = []
                     deletions = []
 
                     for mut in self._muts:
@@ -234,35 +235,44 @@ class KettleController(threading.Thread,
                             forget.append(mut)
 
                         if upd.delete:
-                            deletions.append(upd)
-                        elif upd.changed:
-                            updates.append(upd)
+                            deletions.append((mut, upd))
 
-                    if forget:
-                        for mut in forget:
-                            self._logger.debug(f'loop: removing mut {mut}')
-                            self._muts.remove(mut)
+                        elif upd.changed:
+                            updates.append((mut, upd))
 
                     self._info_flushed_time = time.time()
                     self._accumulated_updates = {}
 
-            for upd in updates:
+            # edit messages
+            for mut, upd in updates:
                 self._logger.debug(f'loop: got update: {upd}')
                 try:
                     bot.edit_message_text(upd.user_id, upd.message_id,
                                           text=upd.html,
                                           reply_markup=upd.markup)
                 except TelegramError as exc:
+                    if "Message can't be edited" in exc.message:
+                        self._logger.warning("message can't be edited, adding it to forget list")
+                        forget.append(upd)
+
                     self._logger.error(f'loop: edit_message_text failed for update: {upd}')
                     self._logger.exception(exc)
 
-            for upd in deletions:
+            # delete messages
+            for mut, upd in deletions:
                 self._logger.debug(f'loop: got deletion: {upd}')
                 try:
                     bot.delete_message(upd.user_id, upd.message_id)
                 except TelegramError as exc:
                     self._logger.error(f'loop: delete_message failed for update: {upd}')
                     self._logger.exception(exc)
+
+            # delete muts, if needed
+            if forget:
+                with self._muts_lock:
+                    for mut in forget:
+                        self._logger.debug(f'loop: removing mut {mut}')
+                        self._muts.remove(mut)
 
             time.sleep(0.5)
 

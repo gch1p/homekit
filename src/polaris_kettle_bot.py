@@ -553,8 +553,8 @@ class KettleBot(Wrapper):
         super().__init__()
 
         self.lang.ru(
-            start_message="Выберите команду на клавиатуре",
-            unknown_command="Неизвестная команда",
+            start_message="Выберите команду на клавиатуре:",
+            invalid_command="Неизвестная команда",
             unexpected_callback_data="Ошибка: неверные данные",
             disable="❌ Выключить",
             server_error="Ошибка сервера",
@@ -582,8 +582,8 @@ class KettleBot(Wrapper):
         )
 
         self.lang.en(
-            start_message="Select command on the keyboard",
-            unknown_command="Unknown command",
+            start_message="Select command on the keyboard:",
+            invalid_command="Unknown command",
             unexpected_callback_data="Unexpected callback data",
             disable="❌ Turn OFF",
             server_error="Server error",

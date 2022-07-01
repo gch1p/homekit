@@ -804,7 +804,7 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
         self.outgoing_time = 0
         self.outgoing_time_1st = 0
 
-        self._logger.info('_cleanup: done')
+        self._logger.debug('_cleanup: done')
 
     def set_address(self, addr: Union[IPv4Address, IPv6Address], port: int):
         with self._addr_lock:
@@ -1038,12 +1038,12 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
         handler = self.response_handlers[seq]
 
         if handler.validate(incoming_message):
-            self._logger.info(f'{lpfx} response OK')
+            self._logger.debug(f'{lpfx} response OK')
             handler.phase = MessagePhase.DONE
             callback_value = incoming_message
             self._incr_outseq()
         else:
-            self._logger.info(f'{lpfx} response is INVALID')
+            self._logger.debug(f'{lpfx} response is INVALID')
 
             # It seems that we've received an incoming CmdMessage or PingMessage with the same seqno that our outgoing
             # message had. Bad, but what can I say, this is quick-and-dirty made UDP based protocol and this sort of

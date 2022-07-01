@@ -937,7 +937,7 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
                 wm.message.encrypt(outkey=self.encoutkey, inkey=self.encinkey,
                                    token=self.device_token, pubkey=self.pubkey)
                 buf = wm.message.frame.pack()
-                one_shot = isinstance(wm.message, (AckMessage, NakMessage, PingMessage))
+                one_shot = isinstance(wm.message, (AckMessage, NakMessage))
                 # self._logger.debug(f'run: raw data to be sent: {buf.hex()}')
 
                 # sending the first time

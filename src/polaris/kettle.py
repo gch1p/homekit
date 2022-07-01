@@ -90,7 +90,7 @@ class DeviceDiscover(threading.Thread, zeroconf.ServiceListener):
             # TODO what to do here?!
 
     def run(self):
-        self._logger.info('starting zeroconf service browser')
+        self._logger.debug('starting zeroconf service browser')
         ip_version = zeroconf.IPVersion.V4Only if self._only_ipv4 else zeroconf.IPVersion.All
         self._zc = zeroconf.Zeroconf(ip_version=ip_version)
         self._sb = zeroconf.ServiceBrowser(self._zc, "_syncleo._udp.local.", self)

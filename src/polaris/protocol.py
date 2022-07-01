@@ -1043,7 +1043,7 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
             callback_value = incoming_message
             self._incr_outseq()
         else:
-            self._logger.debug(f'{lpfx} response is INVALID')
+            self._logger.warning(f'{lpfx} response is INVALID')
 
             # It seems that we've received an incoming CmdMessage or PingMessage with the same seqno that our outgoing
             # message had. Bad, but what can I say, this is quick-and-dirty made UDP based protocol and this sort of

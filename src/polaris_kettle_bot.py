@@ -559,6 +559,7 @@ class KettleBot(Wrapper):
             disable="❌ Выключить",
             server_error="Ошибка сервера",
             back="🔙 Назад",
+            smth_went_wrong="😱 Что-то пошло не так",
 
             # /status
             status_not_connected="😟 Связь с чайником не установлена",
@@ -588,6 +589,7 @@ class KettleBot(Wrapper):
             disable="❌ Turn OFF",
             server_error="Server error",
             back="🔙 Back",
+            smth_went_wrong="😱 Something went wrong",
 
             # /status
             not_connected="😟 No connection",

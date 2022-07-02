@@ -21,6 +21,7 @@ token = 'kettle token'
 temp_max = 100
 temp_min = 30
 temp_step = 5
+read_timeout = 1
 ```
 
 

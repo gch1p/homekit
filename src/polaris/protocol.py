@@ -1011,13 +1011,15 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
                 self._logger.error(f'{lpfx} rm path: removing from outgoing_queue raised an exception: {str(exc)}')
 
         # ping pong
-        if self.outgoing_time_1st != 0 and self.status == ConnectionStatus.CONNECTED:
+        if not message and self.outgoing_time_1st != 0 and self.status == ConnectionStatus.CONNECTED:
             now = time.time()
             out_delta = now - self.outgoing_time
             in_delta = now - self.incoming_time
-            if not message and max(out_delta, in_delta) > PING_FREQUENCY:
+            if max(out_delta, in_delta) > PING_FREQUENCY:
                 self._logger.debug(f'{lpfx} no activity: in for {in_delta:.2f}s, out for {out_delta:.2f}s, time to ping the damn thing')
                 message = WrappedMessage(PingMessage(), ack=True)
+                # add it to outgoing_queue in order to be aggressively resent in future (if needed)
+                self.outgoing_queue.insert(0, message)
 
         return message
 

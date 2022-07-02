@@ -989,7 +989,7 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
         remove_list = []
         for wm in self.outgoing_queue:
             if wm.phase == MessagePhase.DONE:
-                if isinstance(wm.message, (AckMessage, NakMessage)) or time.time() - wm.phase_update_time >= MESSAGE_QUEUE_REMOVE_DELAY:
+                if isinstance(wm.message, (AckMessage, NakMessage, PingMessage)) or time.time() - wm.phase_update_time >= MESSAGE_QUEUE_REMOVE_DELAY:
                     remove_list.append(wm)
                 continue
             message = wm

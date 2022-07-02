@@ -926,6 +926,8 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
             # pick next (wrapped) message to send
             wm = self._get_next_message()  # wm means "wrapped message"
             if wm:
+                one_shot = isinstance(wm.message, (AckMessage, NakMessage))
+
                 if not isinstance(wm.message, (AckMessage, NakMessage)):
                     old_seq = wm.seq
                     wm.seq = self.outseq
@@ -935,7 +937,7 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
                     # message had)
                     raise RuntimeError(f'run: seq must be set for {wm.__class__.__name__}')
 
-                self._logger.debug(f'run: sending message: {wm.message}')
+                self._logger.debug(f'run: sending message: {wm.message}, one_shot={one_shot}, phase={wm.phase}')
                 encrypted = False
                 try:
                     wm.message.encrypt(outkey=self.encoutkey, inkey=self.encinkey,
@@ -948,7 +950,6 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
 
                 if encrypted:
                     buf = wm.message.frame.pack()
-                    one_shot = isinstance(wm.message, (AckMessage, NakMessage))
                     # self._logger.debug(f'run: raw data to be sent: {buf.hex()}')
 
                     # sending the first time

@@ -1150,7 +1150,7 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
         assert seq is not None, 'seq is not set'
 
         if seq in self.response_handlers:
-            self._logger.warning(f'_set_response_handler(seq={seq}): handler is already set, cancelling it')
+            self._logger.debug(f'_set_response_handler(seq={seq}): handler is already set, cancelling it')
             self.response_handlers[seq].call(False,
                                              error_message=f'_set_response_handler({seq}): error while calling old callback')
         self.response_handlers[seq] = wm

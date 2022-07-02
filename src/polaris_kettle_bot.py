@@ -604,7 +604,7 @@ class KettleBot(Wrapper):
             smth_went_wrong="😱 Something went wrong",
 
             # /status
-            not_connected="😟 No connection",
+            status_not_connected="😟 No connection",
             status_on="🟢 Turned <b>ON</b>! Target: <b>%d °C</b>",
             status_off="🔴 Turned <b>OFF</b>",
             status_current_temp="Now: <b>%d °C</b>",

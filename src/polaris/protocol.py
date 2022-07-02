@@ -28,7 +28,6 @@ _logger = logging.getLogger(__name__)
 
 PING_FREQUENCY = 3
 RESEND_ATTEMPTS = 5
-READ_TIMEOUT = 1
 ERROR_TIMEOUT = 15
 MESSAGE_QUEUE_REMOVE_DELAY = 13  # after what time to delete (and pass False to handlers, if needed) messages with phase=DONE from queue
 DISCONNECT_TIMEOUT = 15
@@ -739,6 +738,7 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
     incoming_time: float
     status: ConnectionStatus
     reconnect_tries: int
+    read_timeout: int
 
     _addr_lock: threading.Lock
     _iml_lock: threading.Lock
@@ -749,7 +749,8 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
                  addr: Union[IPv4Address, IPv6Address],
                  port: int,
                  device_pubkey: bytes,
-                 device_token: bytes):
+                 device_token: bytes,
+                 read_timeout: int = 1):
         super().__init__()
         self._logger = logging.getLogger(f'{__name__}.{self.__class__.__name__} <{hex(id(self))}>')
         self.setName(self.__class__.__name__)
@@ -771,6 +772,7 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
         self.conn_listeners = [self]
         self.status = ConnectionStatus.NOT_CONNECTED
         self.reconnect_tries = 0
+        self.read_timeout = read_timeout
 
         self._iml_lock = threading.Lock()
         self._csl_lock = threading.Lock()
@@ -880,7 +882,7 @@ class UDPConnection(threading.Thread, ConnectionStatusListener):
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.bind(('0.0.0.0', self.source_port))
-        sock.settimeout(READ_TIMEOUT)
+        sock.settimeout(self.read_timeout)
 
         while not self.interrupted:
             with self._st_lock:

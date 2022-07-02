@@ -163,7 +163,8 @@ class KettleController(threading.Thread,
         self._logger = logging.getLogger(self.__class__.__name__)
 
         self.kettle = Kettle(mac=config['kettle']['mac'],
-                             device_token=config['kettle']['token'])
+                             device_token=config['kettle']['token'],
+                             read_timeout=config['kettle']['read_timeout'])
         self.kettle_reconnect()
 
         # info

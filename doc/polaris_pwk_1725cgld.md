@@ -238,6 +238,11 @@ $ grep -A1 -r "public byte getType()" .
 
 See also class `com/syncleiot/iottransport/commands/CmdHardware`.
 
+## Known problems
+
+- sometimes, after kettle's power reset, zeroconf.ServiceBrowser can't find the service for a long time. 
+  Reason is unknown, needs more research. Maybe we should send lookup requests more frequently and _continuously_.
+
 ## Other
 
 - sometimes the device looses Wi-Fi connection (it can be seen in AP logs). So if you suffer from

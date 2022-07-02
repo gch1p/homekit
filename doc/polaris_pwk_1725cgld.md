@@ -237,3 +237,9 @@ $ grep -A1 -r "public byte getType()" .
 ```
 
 See also class `com/syncleiot/iottransport/commands/CmdHardware`.
+
+## Other
+
+- sometimes the device looses Wi-Fi connection (it can be seen in AP logs). So if you suffer from
+  frequent reconnects/disconnects, it's probably not a bug in protocol implementation but rather
+  a problem with your wireless environment or wifi stack on device itself.

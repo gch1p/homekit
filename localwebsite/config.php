@@ -74,4 +74,7 @@ return [
     'auth_cookie_host' => '',
     'auth_need' => false, // bool|callable
     'auth_pw_salt' => '',
+
+    'grafana_sensors_url' => '',
+    'grafana_inverter_url' => ''
 ];

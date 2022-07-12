@@ -4,7 +4,12 @@ class MiscHandler extends RequestHandler
 {
 
     public function GET_main() {
+        global $config;
         $this->tpl->set_title('Главная');
+        $this->tpl->set([
+            'grafana_sensors_url' => $config['grafana_sensors_url'],
+            'grafana_inverter_url' => $config['grafana_inverter_url'],
+        ]);
         $this->tpl->render_page('index.twig');
     }
 

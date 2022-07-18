@@ -5,15 +5,16 @@ require_once __DIR__.'/../init.php';
 $router = new router;
 
 // modem
-$router->add('modem/status/',         'Modem status_page');
-$router->add('modem/status/get.ajax', 'Modem status_get_ajax');
+$router->add('modem/',         'Modem status_page');
+$router->add('modem/verbose/', 'Modem verbose_page');
+$router->add('modem/get.ajax', 'Modem status_get_ajax');
 
 $router->add('routing/',                   'Modem routing_smallhome_page');
 $router->add('routing/switch-small-home/', 'Modem routing_smallhome_switch');
 $router->add('routing/{ipsets,dhcp}/',     'Modem routing_${1}_page');
 $router->add('routing/ipsets/{add,del}/',  'Modem routing_ipsets_${1}');
 
-$router->add('modem/sms/',     'Modem sms_page');
+$router->add('sms/',     'Modem sms');
 // $router->add('modem/set.ajax', 'Modem ctl_set_ajax');
 
 // inverter

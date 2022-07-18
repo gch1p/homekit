@@ -8,7 +8,8 @@
   <h6 class="text-primary{% if not loop.first %} mt-4{% endif %}">{{ modem.label }}</h6>
   <div id="modem_data_{{ modem_key }}">
     {% include 'modem_data.twig' with {
-      loading: true
+      loading: true,
+      modem: modem_key
     } %}
   </div>
 {% endfor %}

@@ -52,7 +52,7 @@ return [
         'app.css' => 10,
         'app.js' => 4,
         'polyfills.js' => 1,
-        'modem.js' => 1,
+        'modem.js' => 2,
         'inverter.js' => 2,
     ],
 

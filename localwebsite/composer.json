@@ -9,7 +9,8 @@
         "ext-curl": "*",
         "ext-json": "*",
         "ext-gmp": "*",
-        "ext-sqlite3": "*"
+        "ext-sqlite3": "*",
+        "giggsey/libphonenumber-for-php": "^8.12"
     },
     "license": "MIT"
 }

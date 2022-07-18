@@ -1,0 +1,15 @@
+{% include 'bc.twig' with {
+  history: [
+    {link: '/modem/', text: "Модемы" },
+    {text: modem_name}
+  ]
+} %}
+
+{% for item in data %}
+  {% set item_name = item[0] %}
+  {% set item_data = item[1] %}
+  <h6 class="text-primary mt-4">{{ item_name }}</h6>
+  {% for k, v in item_data %}
+    {{ k }} = {{ v }}<br>
+  {% endfor %}
+{% endfor %}

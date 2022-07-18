@@ -7,14 +7,50 @@
 <nav>
   <div class="nav nav-tabs" id="nav-tab">
     {% for modem in modems_list %}
-      {% if selected_modem != modem %}<a href="/modem/sms/?modem={{ modem }}" class="text-decoration-none">{% endif %}
+      {% if selected_modem != modem %}<a href="/sms/?modem={{ modem }}" class="text-decoration-none">{% endif %}
       <button class="nav-link{% if modem == selected_modem %} active{% endif %}" type="button">{{ modems[modem].short_label }}</button>
       {% if selected_modem != modem %}</a>{% endif %}
     {% endfor %}
   </div>
 </nav>
 
-<h6 class="text-primary mt-4">Последние входящие</h6>
+<h6 class="text-primary mt-4">Отправить SMS</h6>
+
+{% if is_sent %}
+  <div class="alert alert-success" role="alert">
+    Сообщение отправлено.
+  </div>
+{% elseif error %}
+  <div class="alert alert-danger" role="alert">
+    {{ error }}
+  </div>
+{% endif %}
+
+<div>
+  <form method="post" action="/sms/">
+    <input type="hidden" name="modem" value="{{ selected_modem }}">
+    <div class="form-floating mb-3">
+      <input type="text" name="phone" class="form-control" id="inputPhone" placeholder="+7911xxxyyzz">
+      <label for="inputPhone">Телефон</label>
+    </div>
+    <div class="form-floating">
+      <textarea class="form-control" id="inputTA" name="text" placeholder="Hello world" style="height: 100px"></textarea>
+      <label for="inputTA">Текст сообщения</label>
+    </div>
+    <div class="mt-3">
+      <button type="submit" class="btn btn-primary">Отправить</button>
+    </div>
+  </form>
+</div>
+
+<h6 class="text-primary mt-4">
+  Последние
+  {% if not is_outbox %}
+    <b>входящие</b> <span class="text-black-50">|</span> <a href="/sms/?modem={{ selected_modem }}&amp;outbox=1">исходящие</a>
+  {% else %}
+    <a href="/sms/?modem={{ selected_modem }}">входящие</a> <span class="text-black-50">|</span> <b>исходящие</b>
+  {% endif %}
+</h6>
 
 {% for m in messages %}
   <div class="mt-3">

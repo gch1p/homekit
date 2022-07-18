@@ -17,7 +17,7 @@ function ModemStatusUpdater(id) {
 }
 extend(ModemStatusUpdater.prototype, {
     fetch: function() {
-        ajax.get('/modem/status/get.ajax', {
+        ajax.get('/modem/get.ajax', {
             id: this.id
         }).then(({response}) => {
             var {html} = response;

@@ -104,13 +104,6 @@ class E3372
         $this->useLegacyTokenAuth = $legacy_token_auth;
     }
 
-    public function __call(string $name, array $arguments) {
-        if (startsWith($name, 'get'))
-            $this->auth();
-
-        return call_user_func_array([$this, $name], $arguments);
-    }
-
     public function auth() {
         if ($this->authorized)
             return;
@@ -132,45 +125,65 @@ class E3372
         $this->authorized = true;
     }
 
-
-    // get* methods have to be protected for __call magic to work
-
-    protected function getDeviceInformation() {
+    public function getDeviceInformation() {
+        $this->auth();
         return $this->request('device/information');
     }
 
-    protected function getDeviceSignal() {
+    public function getDeviceSignal() {
+        $this->auth();
         return $this->request('device/signal');
     }
 
-    protected function getMonitoringStatus() {
+    public function getMonitoringStatus() {
+        $this->auth();
         return $this->request('monitoring/status');
     }
 
-    protected function getNotifications() {
+    public function getNotifications() {
+        $this->auth();
         return $this->request('monitoring/check-notifications');
     }
 
-    protected function getDialupConnection() {
+    public function getDialupConnection() {
+        $this->auth();
         return $this->request('dialup/connection');
     }
 
-    protected function getTrafficStats() {
+    public function getTrafficStats() {
+        $this->auth();
         return $this->request('monitoring/traffic-statistics');
     }
 
-    protected function getSMSCount() {
+    public function getSMSCount() {
+        $this->auth();
         return $this->request('sms/sms-count');
     }
 
-    protected function getSMSList($page = 1, $count = 20) {
+    public function sendSMS(string $phone, string $text) {
+        $this->auth();
+        return $this->request('sms/send-sms', 'POST', [
+            'Index' => -1,
+            'Phones' => [
+                'Phone' => $phone
+            ],
+            'Sca' => '',
+            'Content' => $text,
+            'Length' => -1,
+            'Reserved' => 1,
+            'Date' => -1
+        ]);
+    }
+
+    public function getSMSList(int $page = 1, int $count = 20, bool $outbox = false) {
+        $this->auth();
         $xml = $this->request('sms/sms-list', 'POST', [
             'PageIndex' => $page,
             'ReadCount' => $count,
-            'BoxType' => 1,
+            'BoxType' => !$outbox ? 1 : 2,
             'SortType' => 0,
             'Ascending' => 0,
-            'UnreadPreferred' => 1
+            'UnreadPreferred' => !$outbox ? 1 : 0
         ], true);
         $xml = simplexml_load_string($xml);
 
@@ -205,8 +218,12 @@ class E3372
             curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
         if ($http_method == 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);
+
+            $post_data = $this->postDataToXML($data);
+            // debugLog('post_data:', $post_data);
+
             if (!empty($data))
-                curl_setopt($ch, CURLOPT_POSTFIELDS, $this->postDataToXML($data));
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
         }
         $body = curl_exec($ch);
 
@@ -218,7 +235,7 @@ class E3372
         return $return_body ? $body : $this->xmlToAssoc($body);
     }
 
-    private function postDataToXML(array $data, int $depth = 1) {
+    private function postDataToXML(array $data, int $depth = 1): string {
         if ($depth == 1)
             return '<?xml version: "1.0" encoding="UTF-8"?>'.$this->postDataToXML(['request' => $data], $depth+1);
 

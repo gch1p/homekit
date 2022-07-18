@@ -200,25 +200,29 @@ class ModemHandler extends RequestHandler
         };
 
         $phone = preg_replace('/\s+/', '', $phone);
-        $country = null;
-        if (!startsWith($phone, '+'))
-            $country = 'RU';
 
-        $phoneUtil = PhoneNumberUtil::getInstance();
-        try {
-            $number = $phoneUtil->parse($phone, $country);
-        } catch (NumberParseException $e) {
-            debugError(__METHOD__.': failed to parse number '.$phone.': '.$e->getMessage());
-            $go_back('Неверный номер ('.$e->getMessage().')');
-            return;
+        // при отправке смс на короткие номера не надо использовать libphonenumber и вот это вот всё
+        if (strlen($phone) > 4) {
+            $country = null;
+            if (!startsWith($phone, '+'))
+                $country = 'RU';
+
+            $phoneUtil = PhoneNumberUtil::getInstance();
+            try {
+                $number = $phoneUtil->parse($phone, $country);
+            } catch (NumberParseException $e) {
+                debugError(__METHOD__.': failed to parse number '.$phone.': '.$e->getMessage());
+                $go_back('Неверный номер ('.$e->getMessage().')');
+                return;
+            }
+
+            if (!$phoneUtil->isValidNumber($number)) {
+                $go_back('Неверный номер');
+                return;
+            }
+
+            $phone = $phoneUtil->format($number, PhoneNumberFormat::E164);
         }
-
-        if (!$phoneUtil->isValidNumber($number)) {
-            $go_back('Неверный номер');
-            return;
-        }
-
-        $phone = $phoneUtil->format($number, PhoneNumberFormat::E164);
 
         $cfg = $config['modems'][$selected];
         $e3372 = new E3372($cfg['ip'], $cfg['legacy_token_auth']);

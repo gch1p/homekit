@@ -120,6 +120,8 @@ window.Cameras = {
 
             video.autoplay = true;
             video.muted = true;
+            video.playsInline = true;
+            video.autoplay = true;
             if (window.browserInfo.ios)
                 video.setAttribute('controls', 'controls');
 

@@ -349,12 +349,11 @@ class InverterMonitor(Thread):
         logger.info(f'charging is finished, entering {reason} state')
         self.charging_event_handler(event)
 
-        # Let Mr. Proper do his job
-        if self.active_current_idx != -1:
-            self.next_current_enter_time = 0
-            self.mostly_charged = False
-            self.active_current_idx = -1
-            self.floating_stopwatch.reset()
+        self.next_current_enter_time = 0
+        self.mostly_charged = False
+        self.active_current_idx = -1
+        self.floating_stopwatch.reset()
+        self.current_change_direction = CurrentChangeDirection.UP
 
     def gen_next_current(self, current=None):
         if current is None:

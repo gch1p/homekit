@@ -52,7 +52,9 @@ class MiscHandler extends RequestHandler
     public function GET_cams() {
         global $config;
 
-        list($hls_debug, $video_events) = $this->input('b:hls_debug, b:video_events');
+        list($hls_debug, $video_events, $high) = $this->input('b:hls_debug, b:video_events, b:high');
+
+        $tab = $high ? 'high' : 'low';
 
         $hls_opts = [
             'startPosition' => -1,
@@ -82,7 +84,8 @@ class MiscHandler extends RequestHandler
             'hls_opts' => $hls_opts,
             'hls_access_key' => $config['cam_hls_access_key'],
 
-            'cams' => $config['cam_list'],
+            'cams' => $config['cam_list'][$tab],
+            'tab' => $tab,
             'video_events' => $video_events
         ]);
         $this->tpl->set_title('Камеры');

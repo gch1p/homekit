@@ -4,6 +4,13 @@
     ]
 } %}
 
+<nav>
+    <div class="nav nav-tabs" id="nav-tab">
+        <a href="/cams/" class="text-decoration-none"><button class="nav-link{% if tab == 'low' %} active{% endif %}" type="button">Low-res</button></a>
+        <a href="/cams/?high=1" class="text-decoration-none"><button class="nav-link{% if tab == 'high' %} active{% endif %}" type="button">High-res</button></a>
+    </div>
+</nav>
+
 <div id="videos" class="camfeeds"></div>
 
 {% js %}

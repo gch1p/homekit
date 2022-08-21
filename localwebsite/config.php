@@ -60,7 +60,12 @@ return [
     'cam_hls_proto' => 'http', // bool|callable
     'cam_hls_host' => '192.168.1.1', // bool|callable
     'cam_list' => [
-        // fill me with names
+        'low' => [
+            // fill me with names
+        ],
+        'high' => [
+            // fill me with names
+        ],
     ],
 
     'vk_sms_checker' => [

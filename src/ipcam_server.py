@@ -14,7 +14,7 @@ from home.database.sqlite import SQLiteBase
 from home.camera import util as camutil
 
 from enum import Enum
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Tuple
 from datetime import datetime, timedelta
 
 

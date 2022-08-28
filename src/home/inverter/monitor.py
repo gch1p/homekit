@@ -271,7 +271,7 @@ class InverterMonitor(Thread):
 
                     if self.next_current_enter_time != 0 and pd != BatteryPowerDirection.CHARGING:
                         # Generator was warming up and charging, but stopped (pd has changed).
-                        # Resetting to the minimum possible pd
+                        # Resetting to the minimum possible current
                         logger.info(f'gen_charging_program (warming path): was charging but power direction suddeny changed. resetting to minimum current')
                         self.next_current_enter_time = 0
                         self.gen_next_current(current=self.min_allowed_current)
@@ -354,6 +354,8 @@ class InverterMonitor(Thread):
         self.active_current_idx = -1
         self.floating_stopwatch.reset()
         self.current_change_direction = CurrentChangeDirection.UP
+
+        self.set_hw_charging_current(self.min_allowed_current)
 
     def gen_next_current(self, current=None):
         if current is None:

@@ -35,7 +35,7 @@ languages = {
     'en': 'English',
     'ru': 'Русский'
 }
-LANG_STARTED = range(1)
+LANG_STARTED, = range(1)
 user_filter: Optional[BaseFilter] = None
 
 
@@ -47,7 +47,7 @@ def default_langpack() -> LangPack:
         cancel="Cancel",
         select_language="Select language on the keyboard.",
         invalid_language="Invalid language. Please try again.",
-        language_saved='Saved.',
+        saved='Saved.',
     )
     lang.ru(
         start_message="Выберите команду на клавиатуре.",
@@ -55,7 +55,7 @@ def default_langpack() -> LangPack:
         cancel="Отмена",
         select_language="Выберите язык на клавиатуре.",
         invalid_language="Неверный язык. Пожалуйста, попробуйте снова",
-        language_saved="Настройки сохранены."
+        saved="Настройки сохранены."
     )
     return lang
 
@@ -183,11 +183,12 @@ class Wrapper:
     lang: LangPack
     reporting: Optional[ReportingHelper]
 
-    def __init__(self):
+    def __init__(self,
+                 store: Optional[Store] = None):
         self.updater = Updater(config['bot']['token'],
                                request_kwargs={'read_timeout': 6, 'connect_timeout': 7})
         self.lang = default_langpack()
-        self.store = Store()
+        self.store = store if store else Store()
         self.reporting = None
 
         init_user_filter()
@@ -346,11 +347,11 @@ class Wrapper:
                 break
 
         if lang is None:
-            ValueError('could not find the language')
+            raise ValueError('could not find the language')
 
         self.store.set_user_lang(ctx.user_id, lang)
 
-        ctx.reply(ctx.lang('language_saved'), markup=IgnoreMarkup())
+        ctx.reply(ctx.lang('saved'), markup=IgnoreMarkup())
 
         self.start(ctx)
         return ConversationHandler.END

@@ -47,6 +47,11 @@ class BatteryState(Enum):
     CRITICAL = auto()
 
 
+class ACMode(Enum):
+    GENERATOR = 'generator'
+    UTILITIES = 'utilities'
+
+
 def _pd_from_string(pd: str) -> BatteryPowerDirection:
     if pd == 'Discharge':
         return BatteryPowerDirection.DISCHARGING
@@ -72,7 +77,6 @@ TODO:
 - поддержать возможность бесшовного перезапуска бота, когда монитор понимает, что зарядка уже идет, и он
   не запускает программу с начала, а продолжает с уже существующей позиции. Уведомления при этом можно не
   присылать совсем, либо прислать какое-то одно приложение, в духе "программа была перезапущена"
-- баг: при отключении генератора бот не присылает никаких уведомлений, а должен
 """
 
 
@@ -87,6 +91,7 @@ class InverterMonitor(Thread):
 
         self.interrupted = False
         self.min_allowed_current = 0
+        self.ac_mode = None
 
         # Event handlers for the bot.
         self.charging_event_handler = None
@@ -152,7 +157,8 @@ class InverterMonitor(Thread):
 
                     logger.debug(f'got status: ac={ac}, solar={solar}, v={v}, pd={pd}')
 
-                    self.gen_charging_program(ac, solar, v, pd)
+                    if self.ac_mode == ACMode.GENERATOR:
+                        self.gen_charging_program(ac, solar, v, pd)
 
                     if not ac or pd != BatteryPowerDirection.CHARGING:
                         # if AC is disconnected or not charging, run the low voltage checking program
@@ -439,6 +445,9 @@ class InverterMonitor(Thread):
 
     def set_error_handler(self, handler: Callable):
         self.error_handler = handler
+
+    def set_ac_mode(self, mode: ACMode):
+        self.ac_mode = mode
 
     def stop(self):
         self.interrupted = True

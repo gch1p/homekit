@@ -14,6 +14,14 @@ notify_users = [ 1, 2 ]
 host = "127.0.0.1"
 port = 8305
 
+[ac_mode.generator]
+thresholds = [51, 58]
+initial_current = 2
+
+[ac_mode.utilities]
+thresholds = [48, 54]
+initial_current = 40
+
 [monitor]
 vlow = 47
 vcrit = 45
@@ -71,6 +79,7 @@ calcwadv - Advanced watts usage calculator
 setbatuv - Set battery under voltage
 setgencc - Set AC charging current
 setgenct - Set AC charging thresholds
+setacmode - Set AC input mode
 monstatus - Monitor: dump state
 monsetcur - Monitor: set charging currents
 ```

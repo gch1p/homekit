@@ -6,9 +6,16 @@ import json
 
 from inverterd import Format, InverterError
 from html import escape
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 from home.config import config
-from home.bot import Wrapper, Context, text_filter, command_usage
+from home.bot import (
+    Wrapper,
+    Context,
+    text_filter,
+    command_usage,
+    Store,
+    IgnoreMarkup
+)
 from home.inverter import (
     wrapper_instance as inverter,
     beautify_table,
@@ -16,10 +23,17 @@ from home.inverter import (
     InverterMonitor,
     ChargingEvent,
     BatteryState,
+    ACMode
 )
 from home.api.types import BotType
 from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import MessageHandler, CommandHandler, CallbackQueryHandler
+from telegram.ext import (
+    MessageHandler,
+    CommandHandler,
+    CallbackQueryHandler,
+    ConversationHandler,
+    Filters
+)
 
 monitor: Optional[InverterMonitor] = None
 bot: Optional[Wrapper] = None
@@ -225,6 +239,76 @@ def setgenct(ctx: Context) -> None:
         }, language=ctx.user_lang))
 
 
+SETACMODE_STARTED, = range(1)
+
+
+def setacmode(mode: ACMode):
+    monitor.set_ac_mode(mode)
+
+    cv, dv = config['ac_mode'][str(mode.value)]['thresholds']
+    a = config['ac_mode'][str(mode.value)]['initial_current']
+
+    logger.debug(f'setacmode: mode={mode}, cv={cv}, dv={dv}, a={a}')
+
+    inverter.exec('set-charging-thresholds', (cv, dv))
+    inverter.exec('set-max-ac-charging-current', (0, a))
+
+
+def setacmode_start(ctx: Context) -> None:
+    if monitor.active_current is not None:
+        raise RuntimeError('generator charging program is active')
+
+    buttons = []
+    for mode in ACMode:
+        buttons.append(ctx.lang(str(mode.value)))
+    markup = ReplyKeyboardMarkup([buttons, [ctx.lang('cancel')]], one_time_keyboard=False)
+
+    ctx.reply(ctx.lang('select_ac_mode'), markup=markup)
+    return SETACMODE_STARTED
+
+
+def setacmode_input(ctx: Context):
+    if monitor.active_current is not None:
+        raise RuntimeError('generator charging program is active')
+
+    if ctx.text == ctx.lang('utilities'):
+        newmode = ACMode.UTILITIES
+    elif ctx.text == ctx.lang('generator'):
+        newmode = ACMode.GENERATOR
+    else:
+        raise ValueError('invalid mode')
+
+    # apply the mode
+    setacmode(newmode)
+
+    # save
+    db.set_param('ac_mode', str(newmode.value))
+
+    # reply to user
+    ctx.reply(ctx.lang('saved'), markup=IgnoreMarkup())
+
+    # notify other users
+    bot.notify_all(
+        lambda lang: bot.lang.get('ac_mode_changed_notification', lang,
+                                  ctx.user.id, ctx.user.name,
+                                  bot.lang.get(str(newmode.value), lang)),
+        exclude=(ctx.user_id,)
+    )
+
+    bot.start(ctx)
+    return ConversationHandler.END
+
+
+def setacmode_invalid(ctx: Context):
+    ctx.reply(ctx.lang('invalid_mode'), markup=IgnoreMarkup())
+    return SETACMODE_STARTED
+
+
+def setacmode_cancel(ctx: Context):
+    bot.start(ctx)
+    return ConversationHandler.END
+
+
 def setbatuv(ctx: Context) -> None:
     try:
         v = float(ctx.args[0])
@@ -297,8 +381,8 @@ def button_callback(ctx: Context) -> None:
 
 
 class InverterBot(Wrapper):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.lang.ru(
             status='Статус',
@@ -306,8 +390,11 @@ class InverterBot(Wrapper):
             battery="АКБ",
             load="Нагрузка",
             generator="Генератор",
+            utilities="Столб",
             done="Готово",
             unexpected_callback_data="Ошибка: неверные данные",
+            select_ac_mode="Выберите режим:",
+            invalid_input="Неверное значение",
 
             flags_press_button='Нажмите кнопку для переключения настройки',
             flags_fail='Не удалось установить настройку',
@@ -352,6 +439,9 @@ class InverterBot(Wrapper):
             battery_level_changed='Уровень заряда АКБ: <b>%s %s</b> (<b>%0.1f V</b> при нагрузке <b>%d W</b>)',
             error_message='<b>Ошибка:</b> %s.',
 
+            # other notifications
+            ac_mode_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> установил режим A/C: <b>%s</b>.',
+
             bat_state_normal='Нормальный',
             bat_state_low='Низкий',
             bat_state_critical='Критический',
@@ -363,8 +453,11 @@ class InverterBot(Wrapper):
             battery="Battery",
             load="Load",
             generator="Generator",
+            utilities="Utilities",
             done="Done",
             unexpected_callback_data="Unexpected callback data",
+            select_ac_mode="Select AC input mode:",
+            invalid_input="Invalid input",
 
             flags_press_button='Press a button to toggle a flag.',
             flags_fail='Failed to toggle flag',
@@ -409,6 +502,9 @@ class InverterBot(Wrapper):
             battery_level_changed='Battery level: <b>%s</b> (<b>%0.1f V</b> under <b>%d W</b> load)',
             error_message='<b>Error:</b> %s.',
 
+            # other notifications
+            ac_mode_changed_notification='User <a href="tg://user?id=%d">%s</a> set A/C mode to <b>%s</b>.',
+
             bat_state_normal='Normal',
             bat_state_low='Low',
             bat_state_critical='Critical',
@@ -432,6 +528,22 @@ class InverterBot(Wrapper):
 
         self.add_handler(CallbackQueryHandler(self.wrap(button_callback)))
 
+    def run(self):
+        cancel_filter = Filters.text(self.lang.all('cancel'))
+
+        self.add_handler(ConversationHandler(
+            entry_points=[CommandHandler('setacmode', self.wrap(setacmode_start), self.user_filter)],
+            states={
+                SETACMODE_STARTED: [
+                    *[MessageHandler(text_filter(self.lang.all(mode.value)), self.wrap(setacmode_input)) for mode in ACMode],
+                    MessageHandler(self.user_filter & ~cancel_filter, self.wrap(setacmode_invalid))
+                ]
+            },
+            fallbacks=[MessageHandler(self.user_filter & cancel_filter, self.wrap(setacmode_cancel))]
+        ))
+
+        super().run()
+
     def markup(self, ctx: Optional[Context]) -> Optional[ReplyKeyboardMarkup]:
         button = [
             [ctx.lang('status'), ctx.lang('generation')]
@@ -449,10 +561,43 @@ class InverterBot(Wrapper):
             return True
 
 
+class InverterStore(Store):
+    SCHEMA = 2
+
+    def schema_init(self, version: int) -> None:
+        super().schema_init(version)
+
+        if version < 2:
+            cursor = self.cursor()
+            cursor.execute("""CREATE TABLE IF NOT EXISTS params (
+                id TEXT NOT NULL PRIMARY KEY,
+                value TEXT NOT NULL
+            )""")
+            cursor.execute("CREATE INDEX param_id_idx ON params (id)")
+            self.commit()
+
+    def get_param(self, key: str, default=None):
+        cursor = self.cursor()
+        cursor.execute('SELECT value FROM params WHERE id=?', (key,))
+        row = cursor.fetchone()
+
+        return default if row is None else row[0]
+
+    def set_param(self, key: str, value: Union[str, int, float]):
+        cursor = self.cursor()
+        cursor.execute('REPLACE INTO params (id, value) VALUES (?, ?)', (key, str(value)))
+        self.commit()
+
+
+db: Optional[InverterStore] = None
+
+
 if __name__ == '__main__':
     config.load('inverter_bot')
 
     inverter.init(host=config['inverter']['ip'], port=config['inverter']['port'])
+
+    db = InverterStore()
 
     monitor = InverterMonitor()
     monitor.set_charging_event_handler(monitor_charging)
@@ -460,7 +605,9 @@ if __name__ == '__main__':
     monitor.set_error_handler(monitor_error)
     monitor.start()
 
-    bot = InverterBot()
+    setacmode(ACMode(db.get_param('ac_mode', default=ACMode.GENERATOR)))
+
+    bot = InverterBot(store=db)
     bot.enable_logging(BotType.INVERTER)
     bot.run()
 

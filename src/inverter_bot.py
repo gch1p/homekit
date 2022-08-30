@@ -37,6 +37,7 @@ from telegram.ext import (
 
 monitor: Optional[InverterMonitor] = None
 bot: Optional[Wrapper] = None
+db = None
 LT = escape('<=')
 flags_map = {
     'buzzer': 'BUZZ',
@@ -49,6 +50,7 @@ flags_map = {
     'fault_code_record': 'FTCR',
 }
 logger = logging.getLogger(__name__)
+SETACMODE_STARTED, = range(1)
 
 
 def monitor_charging(event: ChargingEvent, **kwargs) -> None:
@@ -162,7 +164,8 @@ def status(ctx: Context) -> None:
         html += f'\n<b>{ctx.lang("gen_input_power")}:</b> %s %s' % (gs['pv1_input_power']['value'], gs['pv1_input_power']['unit'])
 
     if gs['grid_voltage']['value'] > 0 or gs['grid_freq']['value'] > 0:
-        html += f'\n<b>{ctx.lang("generator")}:</b> %s %s' % (gs['grid_voltage']['unit'], gs['grid_voltage']['value'])
+        ac_mode = getacmode()
+        html += f'\n<b>{ctx.lang(ac_mode.value)}:</b> %s %s' % (gs['grid_voltage']['unit'], gs['grid_voltage']['value'])
         html += ', %s %s' % (gs['grid_freq']['value'], gs['grid_freq']['unit'])
 
     # send response
@@ -239,7 +242,8 @@ def setgenct(ctx: Context) -> None:
         }, language=ctx.user_lang))
 
 
-SETACMODE_STARTED, = range(1)
+def getacmode() -> ACMode:
+    return ACMode(db.get_param('ac_mode', default=ACMode.GENERATOR))
 
 
 def setacmode(mode: ACMode):
@@ -589,13 +593,10 @@ class InverterStore(Store):
         self.commit()
 
 
-db: Optional[InverterStore] = None
-
-
 if __name__ == '__main__':
     config.load('inverter_bot')
 
-    inverter.init(host=config['inverter']['ip'], port=config['inverter']['port'])
+    inverter.init(host=config['inverter']['ip'],port=config['inverter']['port'])
 
     db = InverterStore()
 
@@ -605,7 +606,7 @@ if __name__ == '__main__':
     monitor.set_error_handler(monitor_error)
     monitor.start()
 
-    setacmode(ACMode(db.get_param('ac_mode', default=ACMode.GENERATOR)))
+    setacmode(getacmode())
 
     bot = InverterBot(store=db)
     bot.enable_logging(BotType.INVERTER)

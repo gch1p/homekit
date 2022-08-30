@@ -596,7 +596,7 @@ class InverterStore(Store):
 if __name__ == '__main__':
     config.load('inverter_bot')
 
-    inverter.init(host=config['inverter']['ip'],port=config['inverter']['port'])
+    inverter.init(host=config['inverter']['ip'], port=config['inverter']['port'])
 
     db = InverterStore()
 

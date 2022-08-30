@@ -465,4 +465,5 @@ class InverterMonitor(Thread):
             'floating_stopwatch_elapsed': self.floating_stopwatch.get_elapsed_time(),
             'time_now': time.time(),
             'next_current_enter_time': self.next_current_enter_time,
+            'ac_mode': self.ac_mode
         }

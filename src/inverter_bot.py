@@ -444,7 +444,7 @@ class InverterBot(Wrapper):
             error_message='<b>Ошибка:</b> %s.',
 
             # other notifications
-            ac_mode_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> установил режим A/C: <b>%s</b>.',
+            ac_mode_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> установил режим AC: <b>%s</b>.',
 
             bat_state_normal='Нормальный',
             bat_state_low='Низкий',
@@ -507,7 +507,7 @@ class InverterBot(Wrapper):
             error_message='<b>Error:</b> %s.',
 
             # other notifications
-            ac_mode_changed_notification='User <a href="tg://user?id=%d">%s</a> set A/C mode to <b>%s</b>.',
+            ac_mode_changed_notification='User <a href="tg://user?id=%d">%s</a> set AC mode to <b>%s</b>.',
 
             bat_state_normal='Normal',
             bat_state_low='Low',

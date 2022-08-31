@@ -69,7 +69,7 @@ class InverterHandler extends RequestHandler
                 $status['pv1_input_power']['unit']);
 
         if ($status['grid_voltage']['value'] > 0 or $status['grid_freq']['value'] > 0) {
-            $html .= "\n".sprintf('<b>A/C input:</b> %s %s',
+            $html .= "\n".sprintf('<b>AC input:</b> %s %s',
                 $status['grid_voltage']['value'],
                 $status['grid_voltage']['unit']);
             $html .= sprintf(', %s %s',

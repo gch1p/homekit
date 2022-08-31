@@ -218,8 +218,9 @@ class InverterMonitor(Thread):
                 except StopwatchError:
                     msg = 'gen_charging_program: floating_stopwatch.pause() failed at (1)'
                     logger.warning(msg)
-                    self.error_handler(msg)
+                    # self.error_handler(msg)
                 logger.info('solar power connected during charging, entering AC_BUT_SOLAR state')
+                return
 
             # No surprises at this point, just check the values and make decisions based on them.
             # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

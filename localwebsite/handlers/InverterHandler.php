@@ -40,12 +40,12 @@ class InverterHandler extends RequestHandler
         $charging_rate = '';
         if ($power_direction == 'charging')
             $charging_rate = sprintf(' @ %s %s',
-                $status['battery_charging_current']['value'],
-                $status['battery_charging_current']['unit']);
+                $status['battery_charge_current']['value'],
+                $status['battery_charge_current']['unit']);
         else if ($power_direction == 'discharging')
             $charging_rate = sprintf(' @ %s %s',
-                $status['battery_discharging_current']['value'],
-                $status['battery_discharging_current']['unit']);
+                $status['battery_discharge_current']['value'],
+                $status['battery_discharge_current']['unit']);
 
         $html = sprintf('<b>Battery:</b> %s %s',
             $status['battery_voltage']['value'],

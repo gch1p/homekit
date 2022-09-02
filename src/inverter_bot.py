@@ -145,11 +145,11 @@ def status(ctx: Context) -> None:
 
     if power_direction == 'charging':
         charging_rate = f'{chrg_at}%s %s' % (
-            gs['battery_charging_current']['value'], gs['battery_charging_current']['unit'])
+            gs['battery_charge_current']['value'], gs['battery_charge_current']['unit'])
         pd_label = ctx.lang('pd_charging')
     elif power_direction == 'discharging':
         charging_rate = f'{chrg_at}%s %s' % (
-            gs['battery_discharging_current']['value'], gs['battery_discharging_current']['unit'])
+            gs['battery_discharge_current']['value'], gs['battery_discharge_current']['unit'])
         pd_label = ctx.lang('pd_discharging')
     else:
         pd_label = ctx.lang('pd_nothing')
@@ -206,14 +206,14 @@ def generation(ctx: Context) -> None:
 
 
 def setgencc(ctx: Context) -> None:
-    allowed_values = inverter.exec('get-allowed-ac-charging-currents')['data']
+    allowed_values = inverter.exec('get-allowed-ac-charge-currents')['data']
 
     try:
         current = int(ctx.args[0])
         if current not in allowed_values:
             raise ValueError(f'invalid value {current}')
 
-        response = inverter.exec('set-max-ac-charging-current', (0, current))
+        response = inverter.exec('set-max-ac-charge-current', (0, current))
         ctx.reply('OK' if response['result'] == 'ok' else 'ERROR')
 
         # TODO notify monitor
@@ -230,7 +230,7 @@ def setgenct(ctx: Context) -> None:
         dv = float(ctx.args[1])
 
         if 44 <= cv <= 51 and 48 <= dv <= 58:
-            response = inverter.exec('set-charging-thresholds', (cv, dv))
+            response = inverter.exec('set-charge-thresholds', (cv, dv))
             ctx.reply('OK' if response['result'] == 'ok' else 'ERROR')
         else:
             raise ValueError('invalid values')
@@ -254,8 +254,8 @@ def setacmode(mode: ACMode):
 
     logger.debug(f'setacmode: mode={mode}, cv={cv}, dv={dv}, a={a}')
 
-    inverter.exec('set-charging-thresholds', (cv, dv))
-    inverter.exec('set-max-ac-charging-current', (0, a))
+    inverter.exec('set-charge-thresholds', (cv, dv))
+    inverter.exec('set-max-ac-charge-current', (0, a))
 
 
 def setacmode_start(ctx: Context) -> None:
@@ -318,7 +318,7 @@ def setbatuv(ctx: Context) -> None:
         v = float(ctx.args[0])
 
         if 40.0 <= v <= 48.0:
-            response = inverter.exec('set-battery-cut-off-voltage', (v,))
+            response = inverter.exec('set-battery-cutoff-voltage', (v,))
             ctx.reply('OK' if response['result'] == 'ok' else 'ERROR')
         else:
             raise ValueError('invalid voltage')

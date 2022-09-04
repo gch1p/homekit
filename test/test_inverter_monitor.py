@@ -143,8 +143,8 @@ class InverterEmulator(threading.Thread):
                        "battery_voltage": {"unit": "V", "value": 48.4},
                        "battery_voltage_scc": {"unit": "V", "value": 0.0},
                        "battery_voltage_scc2": {"unit": "V", "value": 0.0},
-                       "battery_discharging_current": {"unit": "A", "value": 0},
-                       "battery_charging_current": {"unit": "A", "value": 0},
+                       "battery_discharge_current": {"unit": "A", "value": 0},
+                       "battery_charge_current": {"unit": "A", "value": 0},
                        "battery_capacity": {"unit": "%", "value": 62},
                        "inverter_heat_sink_temp": {"unit": "°C", "value": 8},
                        "mppt1_charger_temp": {"unit": "°C", "value": 0},
@@ -175,15 +175,15 @@ class InverterEmulator(threading.Thread):
                       "battery_bulk_voltage": {"unit": "V", "value": 57.6},
                       "battery_float_voltage": {"unit": "V", "value": 54.0},
                       "battery_type": "User",
-                      "max_charging_current": {"unit": "A", "value": 60},
-                      "max_ac_charging_current": {"unit": "A", "value": 10},
+                      "max_charge_current": {"unit": "A", "value": 60},
+                      "max_ac_charge_current": {"unit": "A", "value": 10},
                       "input_voltage_range": "Appliance",
                       "output_source_priority": "Parallel output",
                       "charge_source_priority": "Solar-and-Utility",
                       "parallel_max_num": 6,
                       "machine_type": "Off-Grid-Tie",
                       "topology": "Transformer-less",
-                      "output_model_setting": "Single module",
+                      "output_mode": "Single output",
                       "solar_power_priority": "Load-Battery-Utility",
                       "mppt": "2"}
 
@@ -234,13 +234,13 @@ class InverterEmulator(threading.Thread):
                     args = command[1:]
                     command = command[0]
 
-                    if command == 'get-allowed-ac-charging-currents':
+                    if command == 'get-allowed-ac-charge-currents':
                         self.reply_ok(conn, [2, 10, 20, 30, 40, 50, 60])
                     elif command == 'get-status':
                         self.reply_ok(conn, self._get_status())
                     elif command == 'get-rated':
                         self.reply_ok(conn, self._get_rated())
-                    elif command == 'set-max-ac-charging-current':
+                    elif command == 'set-max-ac-charge-current':
                         self.set_ac_current(args[1])
                         self.reply_ok(conn, 1)
                     else:
@@ -307,7 +307,7 @@ class InverterEmulator(threading.Thread):
 
     def set_ac_current(self, amps):
         with self.lock:
-            self.rated['max_ac_charging_current']['value'] = amps
+            self.rated['max_ac_charge_current']['value'] = amps
         charger.current_changed(amps)
 
     def set_pd(self, pd: BatteryPowerDirection):

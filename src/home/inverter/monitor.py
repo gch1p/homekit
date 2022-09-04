@@ -131,7 +131,7 @@ class InverterMonitor(Thread):
 
     def run(self):
         # Check allowed currents and validate the config.
-        allowed_currents = list(inverter.exec('get-allowed-ac-charging-currents')['data'])
+        allowed_currents = list(inverter.exec('get-allowed-ac-charge-currents')['data'])
         allowed_currents.sort()
 
         for a in self.currents:
@@ -397,10 +397,10 @@ class InverterMonitor(Thread):
 
     def set_hw_charging_current(self, current: int):
         try:
-            response = inverter.exec('set-max-ac-charging-current', (0, current))
+            response = inverter.exec('set-max-ac-charge-current', (0, current))
             if response['result'] != 'ok':
                 logger.error(f'failed to change AC charging current to {current} A')
-                raise InverterError('set-max-ac-charging-current: inverterd reported error')
+                raise InverterError('set-max-ac-charge-current: inverterd reported error')
             else:
                 self.charging_event_handler(ChargingEvent.AC_CURRENT_CHANGED, current=current)
                 logger.info(f'changed AC charging current to {current} A')

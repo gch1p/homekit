@@ -18,6 +18,9 @@ def get_temperature_table(sensor: TemperatureSensorLocation) -> str:
     elif sensor == TemperatureSensorLocation.BIG_HOUSE_2:
         return 'temp_roof'
 
+    elif sensor == TemperatureSensorLocation.BIG_HOUSE_ROOM:
+        return 'temp_room'
+
     elif sensor == TemperatureSensorLocation.SPB1:
         return 'temp_spb1'
 

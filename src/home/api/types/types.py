@@ -13,6 +13,7 @@ class BotType(Enum):
 class TemperatureSensorLocation(Enum):
     BIG_HOUSE_1 = auto()
     BIG_HOUSE_2 = auto()
+    BIG_HOUSE_ROOM = auto()
     STREET = auto()
     DIANA = auto()
     SPB1 = auto()

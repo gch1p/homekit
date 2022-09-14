@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import logging
 import os
+import re
 import asyncio
 import time
+import shutil
 import home.telegram.aio as telegram
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -16,6 +18,7 @@ from home.camera import util as camutil
 from enum import Enum
 from typing import Optional, Union, List, Tuple
 from datetime import datetime, timedelta
+from functools import cmp_to_key
 
 
 class TimeFilterType(Enum):
@@ -405,8 +408,75 @@ async def fix_job() -> None:
         fix_job_running = False
 
 
+async def cleanup_job() -> None:
+    def fn2dt(name: str) -> datetime:
+        name = os.path.basename(name)
+
+        if name.startswith('record_'):
+            return datetime.strptime(re.match(r'record_(.*?)\.mp4', name).group(1), datetime_format)
+
+        m = re.match(rf'({datetime_format_re})__{datetime_format_re}\.mp4', name)
+        if m:
+            return datetime.strptime(m.group(1), datetime_format)
+
+        raise ValueError(f'unrecognized filename format: {name}')
+
+    def compare(i1: str, i2: str) -> int:
+        dt1 = fn2dt(i1)
+        dt2 = fn2dt(i2)
+
+        if dt1 < dt2:
+            return -1
+        elif dt1 > dt2:
+            return 1
+        else:
+            return 0
+
+    global cleanup_job_running
+    logger.debug('cleanup_job: starting')
+
+    if cleanup_job_running:
+        logger.error('cleanup_job: already running')
+        return
+
+    try:
+        cleanup_job_running = True
+
+        gb = float(1 << 30)
+        for storage in config['storages']:
+            if os.path.exists(storage['mountpoint']):
+                total, used, free = shutil.disk_usage(storage['mountpoint'])
+                free_gb = free // gb
+                if free_gb < config['cleanup_min_gb']:
+                    # print(f"{storage['mountpoint']}: free={free}, free_gb={free_gb}")
+                    cleaned = 0
+                    files = []
+                    for cam in storage['cams']:
+                        for _dir in (config['camera'][cam]['recordings_path'], config['camera'][cam]['motion_path']):
+                            files += list(map(lambda file: os.path.join(_dir, file), os.listdir(_dir)))
+                        files = list(filter(lambda path: os.path.isfile(path) and path.endswith('.mp4'), files))
+                        files.sort(key=cmp_to_key(compare))
+
+                    for file in files:
+                        size = os.stat(file).st_size
+                        try:
+                            os.unlink(file)
+                            cleaned += size
+                        except OSError as e:
+                            logger.exception(e)
+                        if (free + cleaned) // gb >= config['cleanup_min_gb']:
+                            break
+            else:
+                logger.error(f"cleanup_job: {storage['mountpoint']} not found")
+    finally:
+        cleanup_job_running = False
+
+
 fix_job_running = False
+cleanup_job_running = False
+
 datetime_format = '%Y-%m-%d-%H.%M.%S'
+datetime_format_re = r'\d{4}-\d{2}-\d{2}-\d{2}\.\d{2}.\d{2}'
 db: Optional[IPCamServerDatabase] = None
 server: Optional[IPCamWebServer] = None
 logger = logging.getLogger(__name__)
@@ -426,6 +496,7 @@ if __name__ == '__main__':
         if config['fix_enabled']:
             scheduler = AsyncIOScheduler(event_loop=loop)
             scheduler.add_job(fix_job, 'interval', seconds=config['fix_interval'])
+            scheduler.add_job(cleanup_job, 'interval', seconds=config['cleanup_interval'])
             scheduler.start()
     except KeyError:
         pass

@@ -5,7 +5,7 @@ from datetime import datetime
 from home.config import config
 from home.database import SimpleState
 from home.api import WebAPIClient
-from typing import Tuple
+from typing import Tuple, List
 
 log_file = '/var/log/openwrt.log'
 

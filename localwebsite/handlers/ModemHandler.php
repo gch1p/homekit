@@ -146,7 +146,12 @@ class ModemHandler extends RequestHandler
     }
 
     public function GET_routing_dhcp_page() {
+        $overrides = config::get('dhcp_hostname_overrides');
         $leases = MyOpenWrtUtils::getDHCPLeases();
+        foreach ($leases as &$lease) {
+            if ($lease['hostname'] == '?' && array_key_exists($lease['mac'], $overrides))
+                $lease['hostname'] = $overrides[$lease['mac']];
+        }
         $this->tpl->set([
             'leases' => $leases
         ]);

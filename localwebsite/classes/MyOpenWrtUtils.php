@@ -119,7 +119,7 @@ class MyOpenWrtUtils {
         $ip = array_shift($words);
         array_pop($words);
         $hostname = trim(implode(' ', $words));
-        if (!$hostname)
+        if (!$hostname || $hostname == '*')
             $hostname = '?';
         return [
             'time' => $time,

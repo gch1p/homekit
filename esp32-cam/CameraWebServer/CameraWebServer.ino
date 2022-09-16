@@ -35,11 +35,22 @@
 // ===========================
 #include "wifi_password.h"
 
+volatile float disconnected_since = 0;
+
 void startCameraServer();
+
+void onWiFiDisconnect(WiFiEvent_t event, WiFiEventInfo_t info) {
+  disconnected_since = millis();
+  WiFi.reconnect();
+}
+
+void onWiFiConnect(WiFiEvent_t event, WiFiEventInfo_t info) {
+  disconnected_since = 0;
+}
 
 void setup() {
   Serial.begin(115200);
-  Serial.setDebugOutput(true);
+  //Serial.setDebugOutput(true);
   Serial.println();
 
   camera_config_t config;
@@ -123,6 +134,9 @@ void setup() {
   s->set_vflip(s, 1);
 #endif
 
+  WiFi.onEvent(onWiFiDisconnect, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+  WiFi.onEvent(onWiFiConnect, ARDUINO_EVENT_WIFI_STA_CONNECTED);
+
   WiFi.begin(ssid, password);
   WiFi.setSleep(false);
 
@@ -141,6 +155,11 @@ void setup() {
 }
 
 void loop() {
+  if (disconnected_since != 0 && (millis() - disconnected_since) > 60000) {
+    ESP.restart();
+    return;
+  }
+  
   // Do nothing. Everything is done in another task by the web server
   delay(10000);
 }

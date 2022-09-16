@@ -21,6 +21,9 @@ $ModLoad imudp
 $UDPServerRun 514  
 :fromhost-ip, isequal, "192.168.1.1" /var/log/openwrt.log  
 & ~
+
+Also comment out the following line: 
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
  
 """
 

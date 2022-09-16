@@ -1,3 +1,4 @@
+
 # ipcam_server.py
 
 ## Configuration
@@ -19,6 +20,14 @@ camera:
     recordings_path: "/data3/cam-3"
     motion_path: "/data3/cam-3/motion"
 
+storages:
+  - mountpoint: "/data1"
+    cams: [1]
+  - mountpoint: "/data2"
+    cams: [2]
+  - mountpoint: "/data3"
+    cams: [3]
+
 motion:
   padding: 2
   telegram: true
@@ -30,6 +39,19 @@ telegram:
   token: ""
   chat_id: ""
   parse_mode: HTML
+
+  fragment_url_templates:
+    - ["example", "https://example.ru/cam-{camera}/motion/{file}"]
+
+  original_file_url_templates:
+    - ["example", "https://example.ru/cam-{camera}/{file}"]
+
+fix_interval: 600
+fix_enabled: true
+
+cleanup_min_gb: 200
+cleanup_interval: 86400
+
 ```
 
 ## Usage

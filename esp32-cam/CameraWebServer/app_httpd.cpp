@@ -1150,7 +1150,7 @@ static esp_err_t win_handler(httpd_req_t *req)
 static esp_err_t uptime_handler(httpd_req_t *req)
 {
     char buf[64];
-    sprintf(buf, "{\"millis\":%d}", (int)millis());
+    sprintf(buf, "{\"seconds\":%ld}", (long)(millis()/1000));
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     return httpd_resp_send(req, buf, strlen(buf));

@@ -1147,6 +1147,15 @@ static esp_err_t win_handler(httpd_req_t *req)
     return httpd_resp_send(req, NULL, 0);
 }
 
+static esp_err_t uptime_handler(httpd_req_t *req)
+{
+    char buf[64];
+    sprintf(buf, "{\"millis\":%d}", (int)millis());
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    return httpd_resp_send(req, buf, strlen(buf));
+}
+
 static esp_err_t index_handler(httpd_req_t *req)
 {
     httpd_resp_set_type(req, "text/html");
@@ -1237,6 +1246,12 @@ void startCameraServer()
         .handler = win_handler,
         .user_ctx = NULL};
 
+    httpd_uri_t uptime_uri = {
+        .uri = "/uptime",
+        .method = HTTP_GET,
+        .handler = uptime_handler,
+        .user_ctx = NULL};
+
     ra_filter_init(&ra_filter, 20);
 
 #if CONFIG_ESP_FACE_RECOGNITION_ENABLED
@@ -1259,6 +1274,7 @@ void startCameraServer()
         httpd_register_uri_handler(camera_httpd, &greg_uri);
         httpd_register_uri_handler(camera_httpd, &pll_uri);
         httpd_register_uri_handler(camera_httpd, &win_uri);
+        httpd_register_uri_handler(camera_httpd, &uptime_uri);
     }
 
     config.server_port += 1;

@@ -16,6 +16,7 @@ class SoundSensorNode:
                  name: str,
                  pinname: str,
                  server_addr: Optional[Addr],
+                 threshold: int = 1,
                  delay=0.005):
 
         if not hasattr(gpioport, pinname):
@@ -24,6 +25,7 @@ class SoundSensorNode:
         self.pin = getattr(gpioport, pinname)
         self.name = name
         self.delay = delay
+        self.threshold = threshold
 
         self.server_addr = server_addr
 
@@ -43,7 +45,7 @@ class SoundSensorNode:
                     hits = self.hits
                     self.hits = 0
 
-                if hits > 0:
+                if hits >= self.threshold:
                     try:
                         if self.server_addr is not None:
                             send_datagram(stringify([self.name, hits]), self.server_addr)

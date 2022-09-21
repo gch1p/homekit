@@ -27,6 +27,7 @@ if __name__ == '__main__':
 
     node = SoundSensorNode(name=config['node']['name'],
                            pinname=config['node']['pin'],
+                           threshold=config['node']['threshold'] if 'threshold' in config['node'] else 1,
                            server_addr=server_addr,
                            **kwargs)
     node.run()

@@ -17,9 +17,17 @@ if __name__ == '__main__':
         buf = []
         i = 0
         for tun_host in hostnames:
-            bind_port = 55000 + config[host]['bind_slot']*10 + i
-            target = ('127.0.0.1' if host == tun_host else network_prefix + '.' + str(config[tun_host]['ipv4'])) + ':' + str(config[tun_host]['http_port'])
-            buf.append(f'-R 127.0.0.1:{bind_port}:{target}')
+            http_bind_port = config['http_bind_base'] + config[host]['bind_slot'] * 10 + i
+            ssh_bind_port = config['ssh_bind_base'] + config[host]['bind_slot'] * 10 + i
+
+            if tun_host == host:
+                target_host = '127.0.0.1'
+            else:
+                target_host = f'{network_prefix}.{config[tun_host]["ipv4"]}'
+
+            buf.append(f'-R 127.0.0.1:{http_bind_port}:{target_host}:{config[tun_host]["http_port"]}')
+            buf.append(f'-R 127.0.0.1:{ssh_bind_port}:{target_host}:22')
+
             i += 1
 
         print(host)

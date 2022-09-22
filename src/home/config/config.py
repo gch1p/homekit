@@ -105,6 +105,9 @@ class ConfigStore:
     def __contains__(self, key):
         return key in self.data
 
+    def items(self):
+        return self.data.items()
+
 
 config = ConfigStore()
 

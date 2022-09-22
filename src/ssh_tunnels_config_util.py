@@ -26,7 +26,7 @@ if __name__ == '__main__':
                 target_host = f'{network_prefix}.{config[tun_host]["ipv4"]}'
 
             buf.append(f'-R 127.0.0.1:{http_bind_port}:{target_host}:{config[tun_host]["http_port"]}')
-            buf.append(f'-R 127.0.0.1:{ssh_bind_port}:{target_host}:22')
+            buf.append(f'-R 127.0.0.1:{ssh_bind_port}:{target_host}:{config[tun_host]["ssh_port"]}')
 
             i += 1
 

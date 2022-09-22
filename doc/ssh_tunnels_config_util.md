@@ -10,11 +10,13 @@ ssh_bind_base = 21000
 [nas1]
 ipv4 = 100
 http_port = 80
+ssh_port = 22
 bind_slot = 0
 
 [nas2]
 ipv4 = 101
 http_port = 8080
+ssh_port = 22
 bind_slot = 1
 ```
 

@@ -134,6 +134,7 @@ class IPCamWebServer(http.HTTPServer):
 
         self.post('/api/debug/migrate-mtimes', self.debug_migrate_mtimes)
         self.post('/api/debug/fix', self.debug_fix)
+        self.post('/api/debug/cleanup', self.debug_cleanup)
         self.post('/api/timestamp/{name}/{type}', self.set_timestamp)
 
         self.post('/api/motion/done/{name}', self.submit_motion)
@@ -216,6 +217,10 @@ class IPCamWebServer(http.HTTPServer):
 
     async def debug_fix(self, req: http.Request):
         asyncio.ensure_future(fix_job())
+        return self.ok()
+
+    async def debug_cleanup(self, req: http.Request):
+        asyncio.ensure_future(cleanup_job())
         return self.ok()
 
     async def set_timestamp(self, req: http.Request):

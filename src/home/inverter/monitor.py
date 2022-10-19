@@ -175,6 +175,7 @@ class InverterMonitor(Thread):
 
                     if self.ac_mode == ACMode.GENERATOR:
                         self.gen_charging_program(ac, solar, v, pd)
+
                     elif self.ac_mode == ACMode.UTILITIES:
                         self.utilities_monitoring_program(ac, solar, pd)
 
@@ -208,12 +209,12 @@ class InverterMonitor(Thread):
             self.util_ac_present = ac
 
         if self.util_pd is None or self.util_pd != pd:
+            self.util_pd = pd
             if not pd_event_send:
                 if pd == BatteryPowerDirection.CHARGING:
                     self.charging_event_handler(ChargingEvent.UTIL_CHARGING_STARTED)
                 else:
                     self.charging_event_handler(ChargingEvent.UTIL_CHARGING_STOPPED)
-                self.util_pd = pd
 
     def gen_charging_program(self,
                              ac: bool,                  # whether AC is connected

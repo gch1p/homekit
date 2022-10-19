@@ -72,7 +72,7 @@ def monitor_charging(event: ChargingEvent, **kwargs) -> None:
         key = 'na_solar'
     elif event == ChargingEvent.AC_MOSTLY_CHARGED:
         key = 'mostly_charged'
-    elif event == ChargingEvent.UTIL_CHARGING_STOPPED:
+    elif event == ChargingEvent.UTIL_CHARGING_STARTED:
         key = 'started'
         is_util = True
     elif event == ChargingEvent.UTIL_CHARGING_STOPPED:

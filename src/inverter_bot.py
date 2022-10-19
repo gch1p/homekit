@@ -639,13 +639,13 @@ if __name__ == '__main__':
 
     db = InverterStore()
 
-    setacmode(getacmode())
-
     monitor = InverterMonitor()
     monitor.set_charging_event_handler(monitor_charging)
     monitor.set_battery_event_handler(monitor_battery)
     monitor.set_util_event_handler(monitor_util)
     monitor.set_error_handler(monitor_error)
+
+    setacmode(getacmode())
 
     bot = InverterBot(store=db)
     bot.enable_logging(BotType.INVERTER)

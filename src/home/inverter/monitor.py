@@ -511,5 +511,8 @@ class InverterMonitor(Thread):
             'floating_stopwatch_elapsed': self.floating_stopwatch.get_elapsed_time(),
             'time_now': time.time(),
             'next_current_enter_time': self.next_current_enter_time,
-            'ac_mode': self.ac_mode
+            'ac_mode': self.ac_mode,
+            'util_ac_present': self.util_ac_present,
+            'util_pd': self.util_pd.name,
+            'util_solar': self.util_solar
         }

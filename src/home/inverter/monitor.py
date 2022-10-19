@@ -166,7 +166,7 @@ class InverterMonitor(Thread):
                     gs = response['data']
 
                     ac = gs['grid_voltage']['value'] > 0 or gs['grid_freq']['value'] > 0
-                    solar = gs['pv1_input_power']['value'] > 0
+                    solar = gs['pv1_input_voltage']['value'] > 0
                     v = float(gs['battery_voltage']['value'])
                     load_watts = int(gs['ac_output_active_power']['value'])
                     pd = _pd_from_string(gs['battery_power_direction'])

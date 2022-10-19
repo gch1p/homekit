@@ -27,6 +27,15 @@ class ChargingEvent(Enum):
     AC_MOSTLY_CHARGED = auto()
     AC_CHARGING_FINISHED = auto()
 
+    UTIL_CHARGING_STARTED = auto()
+    UTIL_CHARGING_STOPPED = auto()
+    UTIL_CHARGING_STOPPED_SOLAR = auto()
+
+
+class ACPresentEvent(Enum):
+    CONNECTED = auto()
+    DISCONNECTED = auto()
+
 
 class ChargingState(Enum):
     NOT_CHARGING = auto()
@@ -83,6 +92,7 @@ TODO:
 class InverterMonitor(Thread):
     charging_event_handler: Optional[Callable]
     battery_event_handler: Optional[Callable]
+    util_event_handler: Optional[Callable]
     error_handler: Optional[Callable]
 
     def __init__(self):
@@ -96,6 +106,7 @@ class InverterMonitor(Thread):
         # Event handlers for the bot.
         self.charging_event_handler = None
         self.battery_event_handler = None
+        self.util_event_handler = None
         self.error_handler = None
 
         # Currents list, defined in the bot config.
@@ -119,6 +130,11 @@ class InverterMonitor(Thread):
         # The stopwatch is used to measure how long does the battery voltage exceeds the float voltage level.
         # We don't want to damage our batteries, right?
         self.floating_stopwatch = Stopwatch()
+
+        # State variables for utilities charging program
+        self.util_ac_present = None
+        self.util_pd = None
+        self.util_solar = None
 
     @property
     def active_current(self) -> Optional[int]:
@@ -159,6 +175,8 @@ class InverterMonitor(Thread):
 
                     if self.ac_mode == ACMode.GENERATOR:
                         self.gen_charging_program(ac, solar, v, pd)
+                    elif self.ac_mode == ACMode.UTILITIES:
+                        self.utilities_monitoring_program(ac, solar, pd)
 
                     if not ac or pd != BatteryPowerDirection.CHARGING:
                         # if AC is disconnected or not charging, run the low voltage checking program
@@ -172,6 +190,30 @@ class InverterMonitor(Thread):
                 logger.exception(e)
 
             time.sleep(2)
+
+    def utilities_monitoring_program(self,
+                                     ac: bool,                  # whether AC is connected
+                                     solar: bool,               # whether MPPT is active
+                                     pd: BatteryPowerDirection  # current power direction
+                                     ):
+        pd_event_send = False
+        if self.util_solar is None or solar != self.util_solar:
+            self.util_solar = solar
+            if solar and self.util_ac_present and self.util_pd == BatteryPowerDirection.CHARGING:
+                self.charging_event_handler(ChargingEvent.UTIL_CHARGING_STOPPED_SOLAR)
+                pd_event_send = True
+
+        if self.util_ac_present is None or ac != self.util_ac_present:
+            self.util_event_handler(ACPresentEvent.CONNECTED if ac else ACPresentEvent.DISCONNECTED)
+            self.util_ac_present = ac
+
+        if self.util_pd is None or self.util_pd != pd:
+            if not pd_event_send:
+                if pd == BatteryPowerDirection.CHARGING:
+                    self.charging_event_handler(ChargingEvent.UTIL_CHARGING_STARTED)
+                else:
+                    self.charging_event_handler(ChargingEvent.UTIL_CHARGING_STOPPED)
+                self.util_pd = pd
 
     def gen_charging_program(self,
                              ac: bool,                  # whether AC is connected
@@ -443,6 +485,9 @@ class InverterMonitor(Thread):
 
     def set_battery_event_handler(self, handler: Callable):
         self.battery_event_handler = handler
+
+    def set_util_event_handler(self, handler: Callable):
+        self.util_event_handler = handler
 
     def set_error_handler(self, handler: Callable):
         self.error_handler = handler

@@ -22,6 +22,7 @@ from home.inverter import (
 
     InverterMonitor,
     ChargingEvent,
+    ACPresentEvent,
     BatteryState,
     ACMode
 )
@@ -55,6 +56,7 @@ SETACMODE_STARTED, = range(1)
 
 def monitor_charging(event: ChargingEvent, **kwargs) -> None:
     args = []
+    is_util = False
     if event == ChargingEvent.AC_CHARGING_STARTED:
         key = 'started'
     elif event == ChargingEvent.AC_CHARGING_FINISHED:
@@ -70,12 +72,24 @@ def monitor_charging(event: ChargingEvent, **kwargs) -> None:
         key = 'na_solar'
     elif event == ChargingEvent.AC_MOSTLY_CHARGED:
         key = 'mostly_charged'
+    elif event == ChargingEvent.UTIL_CHARGING_STOPPED:
+        key = 'started'
+        is_util = True
+    elif event == ChargingEvent.UTIL_CHARGING_STOPPED:
+        key = 'stopped'
+        is_util = True
+    elif event == ChargingEvent.UTIL_CHARGING_STOPPED_SOLAR:
+        key = 'stopped_solar'
+        is_util = True
     else:
         logger.error('unknown charging event:', event)
         return
 
+    key = f'chrg_evt_{key}'
+    if is_util:
+        key = f'util_{key}'
     bot.notify_all(
-        lambda lang: bot.lang.get(f'chrg_evt_{key}', lang, *args)
+        lambda lang: bot.lang.get(key, lang, *args)
     )
 
 
@@ -93,6 +107,17 @@ def monitor_battery(state: BatteryState, v: float, load_watts: int) -> None:
     bot.notify_all(
         lambda lang: bot.lang.get('battery_level_changed', lang,
                                   emoji, bot.lang.get(f'bat_state_{state.name.lower()}', lang), v, load_watts)
+    )
+
+
+def monitor_util(event: ACPresentEvent):
+    if event == ACPresentEvent.CONNECTED:
+        key = 'connected'
+    else:
+        key = 'disconnected'
+    key = f'util_{key}'
+    bot.notify_all(
+        lambda lang: bot.lang.get(key, lang)
     )
 
 
@@ -443,6 +468,13 @@ class InverterBot(Wrapper):
             battery_level_changed='Уровень заряда АКБ: <b>%s %s</b> (<b>%0.1f V</b> при нагрузке <b>%d W</b>)',
             error_message='<b>Ошибка:</b> %s.',
 
+            util_chrg_evt_started='✅ Начали заряжать от столба.',
+            util_chrg_evt_stopped='ℹ️ Перестали заряжать от столба.',
+            util_chrg_evt_stopped_solar='ℹ️ Перестали заряжать от столба из-за подключения панелей.',
+
+            util_connected='✅️ Столб подключен.',
+            util_disconnected='‼️ Столб отключён.',
+
             # other notifications
             ac_mode_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> установил режим AC: <b>%s</b>.',
 
@@ -505,6 +537,13 @@ class InverterBot(Wrapper):
             chrg_evt_mostly_charged='✅ The battery is mostly charged now. The generator can be turned off.',
             battery_level_changed='Battery level: <b>%s</b> (<b>%0.1f V</b> under <b>%d W</b> load)',
             error_message='<b>Error:</b> %s.',
+
+            util_chrg_evt_started='✅ Started charging from utilities.',
+            util_chrg_evt_stopped='ℹ️ Stopped charging from utilities.',
+            util_chrg_evt_stopped_solar='ℹ️ Stopped charging from utilities because solar panels were connected.',
+
+            util_connected='✅️ Utilities connected.',
+            util_disconnected='‼️ Utilities disconected.',
 
             # other notifications
             ac_mode_changed_notification='User <a href="tg://user?id=%d">%s</a> set AC mode to <b>%s</b>.',
@@ -603,6 +642,7 @@ if __name__ == '__main__':
     monitor = InverterMonitor()
     monitor.set_charging_event_handler(monitor_charging)
     monitor.set_battery_event_handler(monitor_battery)
+    monitor.set_util_event_handler(monitor_util)
     monitor.set_error_handler(monitor_error)
     monitor.start()
 

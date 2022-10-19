@@ -498,11 +498,12 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
 
     try:
+        scheduler = AsyncIOScheduler(event_loop=loop)
         if config['fix_enabled']:
-            scheduler = AsyncIOScheduler(event_loop=loop)
             scheduler.add_job(fix_job, 'interval', seconds=config['fix_interval'])
-            scheduler.add_job(cleanup_job, 'interval', seconds=config['cleanup_interval'])
-            scheduler.start()
+
+        scheduler.add_job(cleanup_job, 'interval', seconds=config['cleanup_interval'])
+        scheduler.start()
     except KeyError:
         pass
 

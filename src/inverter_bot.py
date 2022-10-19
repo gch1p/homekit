@@ -543,7 +543,7 @@ class InverterBot(Wrapper):
             util_chrg_evt_stopped_solar='ℹ️ Stopped charging from utilities because solar panels were connected.',
 
             util_connected='✅️ Utilities connected.',
-            util_disconnected='‼️ Utilities disconected.',
+            util_disconnected='‼️ Utilities disconnected.',
 
             # other notifications
             ac_mode_changed_notification='User <a href="tg://user?id=%d">%s</a> set AC mode to <b>%s</b>.',

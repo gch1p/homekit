@@ -649,7 +649,9 @@ if __name__ == '__main__':
 
     bot = InverterBot(store=db)
     bot.enable_logging(BotType.INVERTER)
-    bot.run()
 
     monitor.start()
+
+    bot.run()
+
     monitor.stop()

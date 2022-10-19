@@ -213,7 +213,7 @@ class InverterMonitor(Thread):
             if not pd_event_send and not solar:
                 if pd == BatteryPowerDirection.CHARGING:
                     self.charging_event_handler(ChargingEvent.UTIL_CHARGING_STARTED)
-                else:
+                elif pd == BatteryPowerDirection.DISCHARGING:
                     self.charging_event_handler(ChargingEvent.UTIL_CHARGING_STOPPED)
 
     def gen_charging_program(self,

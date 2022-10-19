@@ -472,7 +472,7 @@ class InverterBot(Wrapper):
             util_chrg_evt_stopped='ℹ️ Перестали заряжать от столба.',
             util_chrg_evt_stopped_solar='ℹ️ Перестали заряжать от столба из-за подключения панелей.',
 
-            util_connected='✅️ Столб подключен.',
+            util_connected='✅️ Столб подключён.',
             util_disconnected='‼️ Столб отключён.',
 
             # other notifications

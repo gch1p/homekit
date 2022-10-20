@@ -486,6 +486,7 @@ class InverterBot(Wrapper):
         self.lang.ru(
             status='Статус',
             generation='Генерация',
+            osp='Приоритет питания нагрузки',
             battery="АКБ",
             load="Нагрузка",
             generator="Генератор",
@@ -562,6 +563,7 @@ class InverterBot(Wrapper):
         self.lang.en(
             status='Status',
             generation='Generation',
+            osp='Output source priority',
             battery="Battery",
             load="Load",
             generator="Generator",
@@ -668,7 +670,10 @@ class InverterBot(Wrapper):
         ))
 
         self.add_handler(ConversationHandler(
-            entry_points=[CommandHandler('setosp', self.wrap(setosp_start), self.user_filter)],
+            entry_points=[
+                CommandHandler('setosp', self.wrap(setosp_start), self.user_filter),
+                MessageHandler(text_filter(self.lang.all('osp')), self.wrap(setosp_start))
+            ],
             states={
                 SETOSP_STARTED: [
                     *[MessageHandler(text_filter(self.lang.all(f'setosp_{sp.value.lower()}')), self.wrap(setosp_input)) for sp in OutputSourcePriority],
@@ -682,7 +687,8 @@ class InverterBot(Wrapper):
 
     def markup(self, ctx: Optional[Context]) -> Optional[ReplyKeyboardMarkup]:
         button = [
-            [ctx.lang('status'), ctx.lang('generation')]
+            [ctx.lang('status'), ctx.lang('generation')],
+            [ctx.lang('osp')]
         ]
         return ReplyKeyboardMarkup(button, one_time_keyboard=False)
 

@@ -387,7 +387,7 @@ def setosp_input(ctx: Context):
     bot.notify_all(
         lambda lang: bot.lang.get('osp_changed_notification', lang,
                                   ctx.user.id, ctx.user.name,
-                                  bot.lang.get(str(selected_sp.value), lang)),
+                                  bot.lang.get(f'setosp_{selected_sp.value.lower()}', lang)),
         exclude=(ctx.user_id,)
     )
 

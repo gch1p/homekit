@@ -293,7 +293,7 @@ def setacmode(mode: ACMode):
 
 def setosp(sp: OutputSourcePriority):
     logger.debug(f'setosp: sp={sp}')
-    inverter.exec('set-output-source-priority', (sp,))
+    inverter.exec('set-output-source-priority', (sp.value,))
 
 
 # /setacmode

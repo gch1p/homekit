@@ -4,6 +4,7 @@ import re
 import datetime
 import json
 
+from enum import Enum
 from inverterd import Format, InverterError
 from html import escape
 from typing import Optional, Tuple, Union
@@ -51,7 +52,14 @@ flags_map = {
     'fault_code_record': 'FTCR',
 }
 logger = logging.getLogger(__name__)
+
 SETACMODE_STARTED, = range(1)
+SETOSP_STARTED, = range(1)
+
+
+class OutputSourcePriority(Enum):
+    SolarUtilityBattery = 'SUB'
+    SolarBatteryUtility = 'SBU'
 
 
 def monitor_charging(event: ChargingEvent, **kwargs) -> None:
@@ -283,6 +291,14 @@ def setacmode(mode: ACMode):
     inverter.exec('set-max-ac-charge-current', (0, a))
 
 
+def setosp(sp: OutputSourcePriority):
+    logger.debug(f'setosp: sp={sp}')
+    inverter.exec('set-output-charge-priority', (sp,))
+
+
+# /setacmode
+# ----------
+
 def setacmode_start(ctx: Context) -> None:
     if monitor.active_current is not None:
         raise RuntimeError('generator charging program is active')
@@ -337,6 +353,60 @@ def setacmode_cancel(ctx: Context):
     bot.start(ctx)
     return ConversationHandler.END
 
+
+# /setosp
+# ------
+
+def setosp_start(ctx: Context) -> None:
+    buttons = []
+    for sp in OutputSourcePriority:
+        buttons.append(ctx.lang(f'setosp_{sp.value.lower()}'))
+    markup = ReplyKeyboardMarkup([buttons, [ctx.lang('cancel')]], one_time_keyboard=False)
+
+    ctx.reply(ctx.lang('select_ac_mode'), markup=markup)
+    return SETOSP_STARTED
+
+
+def setosp_input(ctx: Context):
+    selected_sp = None
+    for sp in OutputSourcePriority:
+        if ctx.text == ctx.lang(f'setosp_{sp.value.lower()}'):
+            selected_sp = sp
+            break
+
+    if selected_sp is None:
+        raise ValueError('invalid sp')
+
+    # apply the mode
+    setosp(selected_sp)
+
+    # reply to user
+    ctx.reply(ctx.lang('saved'), markup=IgnoreMarkup())
+
+    # notify other users
+    bot.notify_all(
+        lambda lang: bot.lang.get('osp_changed_notification', lang,
+                                  ctx.user.id, ctx.user.name,
+                                  bot.lang.get(str(selected_sp.value), lang)),
+        exclude=(ctx.user_id,)
+    )
+
+    bot.start(ctx)
+    return ConversationHandler.END
+
+
+def setosp_invalid(ctx: Context):
+    ctx.reply(ctx.lang('invalid_mode'), markup=IgnoreMarkup())
+    return SETOSP_STARTED
+
+
+def setosp_cancel(ctx: Context):
+    bot.start(ctx)
+    return ConversationHandler.END
+
+
+# other
+# -----
 
 def setbatuv(ctx: Context) -> None:
     try:
@@ -423,6 +493,7 @@ class InverterBot(Wrapper):
             done="Готово",
             unexpected_callback_data="Ошибка: неверные данные",
             select_ac_mode="Выберите режим:",
+            select_priortiy="Установите приоритет:",
             invalid_input="Неверное значение",
 
             flags_press_button='Нажмите кнопку для переключения настройки',
@@ -457,6 +528,9 @@ class InverterBot(Wrapper):
             setgenct_dv=f'напряжение отключения заряда, 48 {LT} DV {LT} 58',
             setgencc_a='максимальный ток заряда, допустимые значения: %s',
 
+            setosp_sub='Solar-Utility-Battery',
+            setosp_sbu='Solar-Battery-Utility',
+
             # monitor
             chrg_evt_started='✅ Начали заряжать от генератора.',
             chrg_evt_finished='✅ Зарядили. Генератор пора выключать.',
@@ -477,6 +551,7 @@ class InverterBot(Wrapper):
 
             # other notifications
             ac_mode_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> установил режим AC: <b>%s</b>.',
+            osp_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> установил приоритет источника питания нагрузки: <b>%s</b>.',
 
             bat_state_normal='Нормальный',
             bat_state_low='Низкий',
@@ -493,6 +568,7 @@ class InverterBot(Wrapper):
             done="Done",
             unexpected_callback_data="Unexpected callback data",
             select_ac_mode="Select AC input mode:",
+            select_priortiy="Select priority:",
             invalid_input="Invalid input",
 
             flags_press_button='Press a button to toggle a flag.',
@@ -527,6 +603,9 @@ class InverterBot(Wrapper):
             setgenct_dv=f'discharging voltage, 48 {LT} DV {LT} 58',
             setgencc_a='max charging current, allowed values: %s',
 
+            setosp_sub='Solar-Utility-Battery',
+            setosp_sbu='Solar-Battery-Utility',
+
             # monitor
             chrg_evt_started='✅ Started charging from AC.',
             chrg_evt_finished='✅ Finished charging, it\'s time to stop the generator.',
@@ -547,6 +626,7 @@ class InverterBot(Wrapper):
 
             # other notifications
             ac_mode_changed_notification='User <a href="tg://user?id=%d">%s</a> set AC mode to <b>%s</b>.',
+            osp_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> set output source priority: <b>%s</b>.',
 
             bat_state_normal='Normal',
             bat_state_low='Low',
@@ -583,6 +663,17 @@ class InverterBot(Wrapper):
                 ]
             },
             fallbacks=[MessageHandler(self.user_filter & cancel_filter, self.wrap(setacmode_cancel))]
+        ))
+
+        self.add_handler(ConversationHandler(
+            entry_points=[CommandHandler('setosp', self.wrap(setosp_start), self.user_filter)],
+            states={
+                SETOSP_STARTED: [
+                    *[MessageHandler(text_filter(self.lang.all(f'setosp_{sp.value.lower()}')), self.wrap(setosp_input)) for sp in OutputSourcePriority],
+                    MessageHandler(self.user_filter & ~cancel_filter, self.wrap(setosp_invalid))
+                ]
+            },
+            fallbacks=[MessageHandler(self.user_filter & cancel_filter, self.wrap(setosp_cancel))]
         ))
 
         super().run()

@@ -80,6 +80,7 @@ setbatuv - Set battery under voltage
 setgencc - Set AC charging current
 setgenct - Set AC charging thresholds
 setacmode - Set AC input mode
+setosp - Set output source priority
 monstatus - Monitor: dump state
 monsetcur - Monitor: set charging currents
 ```

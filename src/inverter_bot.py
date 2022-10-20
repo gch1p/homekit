@@ -293,7 +293,7 @@ def setacmode(mode: ACMode):
 
 def setosp(sp: OutputSourcePriority):
     logger.debug(f'setosp: sp={sp}')
-    inverter.exec('set-output-charge-priority', (sp,))
+    inverter.exec('set-output-source-priority', (sp,))
 
 
 # /setacmode
@@ -396,7 +396,7 @@ def setosp_input(ctx: Context):
 
 
 def setosp_invalid(ctx: Context):
-    ctx.reply(ctx.lang('invalid_mode'), markup=IgnoreMarkup())
+    ctx.reply(ctx.lang('invalid_input'), markup=IgnoreMarkup())
     return SETOSP_STARTED
 
 
@@ -495,6 +495,7 @@ class InverterBot(Wrapper):
             select_ac_mode="Выберите режим:",
             select_priortiy="Установите приоритет:",
             invalid_input="Неверное значение",
+            invalid_mode="Invalid mode",
 
             flags_press_button='Нажмите кнопку для переключения настройки',
             flags_fail='Не удалось установить настройку',
@@ -570,6 +571,7 @@ class InverterBot(Wrapper):
             select_ac_mode="Select AC input mode:",
             select_priortiy="Select priority:",
             invalid_input="Invalid input",
+            invalid_mode="Invalid mode",
 
             flags_press_button='Press a button to toggle a flag.',
             flags_fail='Failed to toggle flag',

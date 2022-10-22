@@ -474,6 +474,9 @@ class InverterMonitor(Thread):
     def set_ac_mode(self, mode: ACMode):
         self.ac_mode = mode
 
+    def notify_osp(self, osp: OutputSourcePriority):
+        self.osp = osp
+
     def stop(self):
         self.interrupted = True
 
@@ -491,6 +494,7 @@ class InverterMonitor(Thread):
             'time_now': time.time(),
             'next_current_enter_time': self.next_current_enter_time,
             'ac_mode': self.ac_mode,
+            'osp': self.osp,
             'util_ac_present': self.util_ac_present,
             'util_pd': self.util_pd.name,
             'util_solar': self.util_solar

@@ -113,7 +113,7 @@ config = ConfigStore()
 
 
 def is_development_mode() -> bool:
-    if 'FLASK_ENV' in os.environ and os.environ['FLASK_ENV'] == 'development':
+    if 'HK_MODE' in os.environ and os.environ['HK_MODE'] == 'dev':
         return True
 
     return ('logging' in config) and ('verbose' in config['logging']) and (config['logging']['verbose'] is True)

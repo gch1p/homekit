@@ -59,7 +59,7 @@ class WebAPIClient:
                         bot: BotType,
                         user_id: int,
                         message: str):
-        return self._post('logs/bot-request/', {
+        return self._post('log/bot-request/', {
             'bot': bot.value,
             'user_id': str(user_id),
             'message': message
@@ -67,7 +67,7 @@ class WebAPIClient:
 
     def log_openwrt(self,
                     lines: List[Tuple[int, str]]):
-        return self._post('logs/openwrt', {
+        return self._post('log/openwrt/', {
             'logs': stringify(lines)
         })
 
@@ -159,7 +159,7 @@ class WebAPIClient:
             kwargs['files'] = fd
 
         try:
-            r = f(f'https://{domain}/api/{name}',
+            r = f(f'https://{domain}/{name}',
                   headers={'X-Token': self.token},
                   timeout=self.timeout,
                   **kwargs)

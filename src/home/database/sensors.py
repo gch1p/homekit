@@ -1,7 +1,7 @@
 from time import time
 from datetime import datetime
 from typing import Tuple, List
-from .clickhouse import get_clickhouse
+from .clickhouse import ClickhouseDatabase
 from ..api.types import TemperatureSensorLocation
 
 
@@ -25,9 +25,9 @@ def get_temperature_table(sensor: TemperatureSensorLocation) -> str:
         return 'temp_spb1'
 
 
-class SensorsDatabase:
+class SensorsDatabase(ClickhouseDatabase):
     def __init__(self):
-        self.db = get_clickhouse('home')
+        super().__init__('home')
 
     def add_temperature(self,
                         home_id: int,
@@ -62,7 +62,7 @@ class SensorsDatabase:
             ORDER BY ClientTime"""
         dt_from, dt_to = time_range
 
-        data = self.db.execute(sql, {
+        data = self.query(sql, {
             'from': dt_from,
             'to': dt_to
         })

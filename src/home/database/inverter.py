@@ -1,40 +1,17 @@
-import logging
-
-from zoneinfo import ZoneInfo
 from time import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
 from collections import namedtuple
 
-from ..config import is_development_mode
-from .clickhouse import get_clickhouse
+from .clickhouse import ClickhouseDatabase
 
 
 IntervalList = list[list[Optional[datetime]]]
 
 
-class InverterDatabase:
+class InverterDatabase(ClickhouseDatabase):
     def __init__(self):
-        self.db = get_clickhouse('solarmon')
-        self.server_timezone = self.query('SELECT timezone()')[0][0]
-
-        self.logger = logging.getLogger(self.__class__.__name__)
-
-    def query(self, *args, **kwargs):
-        settings = {'use_client_time_zone': True}
-        kwargs['settings'] = settings
-
-        if 'no_tz_fix' not in kwargs and len(args) > 1 and isinstance(args[1], dict):
-            for k, v in args[1].items():
-                if isinstance(v, datetime):
-                    args[1][k] = v.astimezone(tz=ZoneInfo(self.server_timezone))
-
-        result = self.db.execute(*args, **kwargs)
-
-        if is_development_mode():
-            self.logger.debug(args[0] if len(args) == 1 else args[0] % args[1])
-
-        return result
+        super().__init__('solarmon')
 
     def add_generation(self, home_id: int, client_time: int, watts: int) -> None:
         self.db.execute(

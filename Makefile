@@ -7,6 +7,7 @@ else
 	USER_PREFIX = $(HOME)/.local
 endif
 
+# TODO drop or rewrite
 PROGRAMS = admin_bot inverter_bot pump_bot sensors_bot
 PROGRAMS += inverter_mqtt_receiver inverter_mqtt_sender
 PROGRAMS += sensors_mqtt_receiver sensors_mqtt_sender
@@ -29,7 +30,7 @@ venv:
 	. ./venv/bin/activate && pip3 install -r requirements.txt
 
 web-api-dev:
-	. ./venv/bin/activate && FLASK_ENV=development python3 src/web_api.py
+	. ./venv/bin/activate && HK_MODE=dev python3 src/web_api.py
 
 install: check-root
 	for name in @(PROGRAMS); do ln -s src/${name}.py $(USER_PREFIX)/bin/$name; done

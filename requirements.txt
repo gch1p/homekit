@@ -2,7 +2,6 @@ paho-mqtt~=1.5.1
 inverterd~=1.0.3
 clickhouse-driver~=0.2.0
 toml~=0.10.2
-Flask~=2.0.2
 mysql-connector-python~=8.0.27
 Werkzeug~=2.0.2
 uwsgi~=2.0.20

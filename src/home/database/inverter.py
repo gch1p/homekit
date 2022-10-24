@@ -1,10 +1,40 @@
-from .clickhouse import get_clickhouse
+import logging
+
+from zoneinfo import ZoneInfo
 from time import time
+from datetime import datetime, timedelta
+from typing import Optional
+from collections import namedtuple
+
+from ..config import is_development_mode
+from .clickhouse import get_clickhouse
+
+
+IntervalList = list[list[Optional[datetime]]]
 
 
 class InverterDatabase:
     def __init__(self):
         self.db = get_clickhouse('solarmon')
+        self.server_timezone = self.query('SELECT timezone()')[0][0]
+
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+    def query(self, *args, **kwargs):
+        settings = {'use_client_time_zone': True}
+        kwargs['settings'] = settings
+
+        if 'no_tz_fix' not in kwargs and len(args) > 1 and isinstance(args[1], dict):
+            for k, v in args[1].items():
+                if isinstance(v, datetime):
+                    args[1][k] = v.astimezone(tz=ZoneInfo(self.server_timezone))
+
+        result = self.db.execute(*args, **kwargs)
+
+        if is_development_mode():
+            self.logger.debug(args[0] if len(args) == 1 else args[0] % args[1])
+
+        return result
 
     def add_generation(self, home_id: int, client_time: int, watts: int) -> None:
         self.db.execute(
@@ -100,3 +130,104 @@ class InverterDatabase:
             line_power_direction,
             load_connected
         ]])
+
+    def get_consumed_energy(self, dt_from: datetime, dt_to: datetime) -> float:
+        rows = self.query('SELECT ClientTime, ACOutputActivePower FROM status'
+                          ' WHERE ClientTime >= %(from)s AND ClientTime <= %(to)s'
+                          ' ORDER BY ClientTime', {'from': dt_from, 'to': dt_to})
+        prev_time = None
+        prev_wh = 0
+
+        ws = 0  # watt-seconds
+        for t, wh in rows:
+            if prev_time is not None:
+                n = (t - prev_time).total_seconds()
+                ws += prev_wh * n
+
+            prev_time = t
+            prev_wh = wh
+
+        return ws / 3600  # convert to watt-hours
+
+    def get_intervals_by_condition(self,
+                                   dt_from: datetime,
+                                   dt_to: datetime,
+                                   cond_start: str,
+                                   cond_end: str) -> IntervalList:
+        rows = None
+        ranges = [[None, None]]
+
+        while rows is None or len(rows) > 0:
+            if ranges[len(ranges) - 1][0] is None:
+                condition = cond_start
+                range_idx = 0
+            else:
+                condition = cond_end
+                range_idx = 1
+
+            rows = self.query('SELECT ClientTime FROM status '
+                              f'WHERE ClientTime > %(from)s AND ClientTime <= %(to)s AND {condition}'
+                              ' ORDER BY ClientTime LIMIT 1',
+                              {'from': dt_from, 'to': dt_to})
+            if not rows:
+                break
+
+            row = rows[0]
+
+            ranges[len(ranges) - 1][range_idx] = row[0]
+            if range_idx == 1:
+                ranges.append([None, None])
+
+            dt_from = row[0]
+
+        if ranges[len(ranges)-1][0] is None:
+            ranges.pop()
+
+        return ranges
+
+    def get_grid_connected_intervals(self, dt_from: datetime, dt_to: datetime) -> IntervalList:
+        return self.get_intervals_by_condition(dt_from, dt_to, 'GridFrequency > 0', 'GridFrequency = 0')
+
+    def get_grid_used_intervals(self, dt_from: datetime, dt_to: datetime) -> IntervalList:
+        return self.get_intervals_by_condition(dt_from,
+                                               dt_to,
+                                               "LinePowerDirection = 'Input'",
+                                               "LinePowerDirection != 'Input'")
+
+    def get_grid_consumed_energy(self, dt_from: datetime, dt_to: datetime) -> float:
+        PrevData = namedtuple('PrevData', 'time, pd, bat_chg, bat_dis, wh')
+
+        ws = 0  # watt-seconds
+        amps = 0  # amper-seconds
+
+        intervals = self.get_grid_used_intervals(dt_from, dt_to)
+        for dt_start, dt_end in intervals:
+            fields = ', '.join([
+                'ClientTime',
+                'DCACPowerDirection',
+                'BatteryChargingCurrent',
+                'BatteryDischargingCurrent',
+                'ACOutputActivePower'
+            ])
+            rows = self.query(f'SELECT {fields} FROM status'
+                              ' WHERE ClientTime >= %(from)s AND ClientTime < %(to)s ORDER BY ClientTime',
+                              {'from': dt_start, 'to': dt_end})
+
+            prev = PrevData(time=None, pd=None, bat_chg=None, bat_dis=None, wh=None)
+            for ct, pd, bat_chg, bat_dis, wh in rows:
+                if prev.time is not None:
+                    n = (ct-prev.time).total_seconds()
+                    ws += prev.wh * n
+
+                    if pd == 'DC/AC':
+                        amps -= prev.bat_dis * n
+                    elif pd == 'AC/DC':
+                        amps += prev.bat_chg * n
+
+                prev = PrevData(time=ct, pd=pd, bat_chg=bat_chg, bat_dis=bat_dis, wh=wh)
+
+        amps /= 3600
+        wh = ws / 3600
+        wh += amps*48
+
+        return wh

@@ -34,7 +34,7 @@ class ConfigStore:
     data: MutableMapping[str, Any]
     app_name: Optional[str]
 
-    def __int__(self):
+    def __init__(self):
         self.data = {}
         self.app_name = None
 
@@ -57,7 +57,7 @@ class ConfigStore:
                 parser = ArgumentParser()
             if not no_config:
                 parser.add_argument('-c', '--config', type=str, required=name is None,
-                                    help='Path to the config in TOML format')
+                                    help='Path to the config in TOML or YAML format')
             parser.add_argument('-V', '--verbose', action='store_true')
             parser.add_argument('--log-file', type=str)
             parser.add_argument('--log-default-fmt', action='store_true')

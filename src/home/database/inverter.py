@@ -158,7 +158,7 @@ class InverterDatabase:
         ranges = [[None, None]]
 
         while rows is None or len(rows) > 0:
-            if ranges[len(ranges) - 1][0] is None:
+            if ranges[len(ranges)-1][0] is None:
                 condition = cond_start
                 range_idx = 0
             else:
@@ -182,6 +182,8 @@ class InverterDatabase:
 
         if ranges[len(ranges)-1][0] is None:
             ranges.pop()
+        elif ranges[len(ranges)-1][1] is None:
+            ranges[len(ranges)-1][1] = dt_to - timedelta(seconds=1)
 
         return ranges
 

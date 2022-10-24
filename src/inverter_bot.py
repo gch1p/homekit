@@ -4,7 +4,6 @@ import re
 import datetime
 import json
 
-from enum import Enum
 from inverterd import Format, InverterError
 from html import escape
 from typing import Optional, Tuple, Union
@@ -20,12 +19,14 @@ from home.bot import (
 from home.inverter import (
     wrapper_instance as inverter,
     beautify_table,
-
     InverterMonitor,
+)
+from home.inverter.types import (
     ChargingEvent,
     ACPresentEvent,
     BatteryState,
-    ACMode
+    ACMode,
+    OutputSourcePriority
 )
 from home.api.types import BotType
 from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
@@ -55,11 +56,6 @@ logger = logging.getLogger(__name__)
 
 SETACMODE_STARTED, = range(1)
 SETOSP_STARTED, = range(1)
-
-
-class OutputSourcePriority(Enum):
-    SolarUtilityBattery = 'SUB'
-    SolarBatteryUtility = 'SBU'
 
 
 def monitor_charging(event: ChargingEvent, **kwargs) -> None:
@@ -132,6 +128,18 @@ def monitor_util(event: ACPresentEvent):
 def monitor_error(error: str) -> None:
     bot.notify_all(
         lambda lang: bot.lang.get('error_message', lang, error)
+    )
+
+
+def osp_change_cb(new_osp: OutputSourcePriority,
+                  solar_input: int,
+                  v: float):
+
+    setosp(new_osp)
+
+    bot.notify_all(
+        lambda lang: bot.lang.get('osp_auto_changed_notification', lang,
+                                  bot.lang.get(f'setosp_{new_osp.value.lower()}', lang), v, solar_input),
     )
 
 
@@ -294,6 +302,7 @@ def setacmode(mode: ACMode):
 def setosp(sp: OutputSourcePriority):
     logger.debug(f'setosp: sp={sp}')
     inverter.exec('set-output-source-priority', (sp.value,))
+    monitor.notify_osp(sp)
 
 
 # /setacmode
@@ -554,6 +563,7 @@ class InverterBot(Wrapper):
             # other notifications
             ac_mode_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> установил режим AC: <b>%s</b>.',
             osp_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> установил приоритет источника питания нагрузки: <b>%s</b>.',
+            osp_auto_changed_notification='ℹ️ Бот установил приоритет источника питания нагрузки: <b>%s</b>. Причины: напряжение АКБ %.1f V, мощность заряда с панелей %d W.',
 
             bat_state_normal='Нормальный',
             bat_state_low='Низкий',
@@ -630,7 +640,8 @@ class InverterBot(Wrapper):
 
             # other notifications
             ac_mode_changed_notification='User <a href="tg://user?id=%d">%s</a> set AC mode to <b>%s</b>.',
-            osp_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> set output source priority: <b>%s</b>.',
+            osp_changed_notification='User <a href="tg://user?id=%d">%s</a> set output source priority: <b>%s</b>.',
+            osp_auto_changed_notification='Bot changed output source priority to <b>%s</b>. Reasons: battery voltage is %.1f V, solar input is %d W.',
 
             bat_state_normal='Normal',
             bat_state_low='Low',
@@ -743,6 +754,7 @@ if __name__ == '__main__':
     monitor.set_battery_event_handler(monitor_battery)
     monitor.set_util_event_handler(monitor_util)
     monitor.set_error_handler(monitor_error)
+    monitor.set_osp_need_change_callback(osp_change_cb)
 
     setacmode(getacmode())
 

@@ -1,7 +1,7 @@
 import logging
 import time
 
-from enum import Enum, auto
+from .types import *
 from threading import Thread
 from typing import Callable, Optional
 from .inverter_wrapper import wrapper_instance as inverter
@@ -10,55 +10,6 @@ from ..util import Stopwatch, StopwatchError
 from ..config import config
 
 logger = logging.getLogger(__name__)
-
-
-class BatteryPowerDirection(Enum):
-    DISCHARGING = auto()
-    CHARGING = auto()
-    DO_NOTHING = auto()
-
-
-class ChargingEvent(Enum):
-    AC_CHARGING_UNAVAILABLE_BECAUSE_SOLAR = auto()
-    AC_NOT_CHARGING = auto()
-    AC_CHARGING_STARTED = auto()
-    AC_DISCONNECTED = auto()
-    AC_CURRENT_CHANGED = auto()
-    AC_MOSTLY_CHARGED = auto()
-    AC_CHARGING_FINISHED = auto()
-
-    UTIL_CHARGING_STARTED = auto()
-    UTIL_CHARGING_STOPPED = auto()
-    UTIL_CHARGING_STOPPED_SOLAR = auto()
-
-
-class ACPresentEvent(Enum):
-    CONNECTED = auto()
-    DISCONNECTED = auto()
-
-
-class ChargingState(Enum):
-    NOT_CHARGING = auto()
-    AC_BUT_SOLAR = auto()
-    AC_WAITING = auto()
-    AC_OK = auto()
-    AC_DONE = auto()
-
-
-class CurrentChangeDirection(Enum):
-    UP = auto()
-    DOWN = auto()
-
-
-class BatteryState(Enum):
-    NORMAL = auto()
-    LOW = auto()
-    CRITICAL = auto()
-
-
-class ACMode(Enum):
-    GENERATOR = 'generator'
-    UTILITIES = 'utilities'
 
 
 def _pd_from_string(pd: str) -> BatteryPowerDirection:
@@ -94,6 +45,8 @@ class InverterMonitor(Thread):
     battery_event_handler: Optional[Callable]
     util_event_handler: Optional[Callable]
     error_handler: Optional[Callable]
+    osp_change_cb: Optional[Callable]
+    osp: Optional[OutputSourcePriority]
 
     def __init__(self):
         super().__init__()
@@ -102,12 +55,14 @@ class InverterMonitor(Thread):
         self.interrupted = False
         self.min_allowed_current = 0
         self.ac_mode = None
+        self.osp = None
 
         # Event handlers for the bot.
         self.charging_event_handler = None
         self.battery_event_handler = None
         self.util_event_handler = None
         self.error_handler = None
+        self.osp_change_cb = None
 
         # Currents list, defined in the bot config.
         self.currents = cfg.gen_currents
@@ -156,6 +111,12 @@ class InverterMonitor(Thread):
 
         self.min_allowed_current = min(allowed_currents)
 
+        # Reading rated configuration
+        rated = inverter.exec('get-rated')['data']
+        self.osp = OutputSourcePriority.SolarBatteryUtility \
+            if rated['output_source_priority'] == 'Solar-Battery-Utility' \
+            else OutputSourcePriority.SolarUtilityBattery
+
         # Read data and run implemented programs every 2 seconds.
         while not self.interrupted:
             try:
@@ -167,6 +128,7 @@ class InverterMonitor(Thread):
 
                     ac = gs['grid_voltage']['value'] > 0 or gs['grid_freq']['value'] > 0
                     solar = gs['pv1_input_voltage']['value'] > 0 or gs['pv2_input_voltage']['value'] > 0
+                    solar_input = gs['pv1_input_power']['value']
                     v = float(gs['battery_voltage']['value'])
                     load_watts = int(gs['ac_output_active_power']['value'])
                     pd = _pd_from_string(gs['battery_power_direction'])
@@ -177,7 +139,7 @@ class InverterMonitor(Thread):
                         self.gen_charging_program(ac, solar, v, pd)
 
                     elif self.ac_mode == ACMode.UTILITIES:
-                        self.utilities_monitoring_program(ac, solar, pd)
+                        self.utilities_monitoring_program(ac, solar, v, load_watts, solar_input, pd)
 
                     if not ac or pd != BatteryPowerDirection.CHARGING:
                         # if AC is disconnected or not charging, run the low voltage checking program
@@ -195,6 +157,9 @@ class InverterMonitor(Thread):
     def utilities_monitoring_program(self,
                                      ac: bool,                  # whether AC is connected
                                      solar: bool,               # whether MPPT is active
+                                     v: float,                  # battery voltage
+                                     load_watts: int,           # load, wh
+                                     solar_input: int,          # input from solar panels, wh
                                      pd: BatteryPowerDirection  # current power direction
                                      ):
         pd_event_send = False
@@ -203,6 +168,15 @@ class InverterMonitor(Thread):
             if solar and self.util_ac_present and self.util_pd == BatteryPowerDirection.CHARGING:
                 self.charging_event_handler(ChargingEvent.UTIL_CHARGING_STOPPED_SOLAR)
                 pd_event_send = True
+
+        if solar:
+            if v <= 48 and self.osp == OutputSourcePriority.SolarBatteryUtility:
+                self.osp_change_cb(OutputSourcePriority.SolarUtilityBattery, solar_input=solar_input, v=v)
+                self.osp = OutputSourcePriority.SolarUtilityBattery
+
+            if self.osp == OutputSourcePriority.SolarUtilityBattery and solar_input >= 900:
+                self.osp_change_cb(OutputSourcePriority.SolarBatteryUtility, solar_input=solar_input, v=v)
+                self.osp = OutputSourcePriority.SolarBatteryUtility
 
         if self.util_ac_present is None or ac != self.util_ac_present:
             self.util_event_handler(ACPresentEvent.CONNECTED if ac else ACPresentEvent.DISCONNECTED)
@@ -213,6 +187,7 @@ class InverterMonitor(Thread):
             if not pd_event_send and not solar:
                 if pd == BatteryPowerDirection.CHARGING:
                     self.charging_event_handler(ChargingEvent.UTIL_CHARGING_STARTED)
+
                 elif pd == BatteryPowerDirection.DISCHARGING:
                     self.charging_event_handler(ChargingEvent.UTIL_CHARGING_STOPPED)
 
@@ -493,8 +468,14 @@ class InverterMonitor(Thread):
     def set_error_handler(self, handler: Callable):
         self.error_handler = handler
 
+    def set_osp_need_change_callback(self, cb: Callable):
+        self.osp_change_cb = cb
+
     def set_ac_mode(self, mode: ACMode):
         self.ac_mode = mode
+
+    def notify_osp(self, osp: OutputSourcePriority):
+        self.osp = osp
 
     def stop(self):
         self.interrupted = True
@@ -513,6 +494,7 @@ class InverterMonitor(Thread):
             'time_now': time.time(),
             'next_current_enter_time': self.next_current_enter_time,
             'ac_mode': self.ac_mode,
+            'osp': self.osp,
             'util_ac_present': self.util_ac_present,
             'util_pd': self.util_pd.name,
             'util_solar': self.util_solar

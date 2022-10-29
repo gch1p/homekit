@@ -4,13 +4,12 @@ import json
 import os
 
 from datetime import datetime, timedelta
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from aiohttp import web
 from home import http
 from home.util import parse_addr
 from home.config import config, is_development_mode
-from home.database import BotsDatabase, SensorsDatabase, InverterDatabase
+from home.database import BotsDatabase, SensorsDatabase
 from home.api.types import BotType, TemperatureSensorLocation, SoundSensorLocation
 from home.media import SoundRecordStorage
 
@@ -190,7 +189,10 @@ class WebAPIServer(http.HTTPServer):
 # --------------------
 
 if __name__ == '__main__':
-    config.load('web_api')
+    _app_name = 'web_api'
+    if is_development_mode():
+        _app_name += '_dev'
+    config.load(_app_name)
 
     loop = asyncio.get_event_loop()
 

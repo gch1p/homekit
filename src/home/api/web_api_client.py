@@ -168,13 +168,13 @@ class WebAPIClient:
                 raise ApiResponseError(r.status_code, 'TypeError', 'content-type is not application/json')
 
             data = json.loads(r.text)
-            if r.status_code != 200 or data['result'] == 'error':
+            if r.status_code != 200:
                 raise ApiResponseError(r.status_code,
                                        data['error']['type'],
                                        data['error']['message'],
                                        data['error']['stacktrace'] if 'stacktrace' in data['error'] else None)
 
-            return data['data'] if 'data' in data else True
+            return data['response'] if 'response' in data else True
         finally:
             for fname, f in fd.items():
                 # logger.debug(f'closing file {fname} (fd={f})')

@@ -176,6 +176,7 @@ def build_flags_keyboard(flags: dict, ctx: Context) -> Tuple[str, InlineKeyboard
 
 def status(ctx: Context) -> None:
     gs = inverter.exec('get-status')['data']
+    rated = inverter.exec('get-rated')['data']
 
     # render response
     power_direction = gs['battery_power_direction'].lower()
@@ -208,6 +209,8 @@ def status(ctx: Context) -> None:
         ac_mode = getacmode()
         html += f'\n<b>{ctx.lang(ac_mode.value)}:</b> %s %s' % (gs['grid_voltage']['unit'], gs['grid_voltage']['value'])
         html += ', %s %s' % (gs['grid_freq']['value'], gs['grid_freq']['unit'])
+
+    html += f'\n<b>{ctx.lang("priority")}</b>: {rated["output_source_priority"]}'
 
     # send response
     ctx.reply(html)
@@ -495,6 +498,7 @@ class InverterBot(Wrapper):
         self.lang.ru(
             status='Статус',
             generation='Генерация',
+            priority='Приоритет',
             osp='Приоритет питания нагрузки',
             battery="АКБ",
             load="Нагрузка",
@@ -573,6 +577,7 @@ class InverterBot(Wrapper):
         self.lang.en(
             status='Status',
             generation='Generation',
+            priority='Priority',
             osp='Output source priority',
             battery="Battery",
             load="Load",

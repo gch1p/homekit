@@ -53,3 +53,12 @@ class ACMode(Enum):
 class OutputSourcePriority(Enum):
     SolarUtilityBattery = 'SUB'
     SolarBatteryUtility = 'SBU'
+
+    @classmethod
+    def from_text(cls, s: str):
+        if s == 'Solar-Battery-Utility':
+            return cls.SolarBatteryUtility
+        elif s == 'Solar-Utility-Battery':
+            return cls.SolarUtilityBattery
+        else:
+            raise ValueError(f'unknown value: {s}')

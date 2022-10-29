@@ -113,9 +113,7 @@ class InverterMonitor(Thread):
 
         # Reading rated configuration
         rated = inverter.exec('get-rated')['data']
-        self.osp = OutputSourcePriority.SolarBatteryUtility \
-            if rated['output_source_priority'] == 'Solar-Battery-Utility' \
-            else OutputSourcePriority.SolarUtilityBattery
+        self.osp = OutputSourcePriority.from_text(rated['output_source_priority'])
 
         # Read data and run implemented programs every 2 seconds.
         while not self.interrupted:

@@ -164,7 +164,7 @@ class WebAPIClient:
                   timeout=self.timeout,
                   **kwargs)
 
-            if r.headers['content-type'] != 'application/json':
+            if not r.headers['content-type'].startswith('application/json'):
                 raise ApiResponseError(r.status_code, 'TypeError', 'content-type is not application/json')
 
             data = json.loads(r.text)

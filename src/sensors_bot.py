@@ -26,12 +26,6 @@ from home.api.types import (
 config.load('sensors_bot')
 bot.initialize()
 
-_sensor_names = []
-for k, v in config['sensors'].items():
-    _sensor_names.append(k)
-    bot.lang.set({k: v['label_ru']}, 'ru')
-    bot.lang.set({k: v['label_en']}, 'en')
-
 bot.lang.ru(
     start_message="Выберите датчик на клавиатуре",
     unknown_command="Неизвестная команда",
@@ -45,7 +39,6 @@ bot.lang.ru(
     loading="Загрузка...",
     n_hrs="график за %d ч."
 )
-
 bot.lang.en(
     start_message="Select the sensor on the keyboard",
     unknown_command="Unknown command",
@@ -65,7 +58,14 @@ logger = logging.getLogger(__name__)
 plot_hours = [3, 6, 12, 24]
 
 
-@bot.handler(messages=_sensor_names)
+_sensor_names = []
+for k, v in config['sensors'].items():
+    _sensor_names.append(k)
+    bot.lang.set({k: v['label_ru']}, 'ru')
+    bot.lang.set({k: v['label_en']}, 'en')
+
+
+@bot.handler(messages=_sensor_names, argument='message_key')
 def read_sensor(sensor: str, ctx: bot.Context) -> None:
     host = config['sensors'][sensor]['ip']
     port = config['sensors'][sensor]['port']
@@ -177,4 +177,5 @@ def markup(ctx: Optional[bot.Context]) -> Optional[ReplyKeyboardMarkup]:
 if __name__ == '__main__':
     if 'api' in config:
         bot.enable_logging(BotType.SENSORS)
+
     bot.run()

@@ -76,8 +76,6 @@ def _handler_of_handler(*args, **kwargs):
                   store=db)
     try:
         _args.insert(0, ctx)
-        if self:
-            _args.insert(0, self)
 
         f = kwargs['f']
         del kwargs['f']
@@ -87,6 +85,17 @@ def _handler_of_handler(*args, **kwargs):
             del kwargs['return_with_context']
         else:
             return_with_context = False
+
+        if 'argument' in kwargs and kwargs['argument'] == 'message_key':
+            mkey = None
+            for k, v in lang.get_langpack(ctx.lang).items():
+                if ctx.text == v:
+                    mkey = k
+                    break
+            _args.insert(0, mkey)
+
+        if self:
+            _args.insert(0, self)
 
         result = f(*_args, **kwargs)
         return result if not return_with_context else (result, ctx)
@@ -104,16 +113,22 @@ def _handler_of_handler(*args, **kwargs):
 def handler(**kwargs):
     def inner(f):
         @wraps(f)
-        def _handler(*args, **kwargs):
-            return _handler_of_handler(f=f, *args, **kwargs)
+        def _handler(*args, **inner_kwargs):
+            if 'argument' in kwargs and kwargs['argument'] == 'message_key':
+                inner_kwargs['argument'] = 'message_key'
+            return _handler_of_handler(f=f, *args, **inner_kwargs)
 
         if 'message' in kwargs:
             _updater.dispatcher.add_handler(MessageHandler(text_filter(lang.all(kwargs['message'])), _handler), group=0)
+
         if 'command' in kwargs:
             _updater.dispatcher.add_handler(CommandHandler(kwargs['command'], _handler), group=0)
+
         if 'callback' in kwargs:
             _updater.dispatcher.add_handler(CallbackQueryHandler(_handler, pattern=kwargs['callback']), group=0)
+
         return _handler
+
     return inner
 
 
@@ -445,6 +460,10 @@ def run(start_handler=None, any_handler=None):
 
 def add_conversation(conv: conversation) -> None:
     _updater.dispatcher.add_handler(conv.get_handler(), group=0)
+
+
+def add_handler(h):
+    _updater.dispatcher.add_handler(h, group=0)
 
 
 def start(ctx: Context):

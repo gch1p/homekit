@@ -66,6 +66,9 @@ class LangPack:
         else:
             return self.strings[lang][key]
 
+    def get_langpack(self, _lang: str) -> dict:
+        return self.strings[_lang]
+
     def __call__(self, *args, **kwargs):
         return self.strings[self.default_lang][args[0]]
 

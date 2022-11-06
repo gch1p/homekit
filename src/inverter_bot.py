@@ -692,16 +692,6 @@ def monsetcur_handler(ctx: bot.Context) -> None:
     ctx.reply('not implemented yet')
 
 
-@bot.handler(command='calcw')
-def calcw_handler(ctx: bot.Context) -> None:
-    ctx.reply('not implemented yet')
-
-
-@bot.handler(command='calcwadv')
-def calcwadv_handler(ctx: bot.Context) -> None:
-    ctx.reply('not implemented yet')
-
-
 @bot.callbackhandler
 def button_callback(ctx: bot.Context) -> None:
     query = ctx.callback_query

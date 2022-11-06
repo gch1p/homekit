@@ -109,9 +109,9 @@ def handler(**kwargs):
 
         if 'message' in kwargs:
             _updater.dispatcher.add_handler(MessageHandler(text_filter(lang.all(kwargs['message'])), _handler), group=0)
-        elif 'command' in kwargs:
+        if 'command' in kwargs:
             _updater.dispatcher.add_handler(CommandHandler(kwargs['command'], _handler), group=0)
-        elif 'callback' in kwargs:
+        if 'callback' in kwargs:
             _updater.dispatcher.add_handler(CallbackQueryHandler(_handler, pattern=kwargs['callback']), group=0)
         return _handler
     return inner

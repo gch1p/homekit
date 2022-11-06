@@ -5,7 +5,6 @@ import datetime
 import json
 import itertools
 
-from enum import Enum
 from inverterd import Format, InverterError
 from html import escape
 from typing import Optional, Tuple, Union
@@ -53,7 +52,6 @@ bot.lang.ru(
     status='Статус',
     generation='Генерация',
     priority='Приоритет',
-    # osp='Приоритет питания нагрузки',
     battery="АКБ",
     load="Нагрузка",
     generator="Генератор",
@@ -62,7 +60,6 @@ bot.lang.ru(
     settings="Настройки",
     done="Готово",
     unexpected_callback_data="Ошибка: неверные данные",
-    # settings_osp_msg="Выберите режим:",
     invalid_input="Неверное значение",
     invalid_mode="Invalid mode",
 

@@ -107,13 +107,13 @@ class WebAPIClient:
         return files
 
     def inverter_get_consumed_energy(self, s_from: str, s_to: str):
-        return self._post('inverter/get_consumed_energy/', {
+        return self._post('inverter/consumed_energy/', {
             'from': s_from,
             'to': s_to
         })
 
     def inverter_get_grid_consumed_energy(self, s_from: str, s_to: str):
-        return self._post('inverter/get_grid_consumed_energy/', {
+        return self._post('inverter/grid_consumed_energy/', {
             'from': s_from,
             'to': s_to
         })

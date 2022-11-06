@@ -258,47 +258,6 @@ bot.lang.en(
 )
 
 
-def command_usage(command: str, arguments: dict, language='en') -> str:
-    _strings = {
-        'en': LangStrings(
-            usage='Usage',
-            arguments='Arguments'
-        ),
-        'ru': LangStrings(
-            usage='Использование',
-            arguments='Аргументы'
-        )
-    }
-
-    if language not in _strings:
-        raise ValueError('unsupported language')
-
-    blocks = []
-    argument_names = []
-    argument_lines = []
-    for k, v in arguments.items():
-        argument_names.append(k)
-        argument_lines.append(
-            f'<code>{k}</code>: {v}'
-        )
-
-    command = f'/{command}'
-    if argument_names:
-        command += ' ' + ' '.join(argument_names)
-
-    blocks.append(
-        f'<b>{_strings[language]["usage"]}</b>\n'
-        f'<code>{command}</code>'
-    )
-
-    if argument_lines:
-        blocks.append(
-            f'<b>{_strings[language]["arguments"]}</b>\n' + '\n'.join(argument_lines)
-        )
-
-    return '\n\n'.join(blocks)
-
-
 def monitor_charging(event: ChargingEvent, **kwargs) -> None:
     args = []
     is_util = False

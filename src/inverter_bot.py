@@ -12,7 +12,6 @@ from typing import Optional, Tuple, Union
 from home.util import chunks
 from home.config import config
 from home.telegram import bot
-from home.telegram._botlang import LangStrings
 from home.inverter import (
     wrapper_instance as inverter,
     beautify_table,
@@ -97,7 +96,7 @@ bot.lang.ru(
 
     # consumption
     consumption_msg="Выберите тип:",
-    consumption_total="Общее",
+    consumption_total="Домашние приборы",
     consumption_grid="Со столба",
     consumption_select_interval='Выберите период:',
     consumption_request_sent="⏳ Запрос отправлен...",
@@ -202,8 +201,8 @@ bot.lang.en(
 
     # consumption
     consumption_msg="Select type:",
-    consumption_total="Total",
-    consumption_grid="Grid",
+    consumption_total="Home appliances",
+    consumption_grid="Consumed from grid",
     consumption_select_interval='Select period:',
     consumption_request_sent="⏳ Request sent...",
 

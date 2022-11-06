@@ -129,7 +129,10 @@ def callbackhandler(**kwargs):
         @wraps(f)
         def _handler(*args, **kwargs):
             return _handler_of_handler(f=f, *args, **kwargs)
-        _updater.dispatcher.add_handler(CallbackQueryHandler(_handler, pattern=kwargs['callback']), group=0)
+        pattern_kwargs = {}
+        if kwargs['callback'] != '*':
+            pattern_kwargs['pattern'] = kwargs['callback']
+        _updater.dispatcher.add_handler(CallbackQueryHandler(_handler, **pattern_kwargs), group=0)
         return _handler
     return inner
 

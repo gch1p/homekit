@@ -90,7 +90,7 @@ def read_sensor(sensor: str, ctx: bot.Context) -> None:
     ctx.reply(text, markup=InlineKeyboardMarkup(chunks(buttons, 2)))
 
 
-@bot.callbackhandler
+@bot.callbackhandler(callback='*')
 def callback_handler(ctx: bot.Context) -> None:
     query = ctx.callback_query
 
@@ -166,7 +166,7 @@ def draw_plot(data,
 
 
 @bot.defaultreplymarkup
-def markup(self, ctx: Optional[bot.Context]) -> Optional[ReplyKeyboardMarkup]:
+def markup(ctx: Optional[bot.Context]) -> Optional[ReplyKeyboardMarkup]:
     buttons = []
     for k in config['sensors'].keys():
         buttons.append(ctx.lang(k))

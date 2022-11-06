@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import itertools
 
 from enum import Enum, auto
 from functools import wraps
@@ -87,8 +88,9 @@ def _handler_of_handler(*args, **kwargs):
             return_with_context = False
 
         if 'argument' in kwargs and kwargs['argument'] == 'message_key':
+            del kwargs['argument']
             mkey = None
-            for k, v in lang.get_langpack(ctx.lang).items():
+            for k, v in lang.get_langpack(ctx.user_lang).items():
                 if ctx.text == v:
                     mkey = k
                     break
@@ -118,8 +120,16 @@ def handler(**kwargs):
                 inner_kwargs['argument'] = 'message_key'
             return _handler_of_handler(f=f, *args, **inner_kwargs)
 
+        messages = []
+        if 'messages' in kwargs:
+            messages += kwargs['messages']
         if 'message' in kwargs:
-            _updater.dispatcher.add_handler(MessageHandler(text_filter(lang.all(kwargs['message'])), _handler), group=0)
+            messages.append(kwargs['message'])
+        if messages:
+            _updater.dispatcher.add_handler(
+                MessageHandler(text_filter(*list(itertools.chain.from_iterable([lang.all(m) for m in messages]))), _handler),
+                group=0
+            )
 
         if 'command' in kwargs:
             _updater.dispatcher.add_handler(CommandHandler(kwargs['command'], _handler), group=0)

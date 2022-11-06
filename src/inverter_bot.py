@@ -915,7 +915,7 @@ if __name__ == '__main__':
     inverter.init(host=config['inverter']['ip'], port=config['inverter']['port'])
 
     bot.set_database(InverterStore())
-    # bot.enable_logging(BotType.INVERTER)
+    bot.enable_logging(BotType.INVERTER)
 
     bot.add_conversation(SettingsConversation(enable_back=True))
     bot.add_conversation(ConsumptionConversation(enable_back=True))
@@ -928,10 +928,11 @@ if __name__ == '__main__':
     monitor.set_osp_need_change_callback(osp_change_cb)
 
     setacmode(getacmode())
-    bot.run()
 
     if not config.get('monitor.disabled'):
         logging.info('starting monitor')
         monitor.start()
+
+    bot.run()
 
     monitor.stop()

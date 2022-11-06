@@ -1,10 +1,8 @@
-from __future__ import annotations
-
 import logging
 
-from typing import Union, Optional, List, Dict
+from typing import Optional, Dict, List, Union
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 class LangStrings(dict):
@@ -18,7 +16,7 @@ class LangStrings(dict):
         self._lang = lang
 
     def __missing__(self, key):
-        logger.warning(f'key {key} is missing in language {self._lang}')
+        _logger.warning(f'key {key} is missing in language {self._lang}')
         return '{%s}' % key
 
     def __setitem__(self, key, value):
@@ -79,3 +77,41 @@ class LangPack:
 
     def __contains__(self, key):
         return key in self.strings[self.default_lang]
+
+    @staticmethod
+    def pfx(prefix: str, l: list) -> list:
+        return list(map(lambda s: f'{prefix}{s}', l))
+
+
+
+languages = {
+    'en': 'English',
+    'ru': 'Русский'
+}
+
+
+lang = LangPack()
+lang.en(
+    en='English',
+    ru='Russian',
+    start_message="Select command on the keyboard.",
+    unknown_message="Unknown message",
+    cancel="🚫 Cancel",
+    back='🔙 Back',
+    select_language="Select language on the keyboard.",
+    invalid_language="Invalid language. Please try again.",
+    saved='Saved.',
+    please_wait="⏳ Please wait..."
+)
+lang.ru(
+    en='Английский',
+    ru='Русский',
+    start_message="Выберите команду на клавиатуре.",
+    unknown_message="Неизвестная команда",
+    cancel="🚫 Отмена",
+    back='🔙 Назад',
+    select_language="Выберите язык на клавиатуре.",
+    invalid_language="Неверный язык. Пожалуйста, попробуйте снова",
+    saved="Настройки сохранены.",
+    please_wait="⏳ Ожидайте..."
+)

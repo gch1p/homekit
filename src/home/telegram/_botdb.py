@@ -1,7 +1,7 @@
-from ..database.sqlite import SQLiteBase
+from home.database.sqlite import SQLiteBase
 
 
-class Store(SQLiteBase):
+class BotDatabase(SQLiteBase):
     def __init__(self):
         super().__init__()
 

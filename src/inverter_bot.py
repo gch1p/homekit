@@ -3,19 +3,17 @@ import logging
 import re
 import datetime
 import json
+import itertools
 
+from enum import Enum
 from inverterd import Format, InverterError
 from html import escape
 from typing import Optional, Tuple, Union
+
+from home.util import chunks
 from home.config import config
-from home.bot import (
-    Wrapper,
-    Context,
-    text_filter,
-    command_usage,
-    Store,
-    IgnoreMarkup
-)
+from home.telegram import bot
+from home.telegram._botlang import LangStrings
 from home.inverter import (
     wrapper_instance as inverter,
     beautify_table,
@@ -28,18 +26,12 @@ from home.inverter.types import (
     ACMode,
     OutputSourcePriority
 )
+from home.database.inverter_time_formats import *
 from home.api.types import BotType
+from home.api import WebAPIClient
 from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import (
-    MessageHandler,
-    CommandHandler,
-    CallbackQueryHandler,
-    ConversationHandler,
-    Filters
-)
 
 monitor: Optional[InverterMonitor] = None
-bot: Optional[Wrapper] = None
 db = None
 LT = escape('<=')
 flags_map = {
@@ -52,10 +44,262 @@ flags_map = {
     'alarm_on_on_primary_source_interrupt': 'ALRM',
     'fault_code_record': 'FTCR',
 }
-logger = logging.getLogger(__name__)
 
-SETACMODE_STARTED, = range(1)
-SETOSP_STARTED, = range(1)
+logger = logging.getLogger(__name__)
+config.load('inverter_bot')
+
+bot.initialize()
+bot.lang.ru(
+    status='Статус',
+    generation='Генерация',
+    priority='Приоритет',
+    # osp='Приоритет питания нагрузки',
+    battery="АКБ",
+    load="Нагрузка",
+    generator="Генератор",
+    utilities="Столб",
+    consumption="Статистика потребления",
+    settings="Настройки",
+    done="Готово",
+    unexpected_callback_data="Ошибка: неверные данные",
+    # settings_osp_msg="Выберите режим:",
+    invalid_input="Неверное значение",
+    invalid_mode="Invalid mode",
+
+    flags_press_button='Нажмите кнопку для переключения настройки',
+    flags_fail='Не удалось установить настройку',
+    flags_invalid='Неизвестная настройка',
+
+    # generation
+    gen_input_power='Зарядная мощность',
+
+    # settings
+    settings_msg="Что вы хотите настроить?",
+    settings_osp='Приоритет питания нагрузки',
+    settings_ac_preset="Применить шаблон режима AC",
+    settings_bat_thresholds="Пороги заряда АКБ от AC",
+    settings_bat_cut_off_voltage="Порог отключения АКБ",
+    settings_ac_max_charging_current="Максимальный ток заряда от AC",
+
+    settings_osp_msg="Установите приоритет:",
+    settings_osp_sub='Solar-Utility-Battery',
+    settings_osp_sbu='Solar-Battery-Utility',
+
+    settings_select_bottom_threshold="Выберите нижний порог:",
+    settings_select_upper_threshold="Выберите верхний порог:",
+    settings_select_max_current='Выберите максимальный ток:',
+    settings_enter_cutoff_voltage=f'Введите напряжение V, где 40.0 {LT} V {LT} 48.0',
+
+    # time and date
+    today='Сегодня',
+    yday1='Вчера',
+    yday2='Позавчера',
+    for_7days='За 7 дней',
+    for_30days='За 30 дней',
+    # to_select_interval='Выбрать интервал',
+
+    # consumption
+    consumption_msg="Выберите тип:",
+    consumption_total="Общее",
+    consumption_grid="Со столба",
+    consumption_select_interval='Выберите период:',
+    consumption_request_sent="⏳ Запрос отправлен...",
+
+    # status
+    charging_at=', ',
+    pd_charging='заряжается',
+    pd_discharging='разряжается',
+    pd_nothing='не используется',
+
+    # flags
+    flag_buzzer='Звуковой сигнал',
+    flag_overload_bypass='Разрешить перегрузку',
+    flag_escape_to_default_screen_after_1min_timeout='Возврат на главный экран через 1 минуту',
+    flag_overload_restart='Перезапуск при перегрузке',
+    flag_over_temp_restart='Перезапуск при перегреве',
+    flag_backlight_on='Подсветка экрана',
+    flag_alarm_on_on_primary_source_interrupt='Сигнал при разрыве основного источника питания',
+    flag_fault_code_record='Запись кодов ошибок',
+
+    # commands
+    setbatuv_v=f'напряжение, 40.0 {LT} V {LT} 48.0',
+    setgenct_cv=f'напряжение включения заряда, 44 {LT} CV {LT} 51',
+    setgenct_dv=f'напряжение отключения заряда, 48 {LT} DV {LT} 58',
+    setgencc_a='максимальный ток заряда, допустимые значения: %s',
+
+    # monitor
+    chrg_evt_started='✅ Начали заряжать от генератора.',
+    chrg_evt_finished='✅ Зарядили. Генератор пора выключать.',
+    chrg_evt_disconnected='ℹ️ Генератор отключен.',
+    chrg_evt_current_changed='ℹ️ Ток заряда от генератора установлен в %d A.',
+    chrg_evt_not_charging='ℹ️ Генератор подключен, но не заряжает.',
+    chrg_evt_na_solar='⛔️ Генератор подключен, но аккумуляторы не заряжаются из-за подключенных панелей.',
+    chrg_evt_mostly_charged='✅ Аккумуляторы более-менее заряжены, генератор пора выключать.',
+    battery_level_changed='Уровень заряда АКБ: <b>%s %s</b> (<b>%0.1f V</b> при нагрузке <b>%d W</b>)',
+    error_message='<b>Ошибка:</b> %s.',
+
+    util_chrg_evt_started='✅ Начали заряжать от столба.',
+    util_chrg_evt_stopped='ℹ️ Перестали заряжать от столба.',
+    util_chrg_evt_stopped_solar='ℹ️ Перестали заряжать от столба из-за подключения панелей.',
+
+    util_connected='✅️ Столб подключён.',
+    util_disconnected='‼️ Столб отключён.',
+
+    # other notifications
+    ac_mode_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> установил режим AC: <b>%s</b>.',
+    osp_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> установил приоритет источника питания нагрузки: <b>%s</b>.',
+    osp_auto_changed_notification='ℹ️ Бот установил приоритет источника питания нагрузки: <b>%s</b>. Причины: напряжение АКБ %.1f V, мощность заряда с панелей %d W.',
+
+    bat_state_normal='Нормальный',
+    bat_state_low='Низкий',
+    bat_state_critical='Критический',
+)
+
+bot.lang.en(
+    status='Status',
+    generation='Generation',
+    priority='Priority',
+    battery="Battery",
+    load="Load",
+    generator="Generator",
+    utilities="Utilities",
+    consumption="Consumption statistics",
+    settings="Settings",
+    done="Done",
+    unexpected_callback_data="Unexpected callback data",
+    select_priortiy="Select priority:",
+    invalid_input="Invalid input",
+    invalid_mode="Invalid mode",
+
+    flags_press_button='Press a button to toggle a flag.',
+    flags_fail='Failed to toggle flag',
+    flags_invalid='Invalid flag',
+
+    # settings
+    settings_msg='What do you want to configure?',
+    settings_osp='Output source priority',
+    settings_ac_preset="AC preset",
+    settings_bat_thresholds="Battery charging thresholds",
+    settings_bat_cut_off_voltage="Battery cut-off voltage",
+    settings_ac_max_charging_current="Max AC charging current",
+
+    settings_osp_msg="Select priority:",
+    settings_osp_sub='Solar-Utility-Battery',
+    settings_osp_sbu='Solar-Battery-Utility',
+
+    settings_select_bottom_threshold="Select bottom (lower) threshold:",
+    settings_select_upper_threshold="Select top (upper) threshold:",
+    settings_select_max_current='Select max current:',
+    settings_enter_cutoff_voltage=f'Enter voltage V (40.0 {LT} V {LT} 48.0):',
+
+    # generation
+    gen_input_power='Input power',
+
+    # time and date
+    today='Today',
+    yday1='Yesterday',
+    yday2='The day before yesterday',
+    for_7days='7 days',
+    for_30days='30 days',
+    # to_select_interval='Select interval',
+
+    # consumption
+    consumption_msg="Select type:",
+    consumption_total="Total",
+    consumption_grid="Grid",
+    consumption_select_interval='Select period:',
+    consumption_request_sent="⏳ Request sent...",
+
+    # status
+    charging_at=' @ ',
+    pd_charging='charging',
+    pd_discharging='discharging',
+    pd_nothing='not used',
+
+    # flags
+    flag_buzzer='Buzzer',
+    flag_overload_bypass='Overload bypass',
+    flag_escape_to_default_screen_after_1min_timeout='Reset to default LCD page after 1min timeout',
+    flag_overload_restart='Restart on overload',
+    flag_over_temp_restart='Restart on overtemp',
+    flag_backlight_on='LCD backlight',
+    flag_alarm_on_on_primary_source_interrupt='Beep on primary source interruption',
+    flag_fault_code_record='Fault code recording',
+
+    # commands
+    setbatuv_v=f'floating point number, 40.0 {LT} V {LT} 48.0',
+    setgenct_cv=f'charging voltage, 44 {LT} CV {LT} 51',
+    setgenct_dv=f'discharging voltage, 48 {LT} DV {LT} 58',
+    setgencc_a='max charging current, allowed values: %s',
+
+    # monitor
+    chrg_evt_started='✅ Started charging from AC.',
+    chrg_evt_finished='✅ Finished charging, it\'s time to stop the generator.',
+    chrg_evt_disconnected='ℹ️ AC disconnected.',
+    chrg_evt_current_changed='ℹ️ AC charging current set to %d A.',
+    chrg_evt_not_charging='ℹ️ AC connected but not charging.',
+    chrg_evt_na_solar='⛔️ AC connected, but battery won\'t be charged due to active solar power line.',
+    chrg_evt_mostly_charged='✅ The battery is mostly charged now. The generator can be turned off.',
+    battery_level_changed='Battery level: <b>%s</b> (<b>%0.1f V</b> under <b>%d W</b> load)',
+    error_message='<b>Error:</b> %s.',
+
+    util_chrg_evt_started='✅ Started charging from utilities.',
+    util_chrg_evt_stopped='ℹ️ Stopped charging from utilities.',
+    util_chrg_evt_stopped_solar='ℹ️ Stopped charging from utilities because solar panels were connected.',
+
+    util_connected='✅️ Utilities connected.',
+    util_disconnected='‼️ Utilities disconnected.',
+
+    # other notifications
+    ac_mode_changed_notification='User <a href="tg://user?id=%d">%s</a> set AC mode to <b>%s</b>.',
+    osp_changed_notification='User <a href="tg://user?id=%d">%s</a> set output source priority: <b>%s</b>.',
+    osp_auto_changed_notification='Bot changed output source priority to <b>%s</b>. Reasons: battery voltage is %.1f V, solar input is %d W.',
+
+    bat_state_normal='Normal',
+    bat_state_low='Low',
+    bat_state_critical='Critical',
+)
+
+
+def command_usage(command: str, arguments: dict, language='en') -> str:
+    _strings = {
+        'en': LangStrings(
+            usage='Usage',
+            arguments='Arguments'
+        ),
+        'ru': LangStrings(
+            usage='Использование',
+            arguments='Аргументы'
+        )
+    }
+
+    if language not in _strings:
+        raise ValueError('unsupported language')
+
+    blocks = []
+    argument_names = []
+    argument_lines = []
+    for k, v in arguments.items():
+        argument_names.append(k)
+        argument_lines.append(
+            f'<code>{k}</code>: {v}'
+        )
+
+    command = f'/{command}'
+    if argument_names:
+        command += ' ' + ' '.join(argument_names)
+
+    blocks.append(
+        f'<b>{_strings[language]["usage"]}</b>\n'
+        f'<code>{command}</code>'
+    )
+
+    if argument_lines:
+        blocks.append(
+            f'<b>{_strings[language]["arguments"]}</b>\n' + '\n'.join(argument_lines)
+        )
+
+    return '\n\n'.join(blocks)
 
 
 def monitor_charging(event: ChargingEvent, **kwargs) -> None:
@@ -139,32 +383,36 @@ def osp_change_cb(new_osp: OutputSourcePriority,
 
     bot.notify_all(
         lambda lang: bot.lang.get('osp_auto_changed_notification', lang,
-                                  bot.lang.get(f'setosp_{new_osp.value.lower()}', lang), v, solar_input),
+                                  bot.lang.get(f'settings_osp_{new_osp.value.lower()}', lang), v, solar_input),
     )
 
 
-def full_status(ctx: Context) -> None:
+@bot.handler(command='status')
+def full_status(ctx: bot.Context) -> None:
     status = inverter.exec('get-status', format=Format.TABLE)
     ctx.reply(beautify_table(status))
 
 
-def full_rated(ctx: Context) -> None:
+@bot.handler(command='config')
+def full_rated(ctx: bot.Context) -> None:
     rated = inverter.exec('get-rated', format=Format.TABLE)
     ctx.reply(beautify_table(rated))
 
 
-def full_errors(ctx: Context) -> None:
+@bot.handler(command='errors')
+def full_errors(ctx: bot.Context) -> None:
     errors = inverter.exec('get-errors', format=Format.TABLE)
     ctx.reply(beautify_table(errors))
 
 
-def flags(ctx: Context) -> None:
+@bot.handler(command='flags')
+def flags_handler(ctx: bot.Context) -> None:
     flags = inverter.exec('get-flags')['data']
     text, markup = build_flags_keyboard(flags, ctx)
     ctx.reply(text, markup=markup)
 
 
-def build_flags_keyboard(flags: dict, ctx: Context) -> Tuple[str, InlineKeyboardMarkup]:
+def build_flags_keyboard(flags: dict, ctx: bot.Context) -> Tuple[str, InlineKeyboardMarkup]:
     keyboard = []
     for k, v in flags.items():
         label = ('✅' if v else '❌') + ' ' + ctx.lang(f'flag_{k}')
@@ -174,7 +422,382 @@ def build_flags_keyboard(flags: dict, ctx: Context) -> Tuple[str, InlineKeyboard
     return ctx.lang('flags_press_button'), InlineKeyboardMarkup(keyboard)
 
 
-def status(ctx: Context) -> None:
+def getacmode() -> ACMode:
+    return ACMode(bot.db.get_param('ac_mode', default=ACMode.GENERATOR))
+
+
+def setacmode(mode: ACMode):
+    monitor.set_ac_mode(mode)
+
+    cv, dv = config['ac_mode'][str(mode.value)]['thresholds']
+    a = config['ac_mode'][str(mode.value)]['initial_current']
+
+    logger.debug(f'setacmode: mode={mode}, cv={cv}, dv={dv}, a={a}')
+
+    inverter.exec('set-charge-thresholds', (cv, dv))
+    inverter.exec('set-max-ac-charge-current', (0, a))
+
+
+def setosp(sp: OutputSourcePriority):
+    logger.debug(f'setosp: sp={sp}')
+    inverter.exec('set-output-source-priority', (sp.value,))
+    monitor.notify_osp(sp)
+
+
+class SettingsConversation(bot.conversation):
+    START, OSP, AC_PRESET, BAT_THRESHOLDS_1, BAT_THRESHOLDS_2, BAT_CUT_OFF_VOLTAGE, AC_MAX_CHARGING_CURRENT = range(7)
+    STATE_SEQS = [
+        [START, OSP],
+        [START, AC_PRESET],
+        [START, BAT_THRESHOLDS_1, BAT_THRESHOLDS_2],
+        [START, BAT_CUT_OFF_VOLTAGE],
+        [START, AC_MAX_CHARGING_CURRENT]
+    ]
+
+    START_BUTTONS = bot.lang.pfx('settings_', ['ac_preset',
+                                               'ac_max_charging_current',
+                                               'bat_thresholds',
+                                               'bat_cut_off_voltage',
+                                               'osp'])
+    OSP_BUTTONS = bot.lang.pfx('settings_osp_', [sp.value.lower() for sp in OutputSourcePriority])
+    AC_PRESET_BUTTONS = [mode.value for mode in ACMode]
+
+    RECHARGE_VOLTAGES = [44, 45, 46, 47, 48, 49, 50, 51]
+    REDISCHARGE_VOLTAGES = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58]
+
+    @bot.conventer(START, message='settings')
+    def start_enter(self, ctx: bot.Context):
+        buttons = list(chunks(list(self.START_BUTTONS), 2))
+        buttons.reverse()
+        return self.reply(ctx, self.START, ctx.lang('settings_msg'), buttons,
+                          with_cancel=True)
+
+    @bot.convinput(START, messages={
+        'settings_osp': OSP,
+        'settings_ac_preset': AC_PRESET,
+        'settings_bat_thresholds': BAT_THRESHOLDS_1,
+        'settings_bat_cut_off_voltage': BAT_CUT_OFF_VOLTAGE,
+        'settings_ac_max_charging_current': AC_MAX_CHARGING_CURRENT
+    })
+    def start_input(self, ctx: bot.Context):
+        pass
+
+    @bot.conventer(OSP)
+    def osp_enter(self, ctx: bot.Context):
+        return self.reply(ctx, self.OSP, ctx.lang('settings_osp_msg'), self.OSP_BUTTONS,
+                          with_back=True)
+
+    @bot.convinput(OSP, messages=OSP_BUTTONS)
+    def osp_input(self, ctx: bot.Context):
+        selected_sp = None
+        for sp in OutputSourcePriority:
+            if ctx.text == ctx.lang(f'settings_osp_{sp.value.lower()}'):
+                selected_sp = sp
+                break
+
+        if selected_sp is None:
+            raise ValueError('invalid sp')
+
+        # apply the mode
+        setosp(selected_sp)
+
+        # reply to user
+        ctx.reply(ctx.lang('saved'), markup=bot.IgnoreMarkup())
+
+        # notify other users
+        bot.notify_all(
+            lambda lang: bot.lang.get('osp_changed_notification', lang,
+                                      ctx.user.id, ctx.user.name,
+                                      bot.lang.get(f'settings_osp_{selected_sp.value.lower()}', lang)),
+            exclude=(ctx.user_id,)
+        )
+        return self.END
+
+    @bot.conventer(AC_PRESET)
+    def acpreset_enter(self, ctx: bot.Context):
+        return self.reply(ctx, self.AC_PRESET, ctx.lang('settings_ac_preset_msg'), self.AC_PRESET_BUTTONS,
+                          with_back=True)
+
+    @bot.convinput(AC_PRESET, messages=AC_PRESET_BUTTONS)
+    def acpreset_input(self, ctx: bot.Context):
+        if monitor.active_current is not None:
+            raise RuntimeError('generator charging program is active')
+
+        if ctx.text == ctx.lang('utilities'):
+            newmode = ACMode.UTILITIES
+        elif ctx.text == ctx.lang('generator'):
+            newmode = ACMode.GENERATOR
+        else:
+            raise ValueError('invalid mode')
+
+        # apply the mode
+        setacmode(newmode)
+
+        # save
+        bot.db.set_param('ac_mode', str(newmode.value))
+
+        # reply to user
+        ctx.reply(ctx.lang('saved'), markup=bot.IgnoreMarkup())
+
+        # notify other users
+        bot.notify_all(
+            lambda lang: bot.lang.get('ac_mode_changed_notification', lang,
+                                      ctx.user.id, ctx.user.name,
+                                      bot.lang.get(str(newmode.value), lang)),
+            exclude=(ctx.user_id,)
+        )
+        return self.END
+
+    @bot.conventer(BAT_THRESHOLDS_1)
+    def thresholds1_enter(self, ctx: bot.Context):
+        buttons = list(map(lambda v: f'{v} V', self.RECHARGE_VOLTAGES))
+        buttons = chunks(buttons, 4)
+        return self.reply(ctx, self.BAT_THRESHOLDS_1, ctx.lang('settings_select_bottom_threshold'), buttons,
+                          with_back=True, buttons_lang_completed=True)
+
+    @bot.convinput(BAT_THRESHOLDS_1,
+                   messages=list(map(lambda n: f'{n} V', RECHARGE_VOLTAGES)),
+                   messages_lang_completed=True)
+    def thresholds1_input(self, ctx: bot.Context):
+        v = self._parse_voltage(ctx.text)
+        ctx.user_data['bat_thrsh_v1'] = v
+        return self.invoke(self.BAT_THRESHOLDS_2, ctx)
+
+    @bot.conventer(BAT_THRESHOLDS_2)
+    def thresholds2_enter(self, ctx: bot.Context):
+        buttons = list(map(lambda v: f'{v} V', self.REDISCHARGE_VOLTAGES))
+        buttons = chunks(buttons, 4)
+        return self.reply(ctx, self.BAT_THRESHOLDS_2, ctx.lang('settings_select_upper_threshold'), buttons,
+                          with_back=True, buttons_lang_completed=True)
+
+    @bot.convinput(BAT_THRESHOLDS_2,
+                   messages=list(map(lambda n: f'{n} V', REDISCHARGE_VOLTAGES)),
+                   messages_lang_completed=True)
+    def thresholds2_input(self, ctx: bot.Context):
+        v2 = v = self._parse_voltage(ctx.text)
+        v1 = ctx.user_data['bat_thrsh_v1']
+        del ctx.user_data['bat_thrsh_v1']
+
+        response = inverter.exec('set-charge-thresholds', (v1, v2))
+        ctx.reply(ctx.lang('saved') if response['result'] == 'ok' else 'ERROR',
+                  markup=bot.IgnoreMarkup())
+        return self.END
+
+    @bot.conventer(AC_MAX_CHARGING_CURRENT)
+    def ac_max_enter(self, ctx: bot.Context):
+        buttons = self._get_allowed_ac_charge_amps()
+        buttons = map(lambda n: f'{n} A', buttons)
+        buttons = [list(buttons)]
+        return self.reply(ctx, self.AC_MAX_CHARGING_CURRENT, ctx.lang('settings_select_max_current'), buttons,
+                          with_back=True, buttons_lang_completed=True)
+
+    @bot.convinput(AC_MAX_CHARGING_CURRENT, regex=r'^\d+ A$')
+    def ac_max_input(self, ctx: bot.Context):
+        a = self._parse_amps(ctx.text)
+        allowed = self._get_allowed_ac_charge_amps()
+        if a not in allowed:
+            raise ValueError('input is not allowed')
+
+        response = inverter.exec('set-max-ac-charge-current', (0, a))
+        ctx.reply(ctx.lang('saved') if response['result'] == 'ok' else 'ERROR',
+                  markup=bot.IgnoreMarkup())
+        return self.END
+
+    @bot.conventer(BAT_CUT_OFF_VOLTAGE)
+    def cutoff_enter(self, ctx: bot.Context):
+        return self.reply(ctx, self.BAT_CUT_OFF_VOLTAGE, ctx.lang('settings_enter_cutoff_voltage'), None,
+                          with_back=True)
+
+    @bot.convinput(BAT_CUT_OFF_VOLTAGE, regex=r'^(\d{2}(\.\d{1})?)$')
+    def cutoff_input(self, ctx: bot.Context):
+        v = float(ctx.text)
+        if 40.0 <= v <= 48.0:
+            response = inverter.exec('set-battery-cutoff-voltage', (v,))
+            ctx.reply(ctx.lang('saved') if response['result'] == 'ok' else 'ERROR',
+                      markup=bot.IgnoreMarkup())
+        else:
+            raise ValueError('invalid voltage')
+
+        return self.END
+
+    def _get_allowed_ac_charge_amps(self) -> list[int]:
+        l = inverter.exec('get-allowed-ac-charge-currents')['data']
+        l = filter(lambda n: n <= 40, l)
+        return list(l)
+
+    def _parse_voltage(self, s: str) -> int:
+        return int(re.match(r'^(\d{2}) V$', s).group(1))
+
+    def _parse_amps(self, s: str) -> int:
+        return int(re.match(r'^(\d{1,2}) A$', s).group(1))
+
+
+class ConsumptionConversation(bot.conversation):
+    START, TOTAL, GRID = range(3)
+    STATE_SEQS = [
+        [START, TOTAL],
+        [START, GRID]
+    ]
+
+    START_BUTTONS = bot.lang.pfx('consumption_', ['total', 'grid'])
+    INTERVAL_BUTTONS = [
+        ['today'],
+        ['yday1'],
+        ['for_7days', 'for_30days'],
+        # ['to_select_interval']
+    ]
+    INTERVAL_BUTTONS_FLAT = list(itertools.chain.from_iterable(INTERVAL_BUTTONS))
+
+    @bot.conventer(START, message='consumption')
+    def start_enter(self, ctx: bot.Context):
+        return self.reply(ctx, self.START, ctx.lang('consumption_msg'), [self.START_BUTTONS],
+                          with_cancel=True)
+
+    @bot.convinput(START, messages={
+        'consumption_total': TOTAL,
+        'consumption_grid': GRID
+    })
+    def start_input(self, ctx: bot.Context):
+        pass
+
+    @bot.conventer(TOTAL)
+    def total_enter(self, ctx: bot.Context):
+        return self._render_interval_btns(ctx, self.TOTAL)
+
+    @bot.conventer(GRID)
+    def grid_enter(self, ctx: bot.Context):
+        return self._render_interval_btns(ctx, self.GRID)
+
+    def _render_interval_btns(self, ctx: bot.Context, state):
+        return self.reply(ctx, state, ctx.lang('consumption_select_interval'), self.INTERVAL_BUTTONS,
+                          with_back=True)
+
+    @bot.convinput(TOTAL, messages=INTERVAL_BUTTONS_FLAT)
+    def total_input(self, ctx: bot.Context):
+        return self._render_interval_results(ctx, self.TOTAL)
+
+    @bot.convinput(GRID, messages=INTERVAL_BUTTONS_FLAT)
+    def grid_input(self, ctx: bot.Context):
+        return self._render_interval_results(ctx, self.GRID)
+
+    def _render_interval_results(self, ctx: bot.Context, state):
+        # if ctx.text == ctx.lang('to_select_interval'):
+        #     TODO
+        # pass
+        #
+        # else:
+
+        now = datetime.datetime.now()
+        s_to = now.strftime(FormatDate)
+
+        if ctx.text == ctx.lang('today'):
+            s_from = now.strftime(FormatDate)
+            s_to = 'now'
+        elif ctx.text == ctx.lang('yday1'):
+            s_from = (now - datetime.timedelta(days=1)).strftime(FormatDate)
+        elif ctx.text == ctx.lang('for_7days'):
+            s_from = (now - datetime.timedelta(days=7)).strftime(FormatDate)
+        elif ctx.text == ctx.lang('for_30days'):
+            s_from = (now - datetime.timedelta(days=30)).strftime(FormatDate)
+
+        # markup = InlineKeyboardMarkup([
+        #     [InlineKeyboardButton(ctx.lang('please_wait'), callback_data='wait')]
+        # ])
+
+        message = ctx.reply(ctx.lang('consumption_request_sent'),
+                  markup=bot.IgnoreMarkup())
+
+        api = WebAPIClient(timeout=60)
+        method = 'inverter_get_consumed_energy' if state == self.TOTAL else 'inverter_get_grid_consumed_energy'
+
+        try:
+            wh = getattr(api, method)(s_from, s_to)
+            bot.delete_message(message.chat_id, message.message_id)
+            ctx.reply('%.2f Wh' % (wh,),
+                      markup=bot.IgnoreMarkup())
+            return self.END
+        except Exception as e:
+            bot.delete_message(message.chat_id, message.message_id)
+            ctx.reply_exc(e)
+
+# other
+# -----
+
+@bot.handler(command='monstatus')
+def monstatus_handler(ctx: bot.Context) -> None:
+    msg = ''
+    st = monitor.dump_status()
+    for k, v in st.items():
+        msg += k + ': ' + str(v) + '\n'
+    ctx.reply(msg)
+
+
+@bot.handler(command='monsetcur')
+def monsetcur_handler(ctx: bot.Context) -> None:
+    ctx.reply('not implemented yet')
+
+
+@bot.handler(command='calcw')
+def calcw_handler(ctx: bot.Context) -> None:
+    ctx.reply('not implemented yet')
+
+
+@bot.handler(command='calcwadv')
+def calcwadv_handler(ctx: bot.Context) -> None:
+    ctx.reply('not implemented yet')
+
+
+@bot.callbackhandler
+def button_callback(ctx: bot.Context) -> None:
+    query = ctx.callback_query
+
+    if query.data.startswith('flag_'):
+        flag = query.data[5:]
+        found = False
+        json_key = None
+        for k, v in flags_map.items():
+            if v == flag:
+                found = True
+                json_key = k
+                break
+        if not found:
+            query.answer(ctx.lang('flags_invalid'))
+            return
+
+        flags = inverter.exec('get-flags')['data']
+        cur_flag_value = flags[json_key]
+        target_flag_value = '0' if cur_flag_value else '1'
+
+        # set flag
+        response = inverter.exec('set-flag', (flag, target_flag_value))
+
+        # notify user
+        query.answer(ctx.lang('done') if response['result'] == 'ok' else ctx.lang('flags_fail'))
+
+        # edit message
+        flags[json_key] = not cur_flag_value
+        text, markup = build_flags_keyboard(flags, ctx)
+        query.edit_message_text(text, reply_markup=markup)
+
+    else:
+        query.answer(ctx.lang('unexpected_callback_data'))
+
+
+@bot.exceptionhandler
+def exception_handler(e: Exception, ctx: bot.Context) -> Optional[bool]:
+    if isinstance(e, InverterError):
+        try:
+            err = json.loads(str(e))['message']
+        except json.decoder.JSONDecodeError:
+            err = str(e)
+        err = re.sub(r'((?:.*)?error:) (.*)', r'<b>\1</b> \2', err)
+        ctx.reply(err,
+                  markup=bot.IgnoreMarkup())
+        return True
+
+
+@bot.handler(message='status')
+def status_handler(ctx: bot.Context) -> None:
     gs = inverter.exec('get-status')['data']
     rated = inverter.exec('get-rated')['data']
 
@@ -216,14 +839,15 @@ def status(ctx: Context) -> None:
     ctx.reply(html)
 
 
-def generation(ctx: Context) -> None:
+@bot.handler(message='generation')
+def generation_handler(ctx: bot.Context) -> None:
     today = datetime.date.today()
     yday = today - datetime.timedelta(days=1)
     yday2 = today - datetime.timedelta(days=2)
 
     gs = inverter.exec('get-status')['data']
 
-    gen_today = inverter.exec('get-day-generated', (today.year, today.month, today.day))['data']
+    today = inverter.exec('get-day-generated', (today.year, today.month, today.day))['data']
     gen_yday = None
     gen_yday2 = None
 
@@ -237,489 +861,29 @@ def generation(ctx: Context) -> None:
     html = f'<b>{ctx.lang("gen_input_power")}:</b> %s %s' % (gs['pv1_input_power']['value'], gs['pv1_input_power']['unit'])
     html += ' (%s %s)' % (gs['pv1_input_voltage']['value'], gs['pv1_input_voltage']['unit'])
 
-    html += f'\n<b>{ctx.lang("gen_today")}:</b> %s Wh' % (gen_today['wh'])
+    html += f'\n<b>{ctx.lang("today")}:</b> %s Wh' % (today['wh'])
 
     if gen_yday is not None:
-        html += f'\n<b>{ctx.lang("gen_yday1")}:</b> %s Wh' % (gen_yday['wh'])
+        html += f'\n<b>{ctx.lang("yday1")}:</b> %s Wh' % (gen_yday['wh'])
 
     if gen_yday2 is not None:
-        html += f'\n<b>{ctx.lang("gen_yday2")}:</b> %s Wh' % (gen_yday2['wh'])
+        html += f'\n<b>{ctx.lang("yday2")}:</b> %s Wh' % (gen_yday2['wh'])
 
     # send response
     ctx.reply(html)
 
 
-def setgencc(ctx: Context) -> None:
-    allowed_values = inverter.exec('get-allowed-ac-charge-currents')['data']
-
-    try:
-        current = int(ctx.args[0])
-        if current not in allowed_values:
-            raise ValueError(f'invalid value {current}')
-
-        response = inverter.exec('set-max-ac-charge-current', (0, current))
-        ctx.reply('OK' if response['result'] == 'ok' else 'ERROR')
-
-        # TODO notify monitor
-
-    except (IndexError, ValueError):
-        ctx.reply(command_usage('setgencc', {
-            'A': ctx.lang('setgencc_a', ', '.join(map(lambda x: str(x), allowed_values)))
-        }, language=ctx.user_lang))
-
-
-def setgenct(ctx: Context) -> None:
-    try:
-        cv = float(ctx.args[0])
-        dv = float(ctx.args[1])
-
-        if 44 <= cv <= 51 and 48 <= dv <= 58:
-            response = inverter.exec('set-charge-thresholds', (cv, dv))
-            ctx.reply('OK' if response['result'] == 'ok' else 'ERROR')
-        else:
-            raise ValueError('invalid values')
-
-    except (IndexError, ValueError):
-        ctx.reply(command_usage('setgenct', {
-            'CV': ctx.lang('setgenct_cv'),
-            'DV': ctx.lang('setgenct_dv')
-        }, language=ctx.user_lang))
-
-
-def getacmode() -> ACMode:
-    return ACMode(db.get_param('ac_mode', default=ACMode.GENERATOR))
-
-
-def setacmode(mode: ACMode):
-    monitor.set_ac_mode(mode)
-
-    cv, dv = config['ac_mode'][str(mode.value)]['thresholds']
-    a = config['ac_mode'][str(mode.value)]['initial_current']
-
-    logger.debug(f'setacmode: mode={mode}, cv={cv}, dv={dv}, a={a}')
-
-    inverter.exec('set-charge-thresholds', (cv, dv))
-    inverter.exec('set-max-ac-charge-current', (0, a))
-
-
-def setosp(sp: OutputSourcePriority):
-    logger.debug(f'setosp: sp={sp}')
-    inverter.exec('set-output-source-priority', (sp.value,))
-    monitor.notify_osp(sp)
-
-
-# /setacmode
-# ----------
-
-def setacmode_start(ctx: Context) -> None:
-    if monitor.active_current is not None:
-        raise RuntimeError('generator charging program is active')
-
-    buttons = []
-    for mode in ACMode:
-        buttons.append(ctx.lang(str(mode.value)))
-    markup = ReplyKeyboardMarkup([buttons, [ctx.lang('cancel')]], one_time_keyboard=False)
-
-    ctx.reply(ctx.lang('select_ac_mode'), markup=markup)
-    return SETACMODE_STARTED
-
-
-def setacmode_input(ctx: Context):
-    if monitor.active_current is not None:
-        raise RuntimeError('generator charging program is active')
-
-    if ctx.text == ctx.lang('utilities'):
-        newmode = ACMode.UTILITIES
-    elif ctx.text == ctx.lang('generator'):
-        newmode = ACMode.GENERATOR
-    else:
-        raise ValueError('invalid mode')
-
-    # apply the mode
-    setacmode(newmode)
-
-    # save
-    db.set_param('ac_mode', str(newmode.value))
-
-    # reply to user
-    ctx.reply(ctx.lang('saved'), markup=IgnoreMarkup())
-
-    # notify other users
-    bot.notify_all(
-        lambda lang: bot.lang.get('ac_mode_changed_notification', lang,
-                                  ctx.user.id, ctx.user.name,
-                                  bot.lang.get(str(newmode.value), lang)),
-        exclude=(ctx.user_id,)
-    )
-
-    bot.start(ctx)
-    return ConversationHandler.END
-
-
-def setacmode_invalid(ctx: Context):
-    ctx.reply(ctx.lang('invalid_mode'), markup=IgnoreMarkup())
-    return SETACMODE_STARTED
-
-
-def setacmode_cancel(ctx: Context):
-    bot.start(ctx)
-    return ConversationHandler.END
-
-
-# /setosp
-# ------
-
-def setosp_start(ctx: Context) -> None:
-    buttons = []
-    for sp in OutputSourcePriority:
-        buttons.append(ctx.lang(f'setosp_{sp.value.lower()}'))
-    markup = ReplyKeyboardMarkup([buttons, [ctx.lang('cancel')]], one_time_keyboard=False)
-
-    ctx.reply(ctx.lang('select_ac_mode'), markup=markup)
-    return SETOSP_STARTED
-
-
-def setosp_input(ctx: Context):
-    selected_sp = None
-    for sp in OutputSourcePriority:
-        if ctx.text == ctx.lang(f'setosp_{sp.value.lower()}'):
-            selected_sp = sp
-            break
-
-    if selected_sp is None:
-        raise ValueError('invalid sp')
-
-    # apply the mode
-    setosp(selected_sp)
-
-    # reply to user
-    ctx.reply(ctx.lang('saved'), markup=IgnoreMarkup())
-
-    # notify other users
-    bot.notify_all(
-        lambda lang: bot.lang.get('osp_changed_notification', lang,
-                                  ctx.user.id, ctx.user.name,
-                                  bot.lang.get(f'setosp_{selected_sp.value.lower()}', lang)),
-        exclude=(ctx.user_id,)
-    )
-
-    bot.start(ctx)
-    return ConversationHandler.END
-
-
-def setosp_invalid(ctx: Context):
-    ctx.reply(ctx.lang('invalid_input'), markup=IgnoreMarkup())
-    return SETOSP_STARTED
-
-
-def setosp_cancel(ctx: Context):
-    bot.start(ctx)
-    return ConversationHandler.END
-
-
-# other
-# -----
-
-def setbatuv(ctx: Context) -> None:
-    try:
-        v = float(ctx.args[0])
-
-        if 40.0 <= v <= 48.0:
-            response = inverter.exec('set-battery-cutoff-voltage', (v,))
-            ctx.reply('OK' if response['result'] == 'ok' else 'ERROR')
-        else:
-            raise ValueError('invalid voltage')
-
-    except (IndexError, ValueError):
-        ctx.reply(command_usage('setbatuv', {
-            'V': ctx.lang('setbatuv_v')
-        }, language=ctx.user_lang))
-
-
-def monstatus(ctx: Context) -> None:
-    msg = ''
-    st = monitor.dump_status()
-    for k, v in st.items():
-        msg += k + ': ' + str(v) + '\n'
-    ctx.reply(msg)
-
-
-def monsetcur(ctx: Context) -> None:
-    ctx.reply('not implemented yet')
-
-
-def calcw(ctx: Context) -> None:
-    ctx.reply('not implemented yet')
-
-
-def calcwadv(ctx: Context) -> None:
-    ctx.reply('not implemented yet')
-
-
-def button_callback(ctx: Context) -> None:
-    query = ctx.callback_query
-
-    if query.data.startswith('flag_'):
-        flag = query.data[5:]
-        found = False
-        json_key = None
-        for k, v in flags_map.items():
-            if v == flag:
-                found = True
-                json_key = k
-                break
-        if not found:
-            query.answer(ctx.lang('flags_invalid'))
-            return
-
-        flags = inverter.exec('get-flags')['data']
-        cur_flag_value = flags[json_key]
-        target_flag_value = '0' if cur_flag_value else '1'
-
-        # set flag
-        response = inverter.exec('set-flag', (flag, target_flag_value))
-
-        # notify user
-        query.answer(ctx.lang('done') if response['result'] == 'ok' else ctx.lang('flags_fail'))
-
-        # edit message
-        flags[json_key] = not cur_flag_value
-        text, markup = build_flags_keyboard(flags, ctx)
-        query.edit_message_text(text, reply_markup=markup)
-
-    else:
-        query.answer(ctx.lang('unexpected_callback_data'))
-
-
-class InverterBot(Wrapper):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        self.lang.ru(
-            status='Статус',
-            generation='Генерация',
-            priority='Приоритет',
-            osp='Приоритет питания нагрузки',
-            battery="АКБ",
-            load="Нагрузка",
-            generator="Генератор",
-            utilities="Столб",
-            done="Готово",
-            unexpected_callback_data="Ошибка: неверные данные",
-            select_ac_mode="Выберите режим:",
-            select_priortiy="Установите приоритет:",
-            invalid_input="Неверное значение",
-            invalid_mode="Invalid mode",
-
-            flags_press_button='Нажмите кнопку для переключения настройки',
-            flags_fail='Не удалось установить настройку',
-            flags_invalid='Неизвестная настройка',
-
-            # generation
-            gen_today='Сегодня',
-            gen_yday1='Вчера',
-            gen_yday2='Позавчера',
-            gen_input_power='Зарядная мощность',
-
-            # status
-            charging_at=', ',
-            pd_charging='заряжается',
-            pd_discharging='разряжается',
-            pd_nothing='не используется',
-
-            # flags
-            flag_buzzer='Звуковой сигнал',
-            flag_overload_bypass='Разрешить перегрузку',
-            flag_escape_to_default_screen_after_1min_timeout='Возврат на главный экран через 1 минуту',
-            flag_overload_restart='Перезапуск при перегрузке',
-            flag_over_temp_restart='Перезапуск при перегреве',
-            flag_backlight_on='Подсветка экрана',
-            flag_alarm_on_on_primary_source_interrupt='Сигнал при разрыве основного источника питания',
-            flag_fault_code_record='Запись кодов ошибок',
-
-            # commands
-            setbatuv_v=f'напряжение, 40.0 {LT} V {LT} 48.0',
-            setgenct_cv=f'напряжение включения заряда, 44 {LT} CV {LT} 51',
-            setgenct_dv=f'напряжение отключения заряда, 48 {LT} DV {LT} 58',
-            setgencc_a='максимальный ток заряда, допустимые значения: %s',
-
-            setosp_sub='Solar-Utility-Battery',
-            setosp_sbu='Solar-Battery-Utility',
-
-            # monitor
-            chrg_evt_started='✅ Начали заряжать от генератора.',
-            chrg_evt_finished='✅ Зарядили. Генератор пора выключать.',
-            chrg_evt_disconnected='ℹ️ Генератор отключен.',
-            chrg_evt_current_changed='ℹ️ Ток заряда от генератора установлен в %d A.',
-            chrg_evt_not_charging='ℹ️ Генератор подключен, но не заряжает.',
-            chrg_evt_na_solar='⛔️ Генератор подключен, но аккумуляторы не заряжаются из-за подключенных панелей.',
-            chrg_evt_mostly_charged='✅ Аккумуляторы более-менее заряжены, генератор пора выключать.',
-            battery_level_changed='Уровень заряда АКБ: <b>%s %s</b> (<b>%0.1f V</b> при нагрузке <b>%d W</b>)',
-            error_message='<b>Ошибка:</b> %s.',
-
-            util_chrg_evt_started='✅ Начали заряжать от столба.',
-            util_chrg_evt_stopped='ℹ️ Перестали заряжать от столба.',
-            util_chrg_evt_stopped_solar='ℹ️ Перестали заряжать от столба из-за подключения панелей.',
-
-            util_connected='✅️ Столб подключён.',
-            util_disconnected='‼️ Столб отключён.',
-
-            # other notifications
-            ac_mode_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> установил режим AC: <b>%s</b>.',
-            osp_changed_notification='Пользователь <a href="tg://user?id=%d">%s</a> установил приоритет источника питания нагрузки: <b>%s</b>.',
-            osp_auto_changed_notification='ℹ️ Бот установил приоритет источника питания нагрузки: <b>%s</b>. Причины: напряжение АКБ %.1f V, мощность заряда с панелей %d W.',
-
-            bat_state_normal='Нормальный',
-            bat_state_low='Низкий',
-            bat_state_critical='Критический',
-        )
-
-        self.lang.en(
-            status='Status',
-            generation='Generation',
-            priority='Priority',
-            osp='Output source priority',
-            battery="Battery",
-            load="Load",
-            generator="Generator",
-            utilities="Utilities",
-            done="Done",
-            unexpected_callback_data="Unexpected callback data",
-            select_ac_mode="Select AC input mode:",
-            select_priortiy="Select priority:",
-            invalid_input="Invalid input",
-            invalid_mode="Invalid mode",
-
-            flags_press_button='Press a button to toggle a flag.',
-            flags_fail='Failed to toggle flag',
-            flags_invalid='Invalid flag',
-
-            # generation
-            gen_today='Today',
-            gen_yday1='Yesterday',
-            gen_yday2='The day before yesterday',
-            gen_input_power='Input power',
-
-            # status
-            charging_at=' @ ',
-            pd_charging='charging',
-            pd_discharging='discharging',
-            pd_nothing='not used',
-
-            # flags
-            flag_buzzer='Buzzer',
-            flag_overload_bypass='Overload bypass',
-            flag_escape_to_default_screen_after_1min_timeout='Reset to default LCD page after 1min timeout',
-            flag_overload_restart='Restart on overload',
-            flag_over_temp_restart='Restart on overtemp',
-            flag_backlight_on='LCD backlight',
-            flag_alarm_on_on_primary_source_interrupt='Beep on primary source interruption',
-            flag_fault_code_record='Fault code recording',
-
-            # commands
-            setbatuv_v=f'floating point number, 40.0 {LT} V {LT} 48.0',
-            setgenct_cv=f'charging voltage, 44 {LT} CV {LT} 51',
-            setgenct_dv=f'discharging voltage, 48 {LT} DV {LT} 58',
-            setgencc_a='max charging current, allowed values: %s',
-
-            setosp_sub='Solar-Utility-Battery',
-            setosp_sbu='Solar-Battery-Utility',
-
-            # monitor
-            chrg_evt_started='✅ Started charging from AC.',
-            chrg_evt_finished='✅ Finished charging, it\'s time to stop the generator.',
-            chrg_evt_disconnected='ℹ️ AC disconnected.',
-            chrg_evt_current_changed='ℹ️ AC charging current set to %d A.',
-            chrg_evt_not_charging='ℹ️ AC connected but not charging.',
-            chrg_evt_na_solar='⛔️ AC connected, but battery won\'t be charged due to active solar power line.',
-            chrg_evt_mostly_charged='✅ The battery is mostly charged now. The generator can be turned off.',
-            battery_level_changed='Battery level: <b>%s</b> (<b>%0.1f V</b> under <b>%d W</b> load)',
-            error_message='<b>Error:</b> %s.',
-
-            util_chrg_evt_started='✅ Started charging from utilities.',
-            util_chrg_evt_stopped='ℹ️ Stopped charging from utilities.',
-            util_chrg_evt_stopped_solar='ℹ️ Stopped charging from utilities because solar panels were connected.',
-
-            util_connected='✅️ Utilities connected.',
-            util_disconnected='‼️ Utilities disconnected.',
-
-            # other notifications
-            ac_mode_changed_notification='User <a href="tg://user?id=%d">%s</a> set AC mode to <b>%s</b>.',
-            osp_changed_notification='User <a href="tg://user?id=%d">%s</a> set output source priority: <b>%s</b>.',
-            osp_auto_changed_notification='Bot changed output source priority to <b>%s</b>. Reasons: battery voltage is %.1f V, solar input is %d W.',
-
-            bat_state_normal='Normal',
-            bat_state_low='Low',
-            bat_state_critical='Critical',
-        )
-
-        self.add_handler(MessageHandler(text_filter(self.lang.all('status')), self.wrap(status)))
-        self.add_handler(MessageHandler(text_filter(self.lang.all('generation')), self.wrap(generation)))
-
-        self.add_handler(CommandHandler('setgencc', self.wrap(setgencc)))
-        self.add_handler(CommandHandler('setgenct', self.wrap(setgenct)))
-        self.add_handler(CommandHandler('setbatuv', self.wrap(setbatuv)))
-        self.add_handler(CommandHandler('monstatus', self.wrap(monstatus)))
-        self.add_handler(CommandHandler('monsetcur', self.wrap(monsetcur)))
-        self.add_handler(CommandHandler('calcw', self.wrap(calcw)))
-        self.add_handler(CommandHandler('calcwadv', self.wrap(calcwadv)))
-
-        self.add_handler(CommandHandler('flags', self.wrap(flags)))
-        self.add_handler(CommandHandler('status', self.wrap(full_status)))
-        self.add_handler(CommandHandler('config', self.wrap(full_rated)))
-        self.add_handler(CommandHandler('errors', self.wrap(full_errors)))
-
-        self.add_handler(CallbackQueryHandler(self.wrap(button_callback)))
-
-    def run(self):
-        cancel_filter = Filters.text(self.lang.all('cancel'))
-
-        self.add_handler(ConversationHandler(
-            entry_points=[CommandHandler('setacmode', self.wrap(setacmode_start), self.user_filter)],
-            states={
-                SETACMODE_STARTED: [
-                    *[MessageHandler(text_filter(self.lang.all(mode.value)), self.wrap(setacmode_input)) for mode in ACMode],
-                    MessageHandler(self.user_filter & ~cancel_filter, self.wrap(setacmode_invalid))
-                ]
-            },
-            fallbacks=[MessageHandler(self.user_filter & cancel_filter, self.wrap(setacmode_cancel))]
-        ))
-
-        self.add_handler(ConversationHandler(
-            entry_points=[
-                CommandHandler('setosp', self.wrap(setosp_start), self.user_filter),
-                MessageHandler(text_filter(self.lang.all('osp')), self.wrap(setosp_start))
-            ],
-            states={
-                SETOSP_STARTED: [
-                    *[MessageHandler(text_filter(self.lang.all(f'setosp_{sp.value.lower()}')), self.wrap(setosp_input)) for sp in OutputSourcePriority],
-                    MessageHandler(self.user_filter & ~cancel_filter, self.wrap(setosp_invalid))
-                ]
-            },
-            fallbacks=[MessageHandler(self.user_filter & cancel_filter, self.wrap(setosp_cancel))]
-        ))
-
-        super().run()
-
-    def markup(self, ctx: Optional[Context]) -> Optional[ReplyKeyboardMarkup]:
-        button = [
-            [ctx.lang('status'), ctx.lang('generation')],
-            [ctx.lang('osp')]
-        ]
-        return ReplyKeyboardMarkup(button, one_time_keyboard=False)
-
-    def exception_handler(self, e: Exception, ctx: Context) -> Optional[bool]:
-        if isinstance(e, InverterError):
-            try:
-                err = json.loads(str(e))['message']
-            except json.decoder.JSONDecodeError:
-                err = str(e)
-            err = re.sub(r'((?:.*)?error:) (.*)', r'<b>\1</b> \2', err)
-            ctx.reply(err)
-            return True
-
-
-class InverterStore(Store):
+@bot.defaultreplymarkup
+def markup(ctx: Optional[bot.Context]) -> Optional[ReplyKeyboardMarkup]:
+    button = [
+        [ctx.lang('status'), ctx.lang('generation')],
+        [ctx.lang('consumption')],
+        [ctx.lang('settings')]
+    ]
+    return ReplyKeyboardMarkup(button, one_time_keyboard=False)
+
+
+class InverterStore(bot.BotDatabase):
     SCHEMA = 2
 
     def schema_init(self, version: int) -> None:
@@ -748,11 +912,13 @@ class InverterStore(Store):
 
 
 if __name__ == '__main__':
-    config.load('inverter_bot')
-
     inverter.init(host=config['inverter']['ip'], port=config['inverter']['port'])
 
-    db = InverterStore()
+    bot.set_database(InverterStore())
+    # bot.enable_logging(BotType.INVERTER)
+
+    bot.add_conversation(SettingsConversation(enable_back=True))
+    bot.add_conversation(ConsumptionConversation(enable_back=True))
 
     monitor = InverterMonitor()
     monitor.set_charging_event_handler(monitor_charging)
@@ -762,12 +928,10 @@ if __name__ == '__main__':
     monitor.set_osp_need_change_callback(osp_change_cb)
 
     setacmode(getacmode())
-
-    bot = InverterBot(store=db)
-    bot.enable_logging(BotType.INVERTER)
-
-    monitor.start()
-
     bot.run()
+
+    if not config.get('monitor.disabled'):
+        logging.info('starting monitor')
+        monitor.start()
 
     monitor.stop()

@@ -1,15 +1,53 @@
 #!/usr/bin/env python3
+from enum import Enum
 from typing import Optional
+from telegram import ReplyKeyboardMarkup, User
+
 from home.config import config
-from home.bot import Wrapper, Context, text_filter, user_any_name
+from home.telegram import bot
+from home.telegram._botutil import user_any_name
 from home.relay import RelayClient
 from home.api.types import BotType
-from telegram import ReplyKeyboardMarkup, User
-from telegram.ext import MessageHandler
-from enum import Enum
-from functools import partial
 
-bot: Optional[Wrapper] = None
+config.load('pump_bot')
+
+bot.initialize()
+bot.lang.ru(
+    start_message="Выберите команду на клавиатуре",
+    unknown_command="Неизвестная команда",
+
+    enable="Включить",
+    enable_silently="Включить тихо",
+    enabled="Включен ✅",
+
+    disable="Выключить",
+    disable_silently="Выключить тихо",
+    disabled="Выключен ❌",
+
+    status="Статус",
+    done="Готово 👌",
+    user_action_notification='Пользователь <a href="tg://user?id=%d">%s</a> <b>%s</b> насос.',
+    user_action_on="включил",
+    user_action_off="выключил",
+)
+bot.lang.en(
+    start_message="Select command on the keyboard",
+    unknown_command="Unknown command",
+
+    enable="Turn ON",
+    enable_silently="Turn ON silently",
+    enabled="Turned ON ✅",
+
+    disable="Turn OFF",
+    disable_silently="Turn OFF silently",
+    disabled="Turned OFF ❌",
+
+    status="Status",
+    done="Done 👌",
+    user_action_notification='User <a href="tg://user?id=%d">%s</a> turned the pump <b>%s</b>.',
+    user_action_on="ON",
+    user_action_off="OFF",
+)
 
 
 class UserAction(Enum):
@@ -23,24 +61,18 @@ def get_relay() -> RelayClient:
     return relay
 
 
-def on(silent: bool, ctx: Context) -> None:
+def on(ctx: bot.Context, silent=False) -> None:
     get_relay().on()
     ctx.reply(ctx.lang('done'))
     if not silent:
         notify(ctx.user, UserAction.ON)
 
 
-def off(silent: bool, ctx: Context) -> None:
+def off(ctx: bot.Context, silent=False) -> None:
     get_relay().off()
     ctx.reply(ctx.lang('done'))
     if not silent:
         notify(ctx.user, UserAction.OFF)
-
-
-def status(ctx: Context) -> None:
-    ctx.reply(
-        ctx.lang('enabled') if get_relay().status() == 'on' else ctx.lang('disabled')
-    )
 
 
 def notify(user: User, action: UserAction) -> None:
@@ -53,72 +85,47 @@ def notify(user: User, action: UserAction) -> None:
     bot.notify_all(text_getter, exclude=(user.id,))
 
 
-class PumpBot(Wrapper):
-    def __init__(self):
-        super().__init__()
+@bot.handler(message='enable')
+def enable_handler(ctx: bot.Context) -> None:
+    on(ctx)
 
-        self.lang.ru(
-            start_message="Выберите команду на клавиатуре",
-            unknown_command="Неизвестная команда",
 
-            enable="Включить",
-            enable_silently="Включить тихо",
-            enabled="Включен ✅",
+@bot.handler(message='enable_silently')
+def enable_s_handler(ctx: bot.Context) -> None:
+    on(ctx, True)
 
-            disable="Выключить",
-            disable_silently="Выключить тихо",
-            disabled="Выключен ❌",
 
-            status="Статус",
-            done="Готово 👌",
-            user_action_notification='Пользователь <a href="tg://user?id=%d">%s</a> <b>%s</b> насос.',
-            user_action_on="включил",
-            user_action_off="выключил",
-        )
+@bot.handler(message='disable')
+def disable_handler(ctx: bot.Context) -> None:
+    off(ctx)
 
-        self.lang.en(
-            start_message="Select command on the keyboard",
-            unknown_command="Unknown command",
 
-            enable="Turn ON",
-            enable_silently="Turn ON silently",
-            enabled="Turned ON ✅",
+@bot.handler(message='disable_silently')
+def disable_s_handler(ctx: bot.Context) -> None:
+    off(ctx, True)
 
-            disable="Turn OFF",
-            disable_silently="Turn OFF silently",
-            disabled="Turned OFF ❌",
 
-            status="Status",
-            done="Done 👌",
-            user_action_notification='User <a href="tg://user?id=%d">%s</a> turned the pump <b>%s</b>.',
-            user_action_on="ON",
-            user_action_off="OFF",
-        )
+@bot.handler(message='status')
+def status(ctx: bot.Context) -> None:
+    ctx.reply(
+        ctx.lang('enabled') if get_relay().status() == 'on' else ctx.lang('disabled')
+    )
 
-        self.add_handler(MessageHandler(text_filter(self.lang.all('enable')), self.wrap(partial(on, False))))
-        self.add_handler(MessageHandler(text_filter(self.lang.all('disable')), self.wrap(partial(off, False))))
 
-        self.add_handler(MessageHandler(text_filter(self.lang.all('enable_silently')), self.wrap(partial(on, True))))
-        self.add_handler(MessageHandler(text_filter(self.lang.all('disable_silently')), self.wrap(partial(off, True))))
+@bot.defaultreplymarkup
+def markup(ctx: Optional[bot.Context]) -> Optional[ReplyKeyboardMarkup]:
+    buttons = [
+        [ctx.lang('enable'), ctx.lang('disable')],
+    ]
 
-        self.add_handler(MessageHandler(text_filter(self.lang.all('status')), self.wrap(status)))
+    if ctx.user_id in config['bot']['silent_users']:
+        buttons.append([ctx.lang('enable_silently'), ctx.lang('disable_silently')])
 
-    def markup(self, ctx: Optional[Context]) -> Optional[ReplyKeyboardMarkup]:
-        buttons = [
-            [ctx.lang('enable'), ctx.lang('disable')],
-        ]
+    buttons.append([ctx.lang('status')])
 
-        if ctx.user_id in config['bot']['silent_users']:
-            buttons.append([ctx.lang('enable_silently'), ctx.lang('disable_silently')])
-
-        buttons.append([ctx.lang('status')])
-
-        return ReplyKeyboardMarkup(buttons, one_time_keyboard=False)
+    return ReplyKeyboardMarkup(buttons, one_time_keyboard=False)
 
 
 if __name__ == '__main__':
-    config.load('pump_bot')
-
-    bot = PumpBot()
     bot.enable_logging(BotType.PUMP)
     bot.run()

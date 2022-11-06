@@ -7,17 +7,15 @@ import gc
 
 from io import BytesIO
 from typing import Optional
-from functools import partial
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker as mticker
 
 from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import MessageHandler, CallbackQueryHandler
 
 from home.config import config
-from home.bot import Wrapper, Context, text_filter
+from home.telegram import bot
 from home.util import chunks, MySimpleSocketClient
 from home.api import WebAPIClient
 from home.api.types import (
@@ -25,13 +23,50 @@ from home.api.types import (
     TemperatureSensorLocation
 )
 
-bot: Optional[Wrapper] = None
+config.load('sensors_bot')
+bot.initialize()
+
+_sensor_names = []
+for k, v in config['sensors'].items():
+    _sensor_names.append(k)
+    bot.lang.set({k: v['label_ru']}, 'ru')
+    bot.lang.set({k: v['label_en']}, 'en')
+
+bot.lang.ru(
+    start_message="Выберите датчик на клавиатуре",
+    unknown_command="Неизвестная команда",
+    temperature="Температура",
+    humidity="Влажность",
+    plot_3h="График за 3 часа",
+    plot_6h="График за 6 часов",
+    plot_12h="График за 12 часов",
+    plot_24h="График за 24 часа",
+    unexpected_callback_data="Ошибка: неверные данные",
+    loading="Загрузка...",
+    n_hrs="график за %d ч."
+)
+
+bot.lang.en(
+    start_message="Select the sensor on the keyboard",
+    unknown_command="Unknown command",
+    temperature="Temperature",
+    humidity="Relative humidity",
+    plot_3h="Graph for 3 hours",
+    plot_6h="Graph for 6 hours",
+    plot_12h="Graph for 12 hours",
+    plot_24h="Graph for 24 hours",
+    unexpected_callback_data="Unexpected callback data",
+    loading="Loading...",
+    n_hrs="graph for %d hours"
+)
+
 plt.rcParams['font.size'] = 7
 logger = logging.getLogger(__name__)
 plot_hours = [3, 6, 12, 24]
 
 
-def read_sensor(sensor: str, ctx: Context) -> None:
+@bot.handler(messages=_sensor_names)
+def read_sensor(sensor: str, ctx: bot.Context) -> None:
     host = config['sensors'][sensor]['ip']
     port = config['sensors'][sensor]['port']
 
@@ -55,7 +90,8 @@ def read_sensor(sensor: str, ctx: Context) -> None:
     ctx.reply(text, markup=InlineKeyboardMarkup(chunks(buttons, 2)))
 
 
-def callback_handler(ctx: Context) -> None:
+@bot.callbackhandler
+def callback_handler(ctx: bot.Context) -> None:
     query = ctx.callback_query
 
     sensors_variants = '|'.join(config['sensors'].keys())
@@ -82,7 +118,7 @@ def callback_handler(ctx: Context) -> None:
     plot = draw_plot(data, title,
                      ctx.lang('temperature'),
                      ctx.lang('humidity'))
-    bot.updater.bot.send_photo(ctx.user_id, plot)
+    bot.send_photo(ctx.user_id, photo=plot)
 
     gc.collect()
 
@@ -129,57 +165,16 @@ def draw_plot(data,
     return buf
 
 
-class SensorsBot(Wrapper):
-    def __init__(self):
-        super().__init__()
-
-        self.lang.ru(
-            start_message="Выберите датчик на клавиатуре",
-            unknown_command="Неизвестная команда",
-            temperature="Температура",
-            humidity="Влажность",
-            plot_3h="График за 3 часа",
-            plot_6h="График за 6 часов",
-            plot_12h="График за 12 часов",
-            plot_24h="График за 24 часа",
-            unexpected_callback_data="Ошибка: неверные данные",
-            loading="Загрузка...",
-            n_hrs="график за %d ч."
-        )
-
-        self.lang.en(
-            start_message="Select the sensor on the keyboard",
-            unknown_command="Unknown command",
-            temperature="Temperature",
-            humidity="Relative humidity",
-            plot_3h="Graph for 3 hours",
-            plot_6h="Graph for 6 hours",
-            plot_12h="Graph for 12 hours",
-            plot_24h="Graph for 24 hours",
-            unexpected_callback_data="Unexpected callback data",
-            loading="Loading...",
-            n_hrs="graph for %d hours"
-        )
-
-        for k, v in config['sensors'].items():
-            self.lang.set({k: v['label_ru']}, 'ru')
-            self.lang.set({k: v['label_en']}, 'en')
-            self.add_handler(MessageHandler(text_filter(self.lang.all(k)), self.wrap(partial(read_sensor, k))))
-
-        self.add_handler(CallbackQueryHandler(self.wrap(callback_handler)))
-
-    def markup(self, ctx: Optional[Context]) -> Optional[ReplyKeyboardMarkup]:
-        buttons = []
-        for k in config['sensors'].keys():
-            buttons.append(ctx.lang(k))
-        buttons = chunks(buttons, 2)
-        return ReplyKeyboardMarkup(buttons, one_time_keyboard=False)
+@bot.defaultreplymarkup
+def markup(self, ctx: Optional[bot.Context]) -> Optional[ReplyKeyboardMarkup]:
+    buttons = []
+    for k in config['sensors'].keys():
+        buttons.append(ctx.lang(k))
+    buttons = chunks(buttons, 2)
+    return ReplyKeyboardMarkup(buttons, one_time_keyboard=False)
 
 
 if __name__ == '__main__':
-    config.load('sensors_bot')
-
-    bot = SensorsBot()
     if 'api' in config:
         bot.enable_logging(BotType.SENSORS)
     bot.run()

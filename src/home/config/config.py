@@ -105,6 +105,19 @@ class ConfigStore:
     def __contains__(self, key):
         return key in self.data
 
+    def get(self, key: str, default=None):
+        cur = self.data
+        pts = key.split('.')
+        for i in range(len(pts)):
+            k = pts[i]
+            if i < len(pts)-1:
+                if k not in cur:
+                    raise KeyError(f'key {k} not found')
+            else:
+                return cur[k] if k in cur else default
+            cur = self.data[k]
+        raise KeyError(f'option {key} not found')
+
     def items(self):
         return self.data.items()
 

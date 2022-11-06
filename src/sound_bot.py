@@ -9,7 +9,6 @@ from html import escape
 from typing import Optional, List, Dict, Tuple
 
 from home.config import config
-from home.bot import Wrapper, Context, text_filter, user_any_name
 from home.api import WebAPIClient
 from home.api.types import SoundSensorLocation, BotType
 from home.api.errors import ApiResponseError
@@ -17,19 +16,126 @@ from home.media import SoundNodeClient, SoundRecordClient, SoundRecordFile, Came
 from home.soundsensor import SoundSensorServerGuardClient
 from home.util import parse_addr, chunks, filesize_fmt
 
+from home.telegram import bot
+
 from telegram.error import TelegramError
 from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton, User
-from telegram.ext import (
-    CallbackQueryHandler,
-    MessageHandler
-)
 
 from PIL import Image
+
+config.load('sound_bot')
+
+nodes = {}
+for nodename, nodecfg in config['nodes'].items():
+    nodes[nodename] = parse_addr(nodecfg['addr'])
+
+bot.initialize()
+bot.lang.ru(
+    start_message="Выберите команду на клавиатуре",
+    unknown_command="Неизвестная команда",
+    unexpected_callback_data="Ошибка: неверные данные",
+    settings="Настройки микшера",
+    record="Запись",
+    loading="Загрузка...",
+    select_place="Выберите место:",
+    invalid_location="Неверное место",
+    invalid_interval="Неверная длительность",
+    unsupported_action="Неподдерживаемое действие",
+    # select_control="Выберите контрол для изменения настроек:",
+    control_state="Состояние контрола %s",
+    incr="громкость +",
+    decr="громкость -",
+    back="◀️ Назад",
+    n_min="%d мин.",
+    n_sec="%d сек.",
+    select_interval="Выберите длительность:",
+    place="Место",
+    beginning="Начало",
+    end="Конец",
+    record_result="Результат записи",
+    record_started='Запись запущена!',
+    record_error="Ошибка записи",
+    files="Локальные файлы",
+    remote_files="Файлы на сервере",
+    file_line="— Запись с <b>%s</b> до <b>%s</b> <i>(%s)</i>",
+    access_denied="Доступ запрещён",
+
+    guard_disable="Снять с охраны",
+    guard_enable="Поставить на охрану",
+    guard_status="Статус охраны",
+    guard_user_action_notification='Пользователь <a href="tg://user?id=%d">%s</a> %s.',
+    guard_user_action_enable="включил охрану ✅",
+    guard_user_action_disable="выключил охрану ❌",
+    guard_status_enabled="Включена ✅",
+    guard_status_disabled="Выключена ❌",
+
+    done="Готово 👌",
+
+    sound_sensors="Датчики звука",
+    sound_sensors_info="Здесь можно получить информацию о последних срабатываниях датчиков звука.",
+    sound_sensors_no_24h_data="За последние 24 часа данных нет.",
+    sound_sensors_show_anything="Показать, что есть",
+
+    cameras="Камеры",
+    select_option="Выберите опцию",
+    w_flash="Со вспышкой",
+    wo_flash="Без вспышки",
+)
+
+bot.lang.en(
+    start_message="Select command on the keyboard",
+    unknown_command="Unknown command",
+    settings="Mixer settings",
+    record="Record",
+    unexpected_callback_data="Unexpected callback data",
+    loading="Loading...",
+    select_place="Select place:",
+    invalid_location="Invalid place",
+    invalid_interval="Invalid duration",
+    unsupported_action="Unsupported action",
+    # select_control="Select control to adjust its parameters:",
+    control_state="%s control state",
+    incr="vol +",
+    decr="vol -",
+    back="◀️ Back",
+    n_min="%d min.",
+    n_sec="%d s.",
+    select_interval="Select duration:",
+    place="Place",
+    beginning="Started",
+    end="Ended",
+    record_result="Result",
+    record_started='Recording started!',
+    record_error="Recording error",
+    files="Local files",
+    remote_files="Remote files",
+    file_line="— From <b>%s</b> to <b>%s</b> <i>(%s)</i>",
+    access_denied="Access denied",
+
+    guard_disable="Disable guard",
+    guard_enable="Enable guard",
+    guard_status="Guard status",
+    guard_user_action_notification='User <a href="tg://user?id=%d">%s</a> %s.',
+    guard_user_action_enable="turned the guard ON ✅",
+    guard_user_action_disable="turn the guard OFF ❌",
+    guard_status_enabled="Active ✅",
+    guard_status_disabled="Disabled ❌",
+    done="Done 👌",
+
+    sound_sensors="Sound sensors",
+    sound_sensors_info="Here you can get information about last sound sensors hits.",
+    sound_sensors_no_24h_data="No data for the last 24 hours.",
+    sound_sensors_show_anything="Show me at least something",
+
+    cameras="Cameras",
+    select_option="Select option",
+    w_flash="With flash",
+    wo_flash="Without flash",
+)
 
 logger = logging.getLogger(__name__)
 RenderedContent = Tuple[str, Optional[InlineKeyboardMarkup]]
 record_client: Optional[SoundRecordClient] = None
-bot: Optional[Wrapper] = None
 node_client_links: Dict[str, SoundNodeClient] = {}
 cam_client_links: Dict[str, CameraNodeClient] = {}
 
@@ -73,7 +179,7 @@ def interval_defined(interval: int) -> bool:
     return interval in config['bot']['record_intervals']
 
 
-def callback_unpack(ctx: Context) -> List[str]:
+def callback_unpack(ctx: bot.Context) -> List[str]:
     return ctx.callback_query.data[3:].split('/')
 
 
@@ -90,7 +196,7 @@ def guard_client() -> SoundSensorServerGuardClient:
 
 class Renderer:
     @classmethod
-    def places_markup(cls, ctx: Context, callback_prefix: str) -> InlineKeyboardMarkup:
+    def places_markup(cls, ctx: bot.Context, callback_prefix: str) -> InlineKeyboardMarkup:
         buttons = []
         for node, nodeconfig in config['nodes'].items():
             buttons.append([InlineKeyboardButton(nodeconfig['label'][ctx.user_lang], callback_data=f'{callback_prefix}/{node}')])
@@ -98,7 +204,7 @@ class Renderer:
 
     @classmethod
     def back_button(cls,
-                    ctx: Context,
+                    ctx: bot.Context,
                     buttons: list,
                     callback_data: str):
         buttons.append([
@@ -108,13 +214,13 @@ class Renderer:
 
 class SettingsRenderer(Renderer):
     @classmethod
-    def index(cls, ctx: Context) -> RenderedContent:
+    def index(cls, ctx: bot.Context) -> RenderedContent:
         html = f'<b>{ctx.lang("settings")}</b>\n\n'
         html += ctx.lang('select_place')
         return html, cls.places_markup(ctx, callback_prefix='s0')
 
     @classmethod
-    def node(cls, ctx: Context,
+    def node(cls, ctx: bot.Context,
              controls: List[dict]) -> RenderedContent:
         node, = callback_unpack(ctx)
 
@@ -132,7 +238,7 @@ class SettingsRenderer(Renderer):
         return html, InlineKeyboardMarkup(buttons)
 
     @classmethod
-    def control(cls, ctx: Context, data) -> RenderedContent:
+    def control(cls, ctx: bot.Context, data) -> RenderedContent:
         node, control, *rest = callback_unpack(ctx)
 
         html = '<b>' + ctx.lang('control_state', control) + '</b>\n\n'
@@ -163,13 +269,13 @@ class SettingsRenderer(Renderer):
 
 class RecordRenderer(Renderer):
     @classmethod
-    def index(cls, ctx: Context) -> RenderedContent:
+    def index(cls, ctx: bot.Context) -> RenderedContent:
         html = f'<b>{ctx.lang("record")}</b>\n\n'
         html += ctx.lang('select_place')
         return html, cls.places_markup(ctx, callback_prefix='r0')
 
     @classmethod
-    def node(cls, ctx: Context, durations: List[int]) -> RenderedContent:
+    def node(cls, ctx: bot.Context, durations: List[int]) -> RenderedContent:
         node, = callback_unpack(ctx)
 
         html = ctx.lang('select_interval')
@@ -188,7 +294,7 @@ class RecordRenderer(Renderer):
         return html, InlineKeyboardMarkup(buttons)
 
     @classmethod
-    def record_started(cls, ctx: Context, rid: int) -> RenderedContent:
+    def record_started(cls, ctx: bot.Context, rid: int) -> RenderedContent:
         node, *rest = callback_unpack(ctx)
 
         place = config['nodes'][node]['label'][ctx.user_lang]
@@ -235,13 +341,13 @@ class RecordRenderer(Renderer):
 
 class FilesRenderer(Renderer):
     @classmethod
-    def index(cls, ctx: Context) -> RenderedContent:
+    def index(cls, ctx: bot.Context) -> RenderedContent:
         html = f'<b>{ctx.lang("files")}</b>\n\n'
         html += ctx.lang('select_place')
         return html, cls.places_markup(ctx, callback_prefix='f0')
 
     @classmethod
-    def filelist(cls, ctx: Context, files: List[SoundRecordFile]) -> RenderedContent:
+    def filelist(cls, ctx: bot.Context, files: List[SoundRecordFile]) -> RenderedContent:
         node, = callback_unpack(ctx)
 
         html_files = map(lambda file: cls.file(ctx, file, node), files)
@@ -253,7 +359,7 @@ class FilesRenderer(Renderer):
         return html, InlineKeyboardMarkup(buttons)
 
     @classmethod
-    def file(cls, ctx: Context, file: SoundRecordFile, node: str) -> str:
+    def file(cls, ctx: bot.Context, file: SoundRecordFile, node: str) -> str:
         html = ctx.lang('file_line', file.start_humantime, file.stop_humantime, filesize_fmt(file.filesize))
         if file.file_id is not None:
             html += f'/audio_{node}_{file.file_id}'
@@ -262,7 +368,7 @@ class FilesRenderer(Renderer):
 
 class RemoteFilesRenderer(FilesRenderer):
     @classmethod
-    def index(cls, ctx: Context) -> RenderedContent:
+    def index(cls, ctx: bot.Context) -> RenderedContent:
         html = f'<b>{ctx.lang("remote_files")}</b>\n\n'
         html += ctx.lang('select_place')
         return html, cls.places_markup(ctx, callback_prefix='g0')
@@ -270,7 +376,7 @@ class RemoteFilesRenderer(FilesRenderer):
 
 class SoundSensorRenderer(Renderer):
     @classmethod
-    def places_markup(cls, ctx: Context, callback_prefix: str) -> InlineKeyboardMarkup:
+    def places_markup(cls, ctx: bot.Context, callback_prefix: str) -> InlineKeyboardMarkup:
         buttons = []
         for sensor, sensor_label in config['sound_sensors'].items():
             buttons.append(
@@ -278,13 +384,13 @@ class SoundSensorRenderer(Renderer):
         return InlineKeyboardMarkup(buttons)
 
     @classmethod
-    def index(cls, ctx: Context) -> RenderedContent:
+    def index(cls, ctx: bot.Context) -> RenderedContent:
         html = f'{ctx.lang("sound_sensors_info")}\n\n'
         html += ctx.lang('select_place')
         return html, cls.places_markup(ctx, callback_prefix='S0')
 
     @classmethod
-    def hits(cls, ctx: Context, data, is_last=False) -> RenderedContent:
+    def hits(cls, ctx: bot.Context, data, is_last=False) -> RenderedContent:
         node, = callback_unpack(ctx)
         buttons = []
 
@@ -307,7 +413,7 @@ class SoundSensorRenderer(Renderer):
         return html, InlineKeyboardMarkup(buttons)
 
     @classmethod
-    def hits_plain(cls, ctx: Context, data, is_last=False) -> bytes:
+    def hits_plain(cls, ctx: bot.Context, data, is_last=False) -> bytes:
         node, = callback_unpack(ctx)
 
         text = ''
@@ -326,13 +432,13 @@ class SoundSensorRenderer(Renderer):
 
 class CamerasRenderer(Renderer):
     @classmethod
-    def index(cls, ctx: Context) -> RenderedContent:
+    def index(cls, ctx: bot.Context) -> RenderedContent:
         html = f'<b>{ctx.lang("cameras")}</b>\n\n'
         html += ctx.lang('select_place')
         return html, cls.places_markup(ctx, callback_prefix='c0')
 
     @classmethod
-    def places_markup(cls, ctx: Context, callback_prefix: str) -> InlineKeyboardMarkup:
+    def places_markup(cls, ctx: bot.Context, callback_prefix: str) -> InlineKeyboardMarkup:
         buttons = []
         for camera_name, camera_data in config['cameras'].items():
             buttons.append(
@@ -340,7 +446,7 @@ class CamerasRenderer(Renderer):
         return InlineKeyboardMarkup(buttons)
 
     @classmethod
-    def camera(cls, ctx: Context, flash_available: bool) -> RenderedContent:
+    def camera(cls, ctx: bot.Context, flash_available: bool) -> RenderedContent:
         node, = callback_unpack(ctx)
 
         html = ctx.lang('select_option')
@@ -355,7 +461,7 @@ class CamerasRenderer(Renderer):
         return html, InlineKeyboardMarkup([buttons])
     #
     # @classmethod
-    # def record_started(cls, ctx: Context, rid: int) -> RenderedContent:
+    # def record_started(cls, ctx: bot.Context, rid: int) -> RenderedContent:
     #     node, *rest = callback_unpack(ctx)
     #
     #     place = config['nodes'][node]['label'][ctx.user_lang]
@@ -403,7 +509,10 @@ class CamerasRenderer(Renderer):
 # cameras handlers
 # ----------------
 
-def cameras(ctx: Context):
+@bot.handler(message='cameras', callback=r'^c0$')
+def cameras(ctx: bot.Context):
+    """ List of cameras """
+
     text, markup = CamerasRenderer.index(ctx)
     if not ctx.is_callback_context():
         return ctx.reply(text, markup=markup)
@@ -412,7 +521,10 @@ def cameras(ctx: Context):
         return ctx.edit(text, markup=markup)
 
 
-def camera_options(ctx: Context) -> None:
+@bot.callbackhandler(callback=r'^c0/.*')
+def camera_options(ctx: bot.Context) -> None:
+    """ List of options (with/without flash etc) """
+
     cam, = callback_unpack(ctx)
     if not camera_exists(cam):
         ctx.answer(ctx.lang('invalid_location'))
@@ -425,7 +537,10 @@ def camera_options(ctx: Context) -> None:
     ctx.edit(text, markup)
 
 
-def camera_capture(ctx: Context) -> None:
+@bot.callbackhandler(callback=r'^c1/.*')
+def camera_capture(ctx: bot.Context) -> None:
+    """ Cheese """
+
     cam, flash = callback_unpack(ctx)
     flash = int(flash)
     if not camera_exists(cam):
@@ -464,7 +579,10 @@ def camera_capture(ctx: Context) -> None:
 # settings handlers
 # -----------------
 
-def settings(ctx: Context):
+@bot.handler(message='settings', callback=r'^s0$')
+def settings(ctx: bot.Context):
+    """ List of nodes """
+
     text, markup = SettingsRenderer.index(ctx)
     if not ctx.is_callback_context():
         return ctx.reply(text, markup=markup)
@@ -473,7 +591,10 @@ def settings(ctx: Context):
         return ctx.edit(text, markup=markup)
 
 
-def settings_place(ctx: Context) -> None:
+@bot.callbackhandler(callback=r'^s0/.*')
+def settings_place(ctx: bot.Context):
+    """ List of controls """
+
     node, = callback_unpack(ctx)
     if not node_exists(node):
         ctx.answer(ctx.lang('invalid_location'))
@@ -488,7 +609,10 @@ def settings_place(ctx: Context) -> None:
     ctx.edit(text, markup)
 
 
-def settings_place_control(ctx: Context) -> None:
+@bot.callbackhandler(callback=r'^s1/.*')
+def settings_place_control(ctx: bot.Context):
+    """ List of available tunes for control """
+
     node, control = callback_unpack(ctx)
     if not node_exists(node):
         ctx.answer(ctx.lang('invalid_location'))
@@ -503,7 +627,10 @@ def settings_place_control(ctx: Context) -> None:
     ctx.edit(text, markup)
 
 
-def settings_place_control_action(ctx: Context) -> None:
+@bot.callbackhandler(callback=r'^s2/.*')
+def settings_place_control_action(ctx: bot.Context):
+    """ Tuning """
+
     node, control, action = callback_unpack(ctx)
     if not node_exists(node):
         return
@@ -525,7 +652,10 @@ def settings_place_control_action(ctx: Context) -> None:
 # recording handlers
 # ------------------
 
-def record(ctx: Context):
+@bot.handler(message='record', callback=r'^r0$')
+def record(ctx: bot.Context):
+    """ List of nodes """
+
     if not manual_recording_allowed(ctx.user_id):
         return ctx.reply(ctx.lang('access_denied'))
 
@@ -537,7 +667,10 @@ def record(ctx: Context):
         return ctx.edit(text, markup=markup)
 
 
-def record_place(ctx: Context) -> None:
+@bot.callbackhandler(callback=r'^r0/.*')
+def record_place(ctx: bot.Context):
+    """ List of available intervals """
+
     node, = callback_unpack(ctx)
     if not node_exists(node):
         ctx.answer(ctx.lang('invalid_location'))
@@ -549,7 +682,10 @@ def record_place(ctx: Context) -> None:
     ctx.edit(text, markup)
 
 
-def record_place_interval(ctx: Context) -> None:
+@bot.callbackhandler(callback=r'^r1/.*')
+def record_place_interval(ctx: bot.Context):
+    """ Do record! """
+
     node, interval = callback_unpack(ctx)
     interval = int(interval)
     if not node_exists(node):
@@ -572,38 +708,13 @@ def record_place_interval(ctx: Context) -> None:
     ctx.edit(html, markup)
 
 
-# files handlers
-# --------------
-
-# def files(ctx: Context, remote=False):
-#     renderer = RemoteFilesRenderer if remote else FilesRenderer
-#     text, markup = renderer.index(ctx)
-#     if not ctx.is_callback_context():
-#         return ctx.reply(text, markup=markup)
-#     else:
-#         ctx.answer()
-#         return ctx.edit(text, markup=markup)
-#
-#
-# def files_list(ctx: Context):
-#     node, = callback_unpack(ctx)
-#     if not node_exists(node):
-#         ctx.answer(ctx.lang('invalid_location'))
-#         return
-#
-#     ctx.answer()
-#
-#     cl = node_client(node)
-#     files = cl.storage_list(extended=True, as_objects=True)
-#
-#     text, markup = FilesRenderer.filelist(ctx, files)
-#     ctx.edit(text, markup)
-
-
 # sound sensor handlers
 # ---------------------
 
-def sound_sensors(ctx: Context):
+@bot.handler(message='sound_sensors', callback=r'^S0$')
+def sound_sensors(ctx: bot.Context):
+    """ List of places """
+
     text, markup = SoundSensorRenderer.index(ctx)
     if not ctx.is_callback_context():
         return ctx.reply(text, markup=markup)
@@ -612,7 +723,10 @@ def sound_sensors(ctx: Context):
         return ctx.edit(text, markup=markup)
 
 
-def sound_sensors_last_24h(ctx: Context):
+@bot.callbackhandler(callback=r'^S0/.*')
+def sound_sensors_last_24h(ctx: bot.Context):
+    """ Last 24h log """
+
     node, = callback_unpack(ctx)
     if not sound_sensor_exists(node):
         ctx.answer(ctx.lang('invalid location'))
@@ -632,7 +746,10 @@ def sound_sensors_last_24h(ctx: Context):
         ctx.edit(text, markup=markup)
 
 
-def sound_sensors_last_anything(ctx: Context):
+@bot.callbackhandler(callback=r'^S1/.*')
+def sound_sensors_last_anything(ctx: bot.Context):
+    """ Last _something_ """
+
     node, = callback_unpack(ctx)
     if not sound_sensor_exists(node):
         ctx.answer(ctx.lang('invalid location'))
@@ -660,38 +777,58 @@ class GuardUserAction(Enum):
     DISABLE = 'disable'
 
 
-def guard_status(ctx: Context):
-    guard = guard_client()
-    resp = guard.guard_status()
+if 'guard_server' in config['bot']:
+    @bot.handler(message='guard_status')
+    def guard_status(ctx: bot.Context):
+        guard = guard_client()
+        resp = guard.guard_status()
 
-    key = 'enabled' if resp['enabled'] is True else 'disabled'
-    ctx.reply(ctx.lang(f'guard_status_{key}'))
-
-
-def guard_enable(ctx: Context):
-    guard = guard_client()
-    guard.guard_enable()
-    ctx.reply(ctx.lang('done'))
-
-    _guard_notify(ctx.user, GuardUserAction.ENABLE)
+        key = 'enabled' if resp['enabled'] is True else 'disabled'
+        ctx.reply(ctx.lang(f'guard_status_{key}'))
 
 
-def guard_disable(ctx: Context):
-    guard = guard_client()
-    guard.guard_disable()
-    ctx.reply(ctx.lang('done'))
+    @bot.handler(message='guard_enable')
+    def guard_enable(ctx: bot.Context):
+        guard = guard_client()
+        guard.guard_enable()
+        ctx.reply(ctx.lang('done'))
 
-    _guard_notify(ctx.user, GuardUserAction.DISABLE)
+        _guard_notify(ctx.user, GuardUserAction.ENABLE)
 
 
-def _guard_notify(user: User, action: GuardUserAction):
-    def text_getter(lang: str):
-        action_name = bot.lang.get(f'guard_user_action_{action.value}', lang)
-        user_name = user_any_name(user)
-        return 'ℹ ' + bot.lang.get('guard_user_action_notification', lang,
-                                   user.id, user_name, action_name)
+    @bot.handler(message='guard_disable')
+    def guard_disable(ctx: bot.Context):
+        guard = guard_client()
+        guard.guard_disable()
+        ctx.reply(ctx.lang('done'))
 
-    bot.notify_all(text_getter, exclude=(user.id,))
+        _guard_notify(ctx.user, GuardUserAction.DISABLE)
+
+
+    def _guard_notify(user: User, action: GuardUserAction):
+        def text_getter(lang: str):
+            action_name = bot.lang.get(f'guard_user_action_{action.value}', lang)
+            user_name = bot.user_any_name(user)
+            return 'ℹ ' + bot.lang.get('guard_user_action_notification', lang,
+                                       user.id, user_name, action_name)
+
+        bot.notify_all(text_getter, exclude=(user.id,))
+
+
+@bot.defaultreplymarkup
+def markup(ctx: Optional[bot.Context]) -> Optional[ReplyKeyboardMarkup]:
+    buttons = [
+        [ctx.lang('record'), ctx.lang('settings')],
+        # [ctx.lang('files'), ctx.lang('remote_files')],
+    ]
+    if 'guard_server' in config['bot']:
+        buttons.append([
+            ctx.lang('guard_enable'), ctx.lang('guard_disable'), ctx.lang('guard_status')
+        ])
+    buttons.append([ctx.lang('sound_sensors')])
+    if have_cameras():
+        buttons.append([ctx.lang('cameras')])
+    return ReplyKeyboardMarkup(buttons, one_time_keyboard=False)
 
 
 # record client callbacks
@@ -740,232 +877,13 @@ def record_onfinished(info: dict, fn: str, userdata: dict):
         logger.exception(e)
 
 
-class SoundBot(Wrapper):
-    def __init__(self):
-        super().__init__()
-
-        self.lang.ru(
-            start_message="Выберите команду на клавиатуре",
-            unknown_command="Неизвестная команда",
-            unexpected_callback_data="Ошибка: неверные данные",
-            settings="Настройки микшера",
-            record="Запись",
-            loading="Загрузка...",
-            select_place="Выберите место:",
-            invalid_location="Неверное место",
-            invalid_interval="Неверная длительность",
-            unsupported_action="Неподдерживаемое действие",
-            # select_control="Выберите контрол для изменения настроек:",
-            control_state="Состояние контрола %s",
-            incr="громкость +",
-            decr="громкость -",
-            back="◀️ Назад",
-            n_min="%d мин.",
-            n_sec="%d сек.",
-            select_interval="Выберите длительность:",
-            place="Место",
-            beginning="Начало",
-            end="Конец",
-            record_result="Результат записи",
-            record_started='Запись запущена!',
-            record_error="Ошибка записи",
-            files="Локальные файлы",
-            remote_files="Файлы на сервере",
-            file_line="— Запись с <b>%s</b> до <b>%s</b> <i>(%s)</i>",
-            access_denied="Доступ запрещён",
-
-            guard_disable="Снять с охраны",
-            guard_enable="Поставить на охрану",
-            guard_status="Статус охраны",
-            guard_user_action_notification='Пользователь <a href="tg://user?id=%d">%s</a> %s.',
-            guard_user_action_enable="включил охрану ✅",
-            guard_user_action_disable="выключил охрану ❌",
-            guard_status_enabled="Включена ✅",
-            guard_status_disabled="Выключена ❌",
-
-            done="Готово 👌",
-
-            sound_sensors="Датчики звука",
-            sound_sensors_info="Здесь можно получить информацию о последних срабатываниях датчиков звука.",
-            sound_sensors_no_24h_data="За последние 24 часа данных нет.",
-            sound_sensors_show_anything="Показать, что есть",
-
-            cameras="Камеры",
-            select_option="Выберите опцию",
-            w_flash="Со вспышкой",
-            wo_flash="Без вспышки",
-        )
-
-        self.lang.en(
-            start_message="Select command on the keyboard",
-            unknown_command="Unknown command",
-            settings="Mixer settings",
-            record="Record",
-            unexpected_callback_data="Unexpected callback data",
-            loading="Loading...",
-            select_place="Select place:",
-            invalid_location="Invalid place",
-            invalid_interval="Invalid duration",
-            unsupported_action="Unsupported action",
-            # select_control="Select control to adjust its parameters:",
-            control_state="%s control state",
-            incr="vol +",
-            decr="vol -",
-            back="◀️ Back",
-            n_min="%d min.",
-            n_sec="%d s.",
-            select_interval="Select duration:",
-            place="Place",
-            beginning="Started",
-            end="Ended",
-            record_result="Result",
-            record_started='Recording started!',
-            record_error="Recording error",
-            files="Local files",
-            remote_files="Remote files",
-            file_line="— From <b>%s</b> to <b>%s</b> <i>(%s)</i>",
-            access_denied="Access denied",
-
-            guard_disable="Disable guard",
-            guard_enable="Enable guard",
-            guard_status="Guard status",
-            guard_user_action_notification='User <a href="tg://user?id=%d">%s</a> %s.',
-            guard_user_action_enable="turned the guard ON ✅",
-            guard_user_action_disable="turn the guard OFF ❌",
-            guard_status_enabled="Active ✅",
-            guard_status_disabled="Disabled ❌",
-            done="Done 👌",
-
-            sound_sensors="Sound sensors",
-            sound_sensors_info="Here you can get information about last sound sensors hits.",
-            sound_sensors_no_24h_data="No data for the last 24 hours.",
-            sound_sensors_show_anything="Show me at least something",
-
-            cameras="Cameras",
-            select_option="Select option",
-            w_flash="With flash",
-            wo_flash="Without flash",
-        )
-
-        # ------
-        #   settings
-        # -------------
-
-        # list of nodes
-        self.add_handler(MessageHandler(text_filter(self.lang.all('settings')), self.wrap(settings)))
-        self.add_handler(CallbackQueryHandler(self.wrap(settings), pattern=r'^s0$'))
-
-        # list of controls
-        self.add_handler(CallbackQueryHandler(self.wrap(settings_place), pattern=r'^s0/.*'))
-
-        # list of available tunes for control
-        self.add_handler(CallbackQueryHandler(self.wrap(settings_place_control), pattern=r'^s1/.*'))
-
-        # tuning
-        self.add_handler(CallbackQueryHandler(self.wrap(settings_place_control_action), pattern=r'^s2/.*'))
-
-        # ------
-        #   recording
-        # --------------
-
-        # list of nodes
-        self.add_handler(MessageHandler(text_filter(self.lang.all('record')), self.wrap(record)))
-        self.add_handler(CallbackQueryHandler(self.wrap(record), pattern=r'^r0$'))
-
-        # list of available intervals
-        self.add_handler(CallbackQueryHandler(self.wrap(record_place), pattern=r'^r0/.*'))
-
-        # do record!
-        self.add_handler(CallbackQueryHandler(self.wrap(record_place_interval), pattern=r'^r1/.*'))
-
-        # ---------
-        #   sound sensors
-        # ------------------
-
-        # list of places
-        self.add_handler(MessageHandler(text_filter(self.lang.all('sound_sensors')), self.wrap(sound_sensors)))
-        self.add_handler(CallbackQueryHandler(self.wrap(sound_sensors), pattern=r'^S0$'))
-
-        # last 24h log
-        self.add_handler(CallbackQueryHandler(self.wrap(sound_sensors_last_24h), pattern=r'^S0/.*'))
-
-        # last _something_
-        self.add_handler(CallbackQueryHandler(self.wrap(sound_sensors_last_anything), pattern=r'^S1/.*'))
-
-        # -------------
-        #   guard enable/disable
-        # -------------------------
-        if 'guard_server' in config['bot']:
-            self.add_handler(MessageHandler(text_filter(self.lang.all('guard_enable')), self.wrap(guard_enable)))
-            self.add_handler(MessageHandler(text_filter(self.lang.all('guard_disable')), self.wrap(guard_disable)))
-            self.add_handler(MessageHandler(text_filter(self.lang.all('guard_status')), self.wrap(guard_status)))
-
-        # --------
-        #   local files
-        # ----------------
-
-        # list of nodes
-        # self.add_handler(MessageHandler(text_filter(self.lang.all('files')), self.wrap(partial(files, remote=False))))
-        # self.add_handler(CallbackQueryHandler(self.wrap(partial(files, remote=False)), pattern=r'^f0$'))
-
-        # list of specific node's files
-        # self.add_handler(CallbackQueryHandler(self.wrap(files_list), pattern=r'^f0/.*'))
-
-        # --------
-        #   remote files
-        # -----------------
-
-        # list of nodes
-        # self.add_handler(MessageHandler(text_filter(self.lang.all('remote_files')), self.wrap(partial(files, remote=True))))
-        # self.add_handler(CallbackQueryHandler(self.wrap(partial(files, remote=True)), pattern=r'^g0$'))
-
-        # list of specific node's files
-        # self.add_handler(CallbackQueryHandler(self.wrap(files_list), pattern=r'^g0/.*'))
-
-        # ------
-        #   cameras
-        # ------------
-
-        # list of cameras
-        self.add_handler(MessageHandler(text_filter(self.lang.all('cameras')), self.wrap(cameras)))
-        self.add_handler(CallbackQueryHandler(self.wrap(cameras), pattern=r'^c0$'))
-
-        # list of options (with/without flash etc)
-        self.add_handler(CallbackQueryHandler(self.wrap(camera_options), pattern=r'^c0/.*'))
-
-        # cheese
-        self.add_handler(CallbackQueryHandler(self.wrap(camera_capture), pattern=r'^c1/.*'))
-
-    def markup(self, ctx: Optional[Context]) -> Optional[ReplyKeyboardMarkup]:
-        buttons = [
-            [ctx.lang('record'), ctx.lang('settings')],
-            # [ctx.lang('files'), ctx.lang('remote_files')],
-        ]
-        if 'guard_server' in config['bot']:
-            buttons.append([
-                ctx.lang('guard_enable'), ctx.lang('guard_disable'), ctx.lang('guard_status')
-            ])
-        buttons.append([ctx.lang('sound_sensors')])
-        if have_cameras():
-            buttons.append([ctx.lang('cameras')])
-        return ReplyKeyboardMarkup(buttons, one_time_keyboard=False)
-
-
 if __name__ == '__main__':
-    config.load('sound_bot')
-
-    nodes = {}
-    for nodename, nodecfg in config['nodes'].items():
-        nodes[nodename] = parse_addr(nodecfg['addr'])
-
     record_client = SoundRecordClient(nodes,
                                       error_handler=record_onerror,
                                       finished_handler=record_onfinished,
                                       download_on_finish=True)
 
-    bot = SoundBot()
     if 'api' in config:
         bot.enable_logging(BotType.SOUND)
     bot.run()
-
     record_client.stop()

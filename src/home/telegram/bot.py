@@ -25,7 +25,7 @@ from home.api.types import BotType
 
 from ._botlang import lang, languages
 from ._botdb import BotDatabase
-from ._botutil import ReportingHelper, exc2text, IgnoreMarkup
+from ._botutil import ReportingHelper, exc2text, IgnoreMarkup, user_any_name
 from ._botcontext import Context
 
 
@@ -112,7 +112,7 @@ def handler(**kwargs):
         elif 'command' in kwargs:
             _updater.dispatcher.add_handler(CommandHandler(kwargs['command'], _handler), group=0)
         elif 'callback' in kwargs:
-            _updater.dispatcher.add_handler(CallbackQueryHandler(_handler), group=0)
+            _updater.dispatcher.add_handler(CallbackQueryHandler(_handler, pattern=kwargs['callback']), group=0)
         return _handler
     return inner
 
@@ -124,12 +124,14 @@ def simplehandler(f: callable):
     return _handler
 
 
-def callbackhandler(f: callable):
-    @wraps(f)
-    def _handler(*args, **kwargs):
-        return _handler_of_handler(f=f, *args, **kwargs)
-    _updater.dispatcher.add_handler(CallbackQueryHandler(_handler), group=0)
-    return _handler
+def callbackhandler(**kwargs):
+    def inner(f):
+        @wraps(f)
+        def _handler(*args, **kwargs):
+            return _handler_of_handler(f=f, *args, **kwargs)
+        _updater.dispatcher.add_handler(CallbackQueryHandler(_handler, pattern=kwargs['callback']), group=0)
+        return _handler
+    return inner
 
 
 def exceptionhandler(f: callable):

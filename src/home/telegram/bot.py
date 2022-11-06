@@ -4,21 +4,13 @@ import logging
 
 from enum import Enum, auto
 from functools import wraps
-from typing import Optional, Union, List, Tuple, Dict
+from typing import Optional, Union, Tuple
 
-from telegram import (
-    Update,
-    ParseMode,
-    ReplyKeyboardMarkup,
-    CallbackQuery,
-    User,
-    Message,
-)
+from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import (
     Updater,
     Filters,
     BaseFilter,
-    Handler,
     CommandHandler,
     MessageHandler,
     CallbackQueryHandler,
@@ -30,7 +22,6 @@ from telegram.error import TimedOut
 from home.config import config
 from home.api import WebAPIClient
 from home.api.types import BotType
-from home.api.errors import ApiResponseError
 
 from ._botlang import lang, languages
 from ._botdb import BotDatabase
@@ -38,14 +29,12 @@ from ._botutil import ReportingHelper, exc2text, IgnoreMarkup
 from ._botcontext import Context
 
 
-# LANG_STARTED, = range(1)
-
-user_filter: Optional[BaseFilter] = None
-cancel_filter = Filters.text(lang.all('cancel'))
-back_filter = Filters.text(lang.all('back'))
-cancel_and_back_filter = Filters.text(lang.all('back') + lang.all('cancel'))
-
 db: Optional[BotDatabase] = None
+
+_user_filter: Optional[BaseFilter] = None
+_cancel_filter = Filters.text(lang.all('cancel'))
+_back_filter = Filters.text(lang.all('back'))
+_cancel_and_back_filter = Filters.text(lang.all('back') + lang.all('cancel'))
 
 _logger = logging.getLogger(__name__)
 _updater: Optional[Updater] = None
@@ -57,9 +46,9 @@ _start_handler_ref: Optional[callable] = None
 
 
 def text_filter(*args):
-    if not user_filter:
+    if not _user_filter:
         raise RuntimeError('user_filter is not initialized')
-    return Filters.text(args[0] if isinstance(args[0], list) else [*args]) & user_filter
+    return Filters.text(args[0] if isinstance(args[0], list) else [*args]) & _user_filter
 
 
 def _handler_of_handler(*args, **kwargs):
@@ -220,10 +209,10 @@ class conversation:
                     handlers.append(MessageHandler(text_filter(lang.all(message) if 'messages_lang_completed' not in kwargs else message), self.make_invoker(target_state)))
 
         if 'regex' in kwargs:
-            handlers.append(MessageHandler(Filters.regex(kwargs['regex']) & user_filter, f))
+            handlers.append(MessageHandler(Filters.regex(kwargs['regex']) & _user_filter, f))
 
         if 'command' in kwargs:
-            handlers.append(CommandHandler(kwargs['command'], f, user_filter))
+            handlers.append(CommandHandler(kwargs['command'], f, _user_filter))
 
         return handlers
 
@@ -252,7 +241,7 @@ class conversation:
         entry_points = []
         states = {}
 
-        l_cancel_filter = cancel_filter if not self._back_enabled else cancel_and_back_filter
+        l_cancel_filter = _cancel_filter if not self._back_enabled else _cancel_and_back_filter
 
         for item in dir(self):
             f = getattr(self, item)
@@ -266,12 +255,12 @@ class conversation:
             elif cd['type'] == ConversationMethodType.STATE_HANDLER:
                 states[cd['state']] = self.make_handlers(f, **cd)
                 states[cd['state']].append(
-                    MessageHandler(user_filter & ~l_cancel_filter, conversation.invalid)
+                    MessageHandler(_user_filter & ~l_cancel_filter, conversation.invalid)
                 )
 
-        fallbacks = [MessageHandler(user_filter & cancel_filter, self.cancel)]
+        fallbacks = [MessageHandler(_user_filter & _cancel_filter, self.cancel)]
         if self._back_enabled:
-            fallbacks.append(MessageHandler(user_filter & back_filter, self.back))
+            fallbacks.append(MessageHandler(_user_filter & _back_filter, self.back))
 
         return ConversationHandler(
             entry_points=entry_points,
@@ -408,23 +397,23 @@ class LangConversation(conversation):
 
 
 def initialize():
-    global user_filter
+    global _user_filter
     global _updater
     global _dispatcher
 
     # init user_filter
     if 'users' in config['bot']:
         _logger.info('allowed users: ' + str(config['bot']['users']))
-        user_filter = Filters.user(config['bot']['users'])
+        _user_filter = Filters.user(config['bot']['users'])
     else:
-        user_filter = Filters.all  # not sure if this is correct
+        _user_filter = Filters.all  # not sure if this is correct
 
     # init updater
     _updater = Updater(config['bot']['token'],
                        request_kwargs={'read_timeout': 6, 'connect_timeout': 7})
 
     # transparently log all messages
-    _updater.dispatcher.add_handler(MessageHandler(Filters.all & user_filter, _logging_message_handler), group=10)
+    _updater.dispatcher.add_handler(MessageHandler(Filters.all & _user_filter, _logging_message_handler), group=10)
     _updater.dispatcher.add_handler(CallbackQueryHandler(_logging_callback_handler), group=10)
 
 
@@ -442,8 +431,8 @@ def run(start_handler=None, any_handler=None):
     _start_handler_ref = start_handler
 
     _updater.dispatcher.add_handler(LangConversation().get_handler(), group=0)
-    _updater.dispatcher.add_handler(CommandHandler('start', simplehandler(start_handler), user_filter))
-    _updater.dispatcher.add_handler(MessageHandler(Filters.all & user_filter, any_handler))
+    _updater.dispatcher.add_handler(CommandHandler('start', simplehandler(start_handler), _user_filter))
+    _updater.dispatcher.add_handler(MessageHandler(Filters.all & _user_filter, any_handler))
 
     _updater.start_polling()
     _updater.idle()

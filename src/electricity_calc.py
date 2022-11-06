@@ -18,7 +18,6 @@ _is_verbose = False
 
 fmt_time = '%Y-%m-%d %H:%M:%S'
 fmt_date = '%Y-%m-%d'
-tz = zoneinfo.ZoneInfo('Europe/Moscow')
 
 
 def method_usage() -> str:

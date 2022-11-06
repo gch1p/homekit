@@ -106,7 +106,20 @@ class WebAPIClient:
             return MediaNodeClient.record_list_from_serialized(files)
         return files
 
-    def _process_sound_sensor_hits_data(self, data: List[dict]) -> List[dict]:
+    def inverter_get_consumed_energy(self, s_from: str, s_to: str):
+        return self._post('inverter/get_consumed_energy/', {
+            'from': s_from,
+            'to': s_to
+        })
+
+    def inverter_get_grid_consumed_energy(self, s_from: str, s_to: str):
+        return self._post('inverter/get_grid_consumed_energy/', {
+            'from': s_from,
+            'to': s_to
+        })
+
+    @staticmethod
+    def _process_sound_sensor_hits_data(data: List[dict]) -> List[dict]:
         for item in data:
             item['time'] = datetime.fromtimestamp(item['time'])
         return data

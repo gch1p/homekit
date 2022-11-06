@@ -9,9 +9,20 @@ from aiohttp import web
 from home import http
 from home.util import parse_addr
 from home.config import config, is_development_mode
-from home.database import BotsDatabase, SensorsDatabase
+from home.database import BotsDatabase, SensorsDatabase, InverterDatabase
+from home.database.inverter_time_formats import *
 from home.api.types import BotType, TemperatureSensorLocation, SoundSensorLocation
 from home.media import SoundRecordStorage
+
+
+def strptime_auto(s: str) -> datetime:
+    e = None
+    for fmt in (FormatTime, FormatDate):
+        try:
+            return datetime.strptime(s, fmt)
+        except ValueError as _e:
+            e = _e
+    raise e
 
 
 class AuthError(Exception):
@@ -33,6 +44,9 @@ class WebAPIServer(http.HTTPServer):
 
         self.post('/log/bot-request/', self.POST_bot_request_log)
         self.post('/log/openwrt/', self.POST_openwrt_log)
+
+        self.get('/inverter/consumed_energy/', self.GET_consumed_energy)
+        self.get('/inverter/grid_consumed_energy/', self.GET_grid_consumed_energy)
 
         self.get('/recordings/list/', self.GET_recordings_list)
 
@@ -183,6 +197,30 @@ class WebAPIServer(http.HTTPServer):
             files = list(map(lambda file: file.__dict__(), files))
 
         return self.ok(files)
+
+    @staticmethod
+    def _get_inverter_from_to(req: http.Request):
+        s_from = req.query['from']
+        s_to = req.query['to']
+
+        dt_from = strptime_auto(s_from)
+
+        if s_to == 'now':
+            dt_to = datetime.now()
+        else:
+            dt_to = strptime_auto(s_to)
+
+        return dt_from, dt_to
+
+    async def GET_consumed_energy(self, req: http.Request):
+        dt_from, dt_to = self._get_inverter_from_to(req)
+        wh = InverterDatabase().get_consumed_energy(dt_from, dt_to)
+        return self.ok(wh)
+
+    async def GET_grid_consumed_energy(self, req: http.Request):
+        dt_from, dt_to = self._get_inverter_from_to(req)
+        wh = InverterDatabase().get_consumed_energy(dt_from, dt_to)
+        return self.ok(wh)
 
 
 # start of the program

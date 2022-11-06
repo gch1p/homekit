@@ -75,8 +75,6 @@ status - Show status
 config - Show configuration
 errors - Show errors
 flags - Toggle flags
-calcw - Calculate daily watts usage 
-calcwadv - Advanced watts usage calculator
 monstatus - Monitor: dump state
 monsetcur - Monitor: set charging currents
 ```

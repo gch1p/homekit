@@ -802,7 +802,7 @@ def generation_handler(ctx: bot.Context) -> None:
 
     gs = inverter.exec('get-status')['data']
 
-    today = inverter.exec('get-day-generated', (today.year, today.month, today.day))['data']
+    gen_today = inverter.exec('get-day-generated', (today.year, today.month, today.day))['data']
     gen_yday = None
     gen_yday2 = None
 
@@ -816,7 +816,7 @@ def generation_handler(ctx: bot.Context) -> None:
     html = f'<b>{ctx.lang("gen_input_power")}:</b> %s %s' % (gs['pv1_input_power']['value'], gs['pv1_input_power']['unit'])
     html += ' (%s %s)' % (gs['pv1_input_voltage']['value'], gs['pv1_input_voltage']['unit'])
 
-    html += f'\n<b>{ctx.lang("today")}:</b> %s Wh' % (today['wh'])
+    html += f'\n<b>{ctx.lang("today")}:</b> %s Wh' % (gen_today['wh'])
 
     if gen_yday is not None:
         html += f'\n<b>{ctx.lang("yday1")}:</b> %s Wh' % (gen_yday['wh'])

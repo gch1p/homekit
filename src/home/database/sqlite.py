@@ -5,19 +5,21 @@ import logging
 from ..config import config, is_development_mode
 
 
-def _get_database_path(name) -> str:
-    return os.path.join(os.environ['HOME'], '.config', name, 'bot.db')
+def _get_database_path(name: str, dbname: str) -> str:
+    return os.path.join(os.environ['HOME'], '.config', name, f'{dbname}.db')
 
 
 class SQLiteBase:
     SCHEMA = 1
 
-    def __init__(self, name=None, check_same_thread=False):
+    def __init__(self, name=None, dbname='bot', check_same_thread=False):
         if not name:
             name = config.app_name
+        if not dbname:
+            dbname = name
 
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.sqlite = sqlite3.connect(_get_database_path(name),
+        self.sqlite = sqlite3.connect(_get_database_path(name, dbname),
                                       check_same_thread=check_same_thread)
 
         if is_development_mode():

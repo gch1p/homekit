@@ -211,6 +211,7 @@ class WebAPIServer(http.HTTPServer):
             dt_to = strptime_auto(s_to)
 
         return dt_from, dt_to
+
     async def GET_consumed_energy(self, req: http.Request):
         dt_from, dt_to = self._get_inverter_from_to(req)
         wh = InverterDatabase().get_consumed_energy(dt_from, dt_to)

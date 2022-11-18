@@ -58,6 +58,7 @@ class Database(SQLiteBase):
     def set_guard_enabled(self, enabled: bool) -> None:
         cur = self.cursor()
         cur.execute("UPDATE status SET guard_enabled=?", (int(enabled),))
+        self.commit()
 
 
 class SoundSensorServer:

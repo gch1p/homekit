@@ -76,7 +76,8 @@ class SoundSensorServer:
             if current_status == -1:
                 self.set_recording(config['server']['guard_recording_default']
                                    if 'guard_recording_default' in config['server']
-                                   else False)
+                                   else False,
+                                   update=False)
             else:
                 self.set_recording(bool(current_status), update=False)
 

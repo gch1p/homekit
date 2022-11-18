@@ -149,7 +149,7 @@ def simplehandler(f: callable):
     return _handler
 
 
-def callbackhandler(**kwargs):
+def callbackhandler(f, **kwargs):
     def inner(f):
         @wraps(f)
         def _handler(*args, **kwargs):

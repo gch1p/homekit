@@ -45,7 +45,7 @@ class Database(SQLiteBase):
         cursor = self.cursor()
 
         if version < 1:
-            cursor.execute("CREATE TABLE IF NOT EXISTS status (guard_enabled) INTEGER NOT NULL")
+            cursor.execute("CREATE TABLE IF NOT EXISTS status (guard_enabled INTEGER NOT NULL)")
             cursor.execute("INSERT INTO status (guard_enabled) VALUES (-1)")
 
         self.commit()

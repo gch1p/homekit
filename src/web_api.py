@@ -39,10 +39,10 @@ class WebAPIServer(http.HTTPServer):
 
         self.get('/', self.get_index)
         self.get('/sensors/data/', self.GET_sensors_data)
-        self.get('/sound-sensors/hits/', self.GET_sound_sensors_hits)
-        self.post('/sound-sensors/hits/', self.POST_sound_sensors_hits)
+        self.get('/sound_sensors/hits/', self.GET_sound_sensors_hits)
+        self.post('/sound_sensors/hits/', self.POST_sound_sensors_hits)
 
-        self.post('/log/bot-request/', self.POST_bot_request_log)
+        self.post('/log/bot_request/', self.POST_bot_request_log)
         self.post('/log/openwrt/', self.POST_openwrt_log)
 
         self.get('/inverter/consumed_energy/', self.GET_consumed_energy)

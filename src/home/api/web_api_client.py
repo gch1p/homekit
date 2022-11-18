@@ -59,7 +59,7 @@ class WebAPIClient:
                         bot: BotType,
                         user_id: int,
                         message: str):
-        return self._post('log/bot-request/', {
+        return self._post('log/bot_request/', {
             'bot': bot.value,
             'user_id': str(user_id),
             'message': message

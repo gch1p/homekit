@@ -44,12 +44,12 @@ define('START_TIME', microtime(true));
 
 set_include_path(get_include_path().PATH_SEPARATOR.ROOT);
 
+require_once ROOT.'/functions.php';
+
 $config = require ROOT.'/config.php';
 if (!is_file(ROOT.'/config.local.php'))
     die('config.local.php not found');
 $config = array_merge($config, require_once ROOT.'/config.local.php');
-
-require_once ROOT.'/functions.php';
 
 // it's better to start logging as early as possible
 $debug = debug::getInstance(

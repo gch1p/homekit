@@ -17,8 +17,8 @@ class MiscHandler extends RequestHandler
         global $config;
 
         $clients = [];
-        foreach ($config['si7021d_servers'] as $key => $params) {
-            $cl = new Si7021dClient(...$params);
+        foreach ($config['temphumd_servers'] as $key => $params) {
+            $cl = new TemphumdClient(...$params);
             $clients[$key] = $cl;
 
             $cl->readSensor();

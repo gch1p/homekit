@@ -15,9 +15,9 @@ return [
     'pump_host' => '192.168.1.2',
     'pump_port' => 8307,
 
-    'si7021d_servers' => [
+    'temphumd_servers' => [
         // fill here, example:
-        'hall' => ['192.168.1.3', 8306, 'Big Hall'],
+        'hall' => ['192.168.1.3', 8306, 'Big Hall'/*, optional: config::TEMPHUMD_NO_HUM */],
     ],
 
     // modem names (array keys) must match ipset names and

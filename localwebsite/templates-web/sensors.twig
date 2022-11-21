@@ -6,6 +6,10 @@
 
 {% for key, sensor in sensors %}
   <h6 class="text-primary{% if not loop.first %} mt-4{% endif %}">{{ sensor.name }}</h6>
-  <span class="text-secondary">Температура:</span> <b>{{ sensor.temp }}</b> °C<br>
-  <span class="text-secondary">Влажность:</span> <b>{{ sensor.humidity }}</b>%
+  {% if sensor.hasTemperature() %}
+    <span class="text-secondary">Температура:</span> <b>{{ sensor.temp }}</b> °C<br>
+  {% endif %}
+  {% if sensor.hasHumidity() %}
+    <span class="text-secondary">Влажность:</span> <b>{{ sensor.humidity }}</b>%
+  {% endif %}
 {% endfor %}

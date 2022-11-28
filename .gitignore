@@ -1,12 +1,17 @@
 .idea
 /venv
+/node_modules
 *.pyc
+config.def.h
 __pycache__
 .DS_Store
 /src/test/test_inverter_monitor.log
 /youtrack-certificate
 /cpp
 /esp32-cam/CameraWebServer/wifi_password.h
+cmake-build-*
+.pio
+CMakeListsPrivate.txt
 
 *.swp
 

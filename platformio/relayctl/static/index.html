@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Configuration</title>
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" type="text/css" href="/style.css">
+    <script src="/app.js"></script>
+</head>
+<body onload="initApp()">
+<div class="title">Settings <span id="loading_label">(loading...)</span></div>
+<div class="block">
+    <form method="post" action="/status" name="network_settings">
+        <div class="form_label">WiFi SSID</div>
+        <div class="form_input">
+            <select id="ssid_select" name="ssid" class="full-width">
+                <option value="">Loading...</option>
+            </select>
+        </div>
+
+        <div class="form_label">WiFi Password</div>
+        <div class="form_input">
+            <input type="password" value="" name="psk" class="full-width" id="fld_psk" maxlength="63" disabled>
+            <div class="form_checkbox">
+                <label for="show_psk"><input type="checkbox" name="show_psk" id="show_psk"> show password</label>
+            </div>
+        </div>
+
+        <div class="form_label">Node ID</div>
+        <div class="form_input">
+            <input type="text" value="" maxlength="16" name="nid" id="fld_nid" class="full-width" disabled>
+        </div>
+
+        <button type="submit" disabled="disabled" name="submit">Save and Reboot</button>
+    </form>
+</div>
+
+<div class="title">Update firmware (.bin)</div>
+<div class="block">
+    <form method="post" action="/update" enctype="multipart/form-data" name="update_settings">
+        <div class="form_input">
+            <input type="file" accept=".bin,.bin.gz" name="file">
+        </div>
+        <button type="submit" name="submit">Upload</button>
+    </form>
+</div>
+
+<div class="title">Reset settings</div>
+<div class="block">
+    <form method="post" action="/reset">
+        <button type="submit" name="submit" class="is_reset">Reset</button>
+    </form>
+</div>
+
+<div class="title">Info</div>
+<div class="block">
+    ESP8266-based <b>relayctl</b>, firmware v{version}<br>
+    Part of <a href="https://git.ch1p.io/homekit.git/">homekit</a> by <a href="https://ch1p.io">Evgeny Zinoviev</a> &copy; 2022
+</div>
+</body>
+</html>

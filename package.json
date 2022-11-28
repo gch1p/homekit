@@ -1,0 +1,14 @@
+{
+  "name": "homekit",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@ch1p.io:homekit.git",
+  "author": "Evgeny Zinoviev <me@ch1p.io>",
+  "license": "MIT",
+  "devDependencies": {
+    "clean-css": "^5.3.1",
+    "html-minifier-terser": "^7.1.0",
+    "minimist": "^1.2.7",
+    "terser": "^5.16.1"
+  }
+}

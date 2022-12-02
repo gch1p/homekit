@@ -111,7 +111,7 @@ def callback_handler(ctx: bot.Context) -> None:
     sensor = TemperatureSensorLocation[match.group(1).upper()]
     hours = int(match.group(2))
 
-    api = WebAPIClient()
+    api = WebAPIClient(timeout=20)
     data = api.get_sensors_data(sensor, hours)
 
     title = ctx.lang(sensor.name.lower()) + ' (' + ctx.lang('n_hrs', hours) + ')'

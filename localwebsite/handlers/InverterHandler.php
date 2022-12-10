@@ -3,37 +3,45 @@
 class InverterHandler extends RequestHandler
 {
 
-    public function __construct()
-    {
+    public function __construct() {
         parent::__construct();
         $this->tpl->add_static('inverter.js');
     }
 
-    public function GET_status_page()
-    {
-        global $config;
-        $inv = new InverterdClient($config['inverterd_host'], $config['inverterd_port']);
-        $inv->setFormat('json');
+    public function GET_status_page() {
+        $inv = $this->getClient();
+
         $status = jsonDecode($inv->exec('get-status'))['data'];
+        $rated = jsonDecode($inv->exec('get-rated'))['data'];
 
         $this->tpl->set([
             'status' => $status,
-            'html' => $this->renderStatusHtml($status)
+            'rated' => $rated,
+            'html' => $this->renderStatusHtml($status, $rated)
         ]);
         $this->tpl->set_title('Инвертор');
         $this->tpl->render_page('inverter_page.twig');
     }
 
-    public function GET_status_ajax() {
-        global $config;
-        $inv = new InverterdClient($config['inverterd_host'], $config['inverterd_port']);
-        $inv->setFormat('json');
-        $status = jsonDecode($inv->exec('get-status'))['data'];
-        ajax_ok(['html' => $this->renderStatusHtml($status)]);
+    public function GET_set_osp() {
+        list($osp) = $this->input('e:value(=sub|sbu)');
+        $inv = $this->getClient();
+        try {
+            $inv->exec('set-output-source-priority', [strtoupper($osp)]);
+        } catch (Exception $e) {
+            die('Ошибка: '.jsonDecode($e->getMessage())['message']);
+        }
+        redirect('/inverter/');
     }
 
-    protected function renderStatusHtml(array $status)
-    {
+    public function GET_status_ajax() {
+        $inv = $this->getClient();
+        $status = jsonDecode($inv->exec('get-status'))['data'];
+        $rated = jsonDecode($inv->exec('get-rated'))['data'];
+        ajax_ok(['html' => $this->renderStatusHtml($status, $rated)]);
+    }
+
+    protected function renderStatusHtml(array $status, array $rated) {
         $power_direction = strtolower($status['battery_power_direction']);
         $power_direction = preg_replace('/ge$/', 'ging', $power_direction);
 
@@ -77,12 +85,18 @@ class InverterHandler extends RequestHandler
                 $status['grid_freq']['unit']);
         }
 
+        $html .= "\n".sprintf('<b>Priority:</b> %s',
+            $rated['output_source_priority']);
+
         return nl2br($html);
     }
 
-    public function GET_status_page_update()
-    {
-
+    protected function getClient(): InverterdClient {
+        global $config;
+        $inv = new InverterdClient($config['inverterd_host'], $config['inverterd_port']);
+        $inv->setFormat('json');
+        return $inv;
     }
+
 
 }

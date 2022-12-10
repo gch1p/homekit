@@ -19,6 +19,7 @@ $router->add('sms/',     'Modem sms');
 
 // inverter
 $router->add('inverter/',            'Inverter status_page');
+$router->add('inverter/set-osp/',    'Inverter set_osp');
 $router->add('inverter/status.ajax', 'Inverter status_ajax');
 
 // misc

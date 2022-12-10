@@ -9,6 +9,12 @@
   {{ html|raw }}
 </div>
 
+<div class="pt-3">
+  <a href="/inverter/set-osp/?value={{ rated.output_source_priority == 'Solar-Battery-Utility' ? 'sub' : 'sbu' }}">
+    <button type="button" class="btn btn-primary">Переключить на <b>{{ rated.output_source_priority == 'Solar-Battery-Utility' ? 'Solar-Utility-Battery' : 'Solar-Battery-Utility' }}</b></button>
+  </a>
+</div>
+
 {% js %}
 Inverter.poll();
 {% endjs %}

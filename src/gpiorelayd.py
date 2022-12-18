@@ -5,7 +5,7 @@ import sys
 
 from home.config import config
 from home.util import parse_addr
-from home.relay.server import RelayServer
+from home.relay.sunxi_h3_server import RelayServer
 
 logger = logging.getLogger(__name__)
 

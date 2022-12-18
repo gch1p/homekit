@@ -6,7 +6,7 @@ from telegram import ReplyKeyboardMarkup, User
 from home.config import config
 from home.telegram import bot
 from home.telegram._botutil import user_any_name
-from home.relay import RelayClient
+from home.relay.sunxi_h3_client import RelayClient
 from home.api.types import BotType
 
 config.load('pump_bot')

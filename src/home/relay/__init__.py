@@ -5,8 +5,8 @@ __all__ = ['RelayClient', 'RelayServer']
 
 def __getattr__(name):
     _map = {
-        'RelayClient': '.client',
-        'RelayServer': '.server'
+        'RelayClient': '.sunxi_h3_client',
+        'RelayServer': '.sunxi_h3_server'
     }
 
     if name in __all__:

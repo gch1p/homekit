@@ -77,6 +77,12 @@ class HTTPServer:
     def post(self, path, handler):
         self._add_route('post', path, handler)
 
+    def put(self, path, handler):
+        self._add_route('put', path, handler)
+
+    def delete(self, path, handler):
+        self._add_route('delete', path, handler)
+
     def run(self, event_loop=None, handle_signals=True):
         if not event_loop:
             event_loop = asyncio.get_event_loop()

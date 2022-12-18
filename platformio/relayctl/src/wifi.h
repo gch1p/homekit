@@ -14,12 +14,9 @@ struct ScanResult {
     String ssid;
 };
 
-void getConfig(ConfigData &cfg, char **ssid_dst, char **psk_dst, char **hostname_dst);
-std::shared_ptr<std::list<ScanResult>> scan();
+void getConfig(ConfigData& cfg, const char** ssid, const char** psk, const char** hostname);
 
-inline int8_t getRSSI() {
-    return WiFi.RSSI();
-}
+std::shared_ptr<std::list<ScanResult>> scan();
 
 inline uint32_t getIPAsInteger() {
     if (!WiFi.isConnected())
@@ -27,9 +24,13 @@ inline uint32_t getIPAsInteger() {
     return WiFi.localIP().v4();
 }
 
-extern const char WIFI_AP_SSID[];
-extern const char WIFI_STA_SSID[];
-extern const char WIFI_STA_PSK[];
-extern const char NODE_ID[];
+inline int8_t getRSSI() {
+    return WiFi.RSSI();
+}
+
+extern const char AP_SSID[];
+extern const char STA_SSID[];
+extern const char STA_PSK[];
+extern const char HOME_ID[];
 
 }

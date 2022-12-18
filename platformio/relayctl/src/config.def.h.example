@@ -18,15 +18,15 @@
     0x8a, 0xb0, 0xc9, 0x9c, 0xbb      \
 };
 
-#define DEFAULT_NODE_ID "relay-node"
+#define DEFAULT_HOME_ID "relay-node"
 
 #define FLASH_BUTTON_PIN 0
 #define ESP_LED_PIN 2
 #define BOARD_LED_PIN 16
+#define RELAY_PIN 5
 
 // 12 bytes string
-#define SECRET ""
-
-#define DEBUG
+#define HOME_SECRET_SIZE 12
+#define HOME_SECRET ""
 
 #define ARRAY_SIZE(X) sizeof((X))/sizeof((X)[0])

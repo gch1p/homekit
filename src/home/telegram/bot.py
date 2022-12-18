@@ -110,6 +110,8 @@ def _handler_of_handler(*args, **kwargs):
                     ctx.reply_exc(e)
                 else:
                     notify_user(ctx.user_id, exc2text(e))
+        else:
+            _logger.exception(e)
 
 
 def handler(**kwargs):

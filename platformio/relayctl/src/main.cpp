@@ -15,9 +15,6 @@
 
 using namespace homekit;
 
-static Led board_led(BOARD_LED_PIN);
-static Led esp_led(ESP_LED_PIN);
-
 enum class WorkingMode {
     RECOVERY, // AP mode, http server with configuration
     NORMAL,   // MQTT client
@@ -39,13 +36,13 @@ static WiFiEventHandler wifiConnectHandler, wifiDisconnectHandler;
 static Ticker wifiTimer;
 static StopWatch blinkStopWatch;
 
-static DNSServer* dnsServer;
+static DNSServer* dnsServer = nullptr;
 
 static void onWifiConnected(const WiFiEventStationModeGotIP& event);
 static void onWifiDisconnected(const WiFiEventStationModeDisconnected& event);
 
 static void wifiConnect() {
-    char* ssid, *psk, *hostname;
+    const char *ssid, *psk, *hostname;
     auto cfg = config::read();
     wifi::getConfig(cfg, &ssid, &psk, &hostname);
 
@@ -54,16 +51,10 @@ static void wifiConnect() {
     wifi_state = WiFiConnectionState::WAITING;
 
     WiFi.mode(WIFI_STA);
-    WiFi.setHostname(hostname);
+    WiFi.hostname(hostname);
     WiFi.begin(ssid, psk);
 
     PRINT("connecting to wifi..");
-    while (WiFi.status() != WL_CONNECTED) {
-        esp_led.blink(2, 50);
-        delay(1000);
-        PRINT('.');
-    }
-    PRINT(' ');
 }
 
 static void wifiHotspot() {
@@ -72,7 +63,7 @@ static void wifiHotspot() {
     auto scanResults = wifi::scan();
 
     WiFi.mode(WIFI_AP);
-    WiFi.softAP(wifi::WIFI_AP_SSID);
+    WiFi.softAP(wifi::AP_SSID);
 
     dnsServer = new DNSServer();
     dnsServer->start(53, "*", WiFi.softAPIP());
@@ -82,6 +73,8 @@ static void wifiHotspot() {
 }
 
 void setup() {
+    WiFi.disconnect();
+
 #ifdef DEBUG
     Serial.begin(115200);
 #endif
@@ -119,6 +112,13 @@ void setup() {
 
 void loop() {
     if (working_mode == WorkingMode::NORMAL) {
+        if (wifi_state == WiFiConnectionState::WAITING) {
+            PRINT(".");
+            esp_led.blink(2, 50);
+            delay(1000);
+            return;
+        }
+
         if (wifi_state == WiFiConnectionState::JUST_CONNECTED) {
             board_led.blink(3, 300);
             wifi_state = WiFiConnectionState::CONNECTED;
@@ -131,28 +131,29 @@ void loop() {
         }
 
         auto mqtt = (mqtt::MQTT*)service;
-        if (static_cast<int>(wifi_state) >= 1
-                && mqtt != nullptr) {
-            if (!mqtt->loop()) {
-                PRINTLN("mqtt::loop() returned false");
-                // FIXME do something here
-            }
+        if (static_cast<int>(wifi_state) >= 1 && mqtt != nullptr) {
+            mqtt->loop();
 
-            if (mqtt->statStopWatch.elapsed(10000)) {
+            if (mqtt->ota.readyToRestart) {
+                mqtt->disconnect();
+            } else if (mqtt->statStopWatch.elapsed(10000)) {
                 mqtt->sendStat();
             }
 
             // periodically blink board led
             if (blinkStopWatch.elapsed(5000)) {
+                // PRINTF("free heap: %d\n", ESP.getFreeHeap());
                 board_led.blink(1, 10);
                 blinkStopWatch.save();
             }
         }
-
-        delay(500);
     } else {
         if (dnsServer != nullptr)
             dnsServer->processNextRequest();
+
+        auto httpServer = (HttpServer*)service;
+        if (httpServer != nullptr)
+            httpServer->loop();
     }
 }
 

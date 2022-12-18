@@ -183,9 +183,9 @@ class WebAPIClient:
             data = json.loads(r.text)
             if r.status_code != 200:
                 raise ApiResponseError(r.status_code,
-                                       data['error']['type'],
-                                       data['error']['message'],
-                                       data['error']['stacktrace'] if 'stacktrace' in data['error'] else None)
+                                       data['error'],
+                                       data['message'],
+                                       data['stacktrace'] if 'stacktrace' in data['error'] else None)
 
             return data['response'] if 'response' in data else True
         finally:

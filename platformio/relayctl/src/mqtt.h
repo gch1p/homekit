@@ -1,30 +1,69 @@
 #include <ESP8266WiFi.h>
-#include <PubSubClient.h>
+#include <espMqttClient.h>
 #include <Ticker.h>
 #include "stopwatch.h"
 
-namespace homekit::mqtt {
+namespace homekit { namespace mqtt {
+
+enum class OTAResult: uint8_t {
+    OK = 0,
+    UPDATE_ERROR = 1,
+    WRITE_ERROR = 2,
+};
+
+struct OTAStatus {
+    uint16_t dataPacketId;
+    uint16_t publishResultPacketId;
+    bool finished;
+    bool readyToRestart;
+    size_t written;
+
+    OTAStatus()
+        : dataPacketId(0)
+        , publishResultPacketId(0)
+        , finished(false)
+        , readyToRestart(false)
+        , written(0)
+    {}
+
+    inline void clean() {
+        dataPacketId = 0;
+        publishResultPacketId = 0;
+        finished = false;
+        readyToRestart = false;
+        written = 0;
+    }
+
+    inline bool started() const {
+        return dataPacketId != 0;
+    }
+};
 
 class MQTT {
 private:
-    WiFiClientSecure wifiClient;
-    PubSubClient client;
+    String homeId;
+    WiFiClientSecure httpsSecureClient;
+    espMqttClientSecure client;
     Ticker reconnectTimer;
+    Ticker restartTimer;
 
-    void callback(char* topic, uint8_t* payload, size_t length);
-    void handleRelayPowerPayload(uint8_t* payload, uint32_t length);
-    bool publish(const char* topic, uint8_t* payload, size_t length);
-    bool subscribe(const char* topic);
+    void handleRelayPowerPayload(const uint8_t* payload, uint32_t length);
+    void handleAdminOtaPayload(uint16_t packetId, const uint8_t* payload, size_t length, size_t index, size_t total);
+
+    uint16_t publish(const String& topic, uint8_t* payload, size_t length);
+    uint16_t subscribe(const String& topic, uint8_t qos = 0);
     void sendInitialStat();
+    uint16_t sendOtaResponse(OTAResult status, uint8_t error_code = 0);
 
 public:
     StopWatch statStopWatch;
+    OTAStatus ota;
 
     MQTT();
     void connect();
     void disconnect();
     void reconnect();
-    bool loop();
+    void loop();
     void sendStat();
 };
 
@@ -54,4 +93,9 @@ struct PowerPayload {
     uint8_t state;
 } __attribute__((packed));
 
-}
+struct OTAResponse {
+    OTAResult status;
+    uint8_t error_code;
+} __attribute__((packed));
+
+} }

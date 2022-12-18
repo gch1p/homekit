@@ -6,6 +6,10 @@ function ge(id) {
     return document.getElementById(id)
 }
 
+function hide(el) {
+    el.style.display = 'none'
+}
+
 function cancelEvent(evt) {
     if (evt.preventDefault) evt.preventDefault();
     if (evt.stopPropagation) evt.stopPropagation();
@@ -100,14 +104,14 @@ function initNetworkSettings() {
     function onRequestDone() {
         doneRequestsCount++;
         if (doneRequestsCount === 2) {
-            ge('loading_label').style.display = 'none';
+            hide(ge('loading_label'))
         }
     }
 
     var form = document.forms.network_settings;
     form.addEventListener('submit', function(e) {
-        if (!form.nid.value.trim()) {
-            alert('Введите node id');
+        if (!form.hid.value.trim()) {
+            alert('Введите home id');
             return cancelEvent(e);
         }
 
@@ -116,7 +120,7 @@ function initNetworkSettings() {
             return cancelEvent(e);
         }
 
-        if (form.ssid.selectedIndex == -1) {
+        if (form.ssid.selectedIndex === -1) {
             alert('Не выбрана точка доступа');
             return cancelEvent(e);
         }
@@ -140,7 +144,7 @@ function initNetworkSettings() {
             if (error)
                 throw error;
 
-            setupField(form.nid, response.node_id || null);
+            setupField(form.hid, response.home_id || null);
             setupField(form.psk, null);
             setupField(form.submit, null);
 
@@ -196,17 +200,23 @@ function initUpdateForm() {
             form.submit.innerHTML = progress + '%';
         });
         xhr.onreadystatechange = function() {
+            var errorMessage = 'Ошибка обновления';
+            var successMessage = 'Обновление завершено, устройство перезагружается';
             if (xhr.readyState === 4) {
-                var response = JSON.parse(xhr.responseText);
-                if (response.result === 1) {
-                    alert('Обновление завершено, устройство перезагружается');
-                } else {
-                    alert('Ошибка обновления');
+                try {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.result === 1) {
+                        alert(successMessage);
+                    } else {
+                        alert(errorMessage);
+                    }
+                } catch (e) {
+                    alert(successMessage);
                 }
             }
         };
         xhr.onerror = function(e) {
-            alert(errorText(e))
+            alert(errorText(e));
         };
 
         xhr.open('POST', e.target.action);
@@ -214,9 +224,23 @@ function initUpdateForm() {
 
         return false;
     });
+    form.file.addEventListener('change', function(e) {
+        if (e.target.files.length) {
+            var reader = new FileReader();
+            reader.onload = function() {
+                var hash = window.md5(reader.result);
+                form.setAttribute('action', '/update?md5='+hash);
+                unlock(form.submit);
+            };
+            reader.onerror = function() {
+                alert('Ошибка чтения файла');
+            };
+            reader.readAsBinaryString(e.target.files[0]);
+        }
+    });
 }
 
-function initApp() {
+window.initApp = function() {
     initNetworkSettings();
     initUpdateForm();
 }

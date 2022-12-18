@@ -1,21 +1,26 @@
 #include <Arduino.h>
 #include <string.h>
 
+#include "static.h"
 #include "http_server.h"
 #include "config.h"
-#include "wifi.h"
 #include "config.def.h"
 #include "logging.h"
+#include "util.h"
+#include "led.h"
 
 namespace homekit {
 
-static const char CONTENT_TYPE_HTML[] = "text/html; charset=utf-8";
-static const char CONTENT_TYPE_CSS[] = "text/css";
-static const char CONTENT_TYPE_JS[] = "application/javascript";
-static const char CONTENT_TYPE_JSON[] = "application/json";
-static const char CONTENT_TYPE_FAVICON[] = "image/x-icon";
+using files::StaticFile;
 
-static const char JSON_STATUS_FMT[] = "{\"node_id\":\"%s\""
+static const char CONTENT_TYPE_HTML[] PROGMEM = "text/html; charset=utf-8";
+static const char CONTENT_TYPE_CSS[] PROGMEM = "text/css";
+static const char CONTENT_TYPE_JS[] PROGMEM = "application/javascript";
+static const char CONTENT_TYPE_JSON[] PROGMEM = "application/json";
+static const char CONTENT_TYPE_FAVICON[] PROGMEM = "image/x-icon";
+
+static const char JSON_UPDATE_FMT[] PROGMEM = "{\"result\":%d}";
+static const char JSON_STATUS_FMT[] PROGMEM = "{\"home_id\":\"%s\""
 #ifdef DEBUG
                                       ",\"configured\":%d"
                                       ",\"crc\":%u"
@@ -25,38 +30,41 @@ static const char JSON_STATUS_FMT[] = "{\"node_id\":\"%s\""
                                       "}";
 static const size_t JSON_BUF_SIZE = 192;
 
-static const char NODE_ID_ERROR[] = "?";
+static const char JSON_SCAN_FIRST_LIST[] PROGMEM = "{\"list\":[";
 
-static const char FIELD_NODE_ID[] = "nid";
-static const char FIELD_SSID[] = "ssid";
-static const char FIELD_PSK[] = "psk";
+static const char MSG_IS_INVALID[] PROGMEM = " is invalid";
+static const char MSG_IS_MISSING[] PROGMEM = " is missing";
 
-static const char MSG_IS_INVALID[] = " is invalid";
-static const char MSG_IS_MISSING[] = " is missing";
+static const char GZIP[] PROGMEM = "gzip";
+static const char CONTENT_ENCODING[] PROGMEM = "Content-Encoding";
+static const char NOT_FOUND[] PROGMEM = "Not Found";
 
-static const char GZIP[] = "gzip";
-static const char CONTENT_ENCODING[] = "Content-Encoding";
-static const char NOT_FOUND[] = "Not Found";
-
-static void do_restart() {
-    ESP.restart();
-}
+static const char ROUTE_STYLE_CSS[] PROGMEM = "/style.css";
+static const char ROUTE_APP_JS[] PROGMEM = "/app.js";
+static const char ROUTE_MD5_JS[] PROGMEM = "/md5.js";
+static const char ROUTE_FAVICON_ICO[] PROGMEM = "/favicon.ico";
+static const char ROUTE_STATUS[] PROGMEM = "/status";
+static const char ROUTE_SCAN[] PROGMEM = "/scan";
+static const char ROUTE_RESET[] PROGMEM = "/reset";
+// #ifdef DEBUG
+static const char ROUTE_HEAP[] PROGMEM = "/heap";
+// #endif
+static const char ROUTE_UPDATE[] PROGMEM = "/update";
 
 void HttpServer::start() {
-    _server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest* req) { sendGzip(req, files::style_css, CONTENT_TYPE_CSS); });
-    _server.on("/app.js", HTTP_GET, [](AsyncWebServerRequest* req) { sendGzip(req, files::app_js, CONTENT_TYPE_JS); });
-    _server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest* req) { sendGzip(req, files::favicon_ico, CONTENT_TYPE_FAVICON); });
-    _server.on("/", HTTP_GET, [&](AsyncWebServerRequest* req) { sendGzip(req, files::index_html, CONTENT_TYPE_HTML); });
+    server.on(FPSTR(ROUTE_STYLE_CSS), HTTP_GET, [&]() { sendGzip(files::style_css, CONTENT_TYPE_CSS); });
+    server.on(FPSTR(ROUTE_APP_JS), HTTP_GET, [&]() { sendGzip(files::app_js, CONTENT_TYPE_JS); });
+    server.on(FPSTR(ROUTE_MD5_JS), HTTP_GET, [&]() { sendGzip(files::md5_js, CONTENT_TYPE_JS); });
+    server.on(FPSTR(ROUTE_FAVICON_ICO), HTTP_GET, [&]() { sendGzip(files::favicon_ico, CONTENT_TYPE_FAVICON); });
 
-    _server.on("/status", HTTP_GET, [](AsyncWebServerRequest* req) {
+    server.on("/", HTTP_GET, [&]() { sendGzip(files::index_html, CONTENT_TYPE_HTML); });
+    server.on(FPSTR(ROUTE_STATUS), HTTP_GET, [&]() {
         char json_buf[JSON_BUF_SIZE];
         auto cfg = config::read();
-        char *ssid, *psk;
-        wifi::getConfig(cfg, &ssid, &psk, nullptr);
 
         if (!isValid(cfg) || !cfg.flags.node_configured) {
-            sprintf(json_buf, JSON_STATUS_FMT
-                    , DEFAULT_NODE_ID
+            sprintf_P(json_buf, JSON_STATUS_FMT
+                    , DEFAULT_HOME_ID
 #ifdef DEBUG
                     , 0
                     , cfg.crc
@@ -65,10 +73,10 @@ void HttpServer::start() {
 #endif
             );
         } else {
-            char escaped_node_id[32];
-            char *escaped_node_id_res = cfg.escapeNodeId(escaped_node_id, 32);
-            sprintf(json_buf, JSON_STATUS_FMT
-                    , escaped_node_id_res == nullptr ? NODE_ID_ERROR : escaped_node_id
+            char escaped_home_id[32];
+            char *escaped_home_id_res = cfg.escapeHomeId(escaped_home_id, 32);
+            sprintf_P(json_buf, JSON_STATUS_FMT
+                    , escaped_home_id_res == nullptr ? "?" : escaped_home_id
 #ifdef DEBUG
                     , 1
                     , cfg.crc
@@ -77,58 +85,54 @@ void HttpServer::start() {
 #endif
             );
         }
-        req->send(200, CONTENT_TYPE_JSON, json_buf);
+        server.send(200, FPSTR(CONTENT_TYPE_JSON), json_buf);
     });
-
-    _server.on("/status", HTTP_POST, [&](AsyncWebServerRequest* req) {
+    server.on(FPSTR(ROUTE_STATUS), HTTP_POST, [&]() {
         auto cfg = config::read();
-        char *s;
+        String s;
 
-        if (!handleInputStr(req, FIELD_SSID, 32, &s)) return;
-        strncpy(cfg.wifi_ssid, s, 32);
+        if (!getInputParam("ssid", 32, s)) return;
+        strncpy(cfg.wifi_ssid, s.c_str(), 32);
         PRINTF("saving ssid: %s\n", cfg.wifi_ssid);
 
-        if (!handleInputStr(req, FIELD_PSK, 63, &s)) return;
-        strncpy(cfg.wifi_psk, s, 63);
+        if (!getInputParam("psk", 63, s)) return;
+        strncpy(cfg.wifi_psk, s.c_str(), 63);
         PRINTF("saving psk: %s\n", cfg.wifi_psk);
 
-        if (!handleInputStr(req, FIELD_NODE_ID, 16, &s)) return;
-        strcpy(cfg.node_id, s);
-        PRINTF("saving node id: %s\n", cfg.node_id);
+        if (!getInputParam("hid", 16, s)) return;
+        strcpy(cfg.home_id, s.c_str());
+        PRINTF("saving home id: %s\n", cfg.home_id);
 
         cfg.flags.node_configured = 1;
         cfg.flags.wifi_configured = 1;
 
-        if (!config::write(cfg)) {
-            PRINTLN("eeprom write error");
-            return sendError(req, "eeprom error");
-        }
+        config::write(cfg);
 
-        restartTimer.once(0, do_restart);
+        restartTimer.once(0, restart);
     });
 
-    _server.on("/reset", HTTP_POST, [&](AsyncWebServerRequest* req) {
+    server.on(FPSTR(ROUTE_RESET), HTTP_POST, [&]() {
         config::erase();
-        restartTimer.once(0, do_restart);
+        restartTimer.once(1, restart);
     });
 
-    _server.on("/heap", HTTP_GET, [](AsyncWebServerRequest* req) {
-       req->send(200, CONTENT_TYPE_HTML, String(ESP.getFreeHeap()));
+    server.on(FPSTR(ROUTE_HEAP), HTTP_GET, [&]() {
+       server.send(200, FPSTR(CONTENT_TYPE_HTML), String(ESP.getFreeHeap()));
     });
 
-    _server.on("/scan", HTTP_GET, [&](AsyncWebServerRequest* req) {
-        int i = 0;
+    server.on(FPSTR(ROUTE_SCAN), HTTP_GET, [&]() {
+        size_t i = 0;
         size_t len;
         const char* ssid;
         bool enough = false;
 
-        bzero(reinterpret_cast<uint8_t*>(buf1k), ARRAY_SIZE(buf1k));
-        char* cur = buf1k;
+        bzero(reinterpret_cast<uint8_t*>(scanBuf), scanBufSize);
+        char* cur = scanBuf;
 
-        strncpy(cur, "{\"list\":[", ARRAY_SIZE(buf1k));
+        strncpy_P(cur, JSON_SCAN_FIRST_LIST, scanBufSize);
         cur += 9;
 
-        for (auto& res: *_scanResults) {
+        for (auto& res: *scanResults) {
             ssid = res.ssid.c_str();
             len = res.ssid.length();
 
@@ -151,10 +155,10 @@ void HttpServer::start() {
             // close array
             *cur++ = ']';
 
-            if (cur - buf1k >= ARRAY_SIZE(buf1k)-40)
+            if ((size_t)(cur - scanBuf) >= (size_t) ARRAY_SIZE(scanBuf) - 40)
                 enough = true;
 
-            if (i < _scanResults->size()-1 || enough)
+            if (i < scanResults->size() - 1 || enough)
                 *cur++ = ',';
 
             if (enough)
@@ -167,82 +171,108 @@ void HttpServer::start() {
         *cur++ = '}';
         *cur++ = '\0';
 
-        req->send(200, CONTENT_TYPE_JSON, buf1k);
+        server.send(200, FPSTR(CONTENT_TYPE_JSON), scanBuf);
     });
 
-    _server.on("/update", HTTP_POST, [&](AsyncWebServerRequest* req) {
+    server.on(FPSTR(ROUTE_UPDATE), HTTP_POST, [&]() {
         char json_buf[16];
-        bool should_reboot = !Update.hasError();
+        bool should_reboot = !Update.hasError() && !ota.invalidMd5;
+        Update.clearError();
 
-        sprintf(json_buf, "{\"result\":%d}", should_reboot ? 1 : 0);
+        sprintf_P(json_buf, JSON_UPDATE_FMT, should_reboot ? 1 : 0);
 
-        auto resp = req->beginResponse(200, CONTENT_TYPE_JSON, json_buf);
-        req->send(resp);
+        server.send(200, FPSTR(CONTENT_TYPE_JSON), json_buf);
 
-        if (should_reboot) restartTimer.once(1, do_restart);
-    }, [&](AsyncWebServerRequest *req, const String& filename, size_t index, uint8_t *data, size_t len, bool final) {
-        if (!index) {
-            PRINTF("update start: %s\n", filename.c_str());
-            Update.runAsync(true);
-            if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000))
-                Update.printError(Serial);
-        }
+        if (should_reboot)
+            restartTimer.once(1, restart);
+    }, [&]() {
+        HTTPUpload& upload = server.upload();
 
-        if (!Update.hasError() && len) {
-            if (Update.write(data, len) != len) {
-                Update.printError(Serial);
+        if (upload.status == UPLOAD_FILE_START) {
+            ota.clean();
+
+            String s;
+            if (!getInputParam("md5", 0, s)) {
+                ota.invalidMd5 = true;
+                PRINTLN("http/ota: md5 not found");
+                return;
             }
-        }
 
-        if (final) { // if the final flag is set then this is the last frame of data
+            if (!Update.setMD5(s.c_str())) {
+                ota.invalidMd5 = true;
+                PRINTLN("http/ota: setMD5() failed");
+                return;
+            }
+
+            Serial.printf("http/ota: starting, filename=%s\n", upload.filename.c_str());
+            if (!Update.begin(otaGetMaxUpdateSize())) {
+#ifdef DEBUG
+                Update.printError(Serial);
+#endif
+            }
+        } else if (upload.status == UPLOAD_FILE_WRITE) {
+            if (!Update.isRunning())
+                return;
+
+            PRINTF("http/ota: writing %ul\n", upload.currentSize);
+            esp_led.blink(1, 1);
+            if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+#ifdef DEBUG
+                Update.printError(Serial);
+#endif
+            }
+        } else if (upload.status == UPLOAD_FILE_END) {
+            if (!Update.isRunning())
+                return;
+
             if (Update.end(true)) {
-                PRINTF("update success: %uB\n", index+len);
+                PRINTF("http/ota: ok, total size %ul\n", upload.totalSize);
             } else {
+#ifdef DEBUG
                 Update.printError(Serial);
+#endif
             }
         }
     });
 
-    _server.onNotFound([](AsyncWebServerRequest* req) {
-        req->send(404, CONTENT_TYPE_HTML, NOT_FOUND);
+    server.onNotFound([&]() {
+        server.send(404, FPSTR(CONTENT_TYPE_HTML), NOT_FOUND);
     });
 
-    _server.begin();
+    server.begin();
 }
 
-void HttpServer::sendGzip(AsyncWebServerRequest* req, StaticFile file, const char* content_type) {
-    auto resp = req->beginResponse_P(200, content_type, file.content, file.size);
-    resp->addHeader(CONTENT_ENCODING, GZIP);
-    req->send(resp);
+void HttpServer::loop() {
+    server.handleClient();
 }
 
-void HttpServer::sendError(AsyncWebServerRequest* req, const String& message) {
+void HttpServer::sendGzip(const StaticFile& file, PGM_P content_type) {
+    server.sendHeader(FPSTR(CONTENT_ENCODING), FPSTR(GZIP));
+    server.send_P(200, content_type, (const char*)file.content, file.size);
+}
+
+void HttpServer::sendError(const String& message) {
     char buf[32];
-    if (snprintf(buf, 32, "error: %s", message.c_str()) == 32)
+    if (snprintf_P(buf, 32, PSTR("error: %s"), message.c_str()) == 32)
         buf[31] = '\0';
-    req->send(400, CONTENT_TYPE_HTML, buf);
+    server.send(400, FPSTR(CONTENT_TYPE_HTML), buf);
 }
 
-bool HttpServer::handleInputStr(AsyncWebServerRequest *req,
-                                const char *field_name,
-                                size_t max_len,
-                                char **dst) {
-    const char* s;
-    size_t len;
-
-    if (!req->hasParam(field_name, true)) {
-        sendError(req, String(field_name) + String(MSG_IS_MISSING));
+bool HttpServer::getInputParam(const char *field_name,
+                               size_t max_len,
+                               String& dst) {
+    if (!server.hasArg(field_name)) {
+        sendError(String(field_name) + String(MSG_IS_MISSING));
         return false;
     }
 
-    s = req->getParam(field_name, true)->value().c_str();
-    len = strlen(s);
-    if (!len || len > max_len) {
-        sendError(req, String(FIELD_NODE_ID) + String(MSG_IS_INVALID));
+    String field = server.arg(field_name);
+    if (!field.length() || (max_len != 0 && field.length() > max_len)) {
+        sendError(String(field_name) + String(MSG_IS_INVALID));
         return false;
     }
 
-    *dst = (char*)s;
+    dst = field;
     return true;
 }
 

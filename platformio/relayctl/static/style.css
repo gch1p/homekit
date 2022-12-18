@@ -30,7 +30,7 @@ body, button, input[type="text"], input[type="password"] {
 .form_input {
     margin-bottom: 15px;
 }
-.form_checkbox {
+.form_sublabel {
     padding-top: 3px;
 }
 

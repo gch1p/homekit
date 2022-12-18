@@ -52,12 +52,24 @@ const args = parseArgs(argv, {
             break
 
         case 'css':
-            console.log(new CleanCSS({level:2}).minify(content).styles)
+            console.log(new CleanCSS({
+                level: 2
+            }).minify(content).styles)
             break
 
         case 'js':
             console.log((await minifyJs(content, {
-                ecma: 5
+                mangle: {
+                    eval: true,
+                    keep_classnames: false,
+                    keep_fnames: false,
+                    module: false,
+                    toplevel: true,
+                },
+                ecma: 5,
+                format: {
+                    comments: false
+                }
             })).code)
             break
     }

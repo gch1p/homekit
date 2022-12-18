@@ -1,37 +1,56 @@
 #pragma once
-
+#include <ESP8266WebServer.h>
+#include <Ticker.h>
 #include <memory>
 #include <list>
-#include <Ticker.h>
 #include <utility>
-#include <ESPAsyncWebServer.h>
-#include "static.h"
 #include "config.h"
 #include "wifi.h"
+#include "static.h"
 
 namespace homekit {
+
+struct OTAStatus {
+    bool invalidMd5;
+
+    OTAStatus() : invalidMd5(false) {}
+
+    inline void clean() {
+        invalidMd5 = false;
+    }
+};
 
 using files::StaticFile;
 
 class HttpServer {
 private:
-    AsyncWebServer _server;
+    ESP8266WebServer server;
     Ticker restartTimer;
-    std::shared_ptr<std::list<wifi::ScanResult>> _scanResults;
-    char buf1k[1024];
+    std::shared_ptr<std::list<wifi::ScanResult>> scanResults;
+    OTAStatus ota;
 
-    static void sendGzip(AsyncWebServerRequest* req, StaticFile file, const char* content_type);
-    static void sendError(AsyncWebServerRequest* req, const String& message);
+    char* scanBuf;
+    size_t scanBufSize;
 
-    static bool handleInputStr(AsyncWebServerRequest* req, const char* field_name, size_t max_len, char** dst);
-    // static bool handle_input_addr(AsyncWebServerRequest* req, const char* field_name, ConfigIPv4Addr* addr_dst);
+    void sendGzip(const StaticFile& file, PGM_P content_type);
+    void sendError(const String& message);
+
+    bool getInputParam(const char* field_name, size_t max_len, String& dst);
 
 public:
     explicit HttpServer(std::shared_ptr<std::list<wifi::ScanResult>> scanResults)
-        : _server(80)
-        , _scanResults(std::move(scanResults)) {};
+        : server(80)
+        , scanResults(std::move(scanResults))
+        , scanBufSize(512) {
+        scanBuf = new char[scanBufSize];
+    };
+
+    ~HttpServer() {
+        delete[] scanBuf;
+    }
 
     void start();
+    void loop();
 };
 
 }

@@ -8,6 +8,7 @@ class BotType(Enum):
     ADMIN = auto()
     SOUND = auto()
     POLARIS_KETTLE = auto()
+    PUMP_MQTT = auto()
 
 
 class TemperatureSensorLocation(Enum):

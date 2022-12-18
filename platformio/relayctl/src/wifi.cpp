@@ -1,3 +1,4 @@
+#include <pgmspace.h>
 #include "config.def.h"
 #include "wifi.h"
 #include "config.h"
@@ -8,22 +9,20 @@ namespace homekit::wifi {
 using namespace homekit;
 using homekit::config::ConfigData;
 
-const char NODE_ID[] = DEFAULT_NODE_ID;
-const char WIFI_AP_SSID[] = DEFAULT_WIFI_AP_SSID;
-const char WIFI_STA_SSID[] = DEFAULT_WIFI_STA_SSID;
-const char WIFI_STA_PSK[] = DEFAULT_WIFI_STA_PSK;
+const char HOME_ID[] = DEFAULT_HOME_ID;
+const char AP_SSID[] = DEFAULT_WIFI_AP_SSID;
+const char STA_SSID[] = DEFAULT_WIFI_STA_SSID;
+const char STA_PSK[] = DEFAULT_WIFI_STA_PSK;
 
-void getConfig(ConfigData& cfg, char** ssid_dst, char** psk_dst, char** hostname_dst) {
+void getConfig(ConfigData &cfg, const char** ssid, const char** psk, const char** hostname) {
     if (cfg.flags.wifi_configured) {
-        *ssid_dst = cfg.wifi_ssid;
-        *psk_dst = cfg.wifi_psk;
-        if (hostname_dst != nullptr)
-            *hostname_dst = cfg.node_id;
+        *ssid = cfg.wifi_ssid;
+        *psk = cfg.wifi_psk;
+        *hostname = cfg.home_id;
     } else {
-        *ssid_dst = (char*)WIFI_STA_SSID;
-        *psk_dst = (char*)WIFI_STA_PSK;
-        if (hostname_dst != nullptr)
-            *hostname_dst = (char*)NODE_ID;
+        *ssid = STA_SSID;
+        *psk = STA_PSK;
+        *hostname = HOME_ID;
     }
 }
 

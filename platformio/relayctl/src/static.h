@@ -15,6 +15,7 @@ typedef struct {
 
 extern const StaticFile index_html;
 extern const StaticFile app_js;
+extern const StaticFile md5_js;
 extern const StaticFile style_css;
 extern const StaticFile favicon_ico;
 

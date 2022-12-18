@@ -73,7 +73,8 @@ for ext in html js css ico; do
       gzip |
       xxd -ps -c 16 |
       sed 's/.\{2\}/0x&, /g' |
-      sed 's/^/    /'
+      sed 's/^/    /' |
+      sed 's/[ \t]*$//'
 
       echo "};"
       echo "const StaticFile $filename PROGMEM = {(sizeof(${filename}_content)/sizeof(${filename}_content[0])), ${filename}_content};"

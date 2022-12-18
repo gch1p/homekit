@@ -6,6 +6,7 @@
     <title>Configuration</title>
     <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" type="text/css" href="/style.css">
+    <script src="/md5.js"></script>
     <script src="/app.js"></script>
 </head>
 <body onload="initApp()">
@@ -22,14 +23,14 @@
         <div class="form_label">WiFi Password</div>
         <div class="form_input">
             <input type="password" value="" name="psk" class="full-width" id="fld_psk" maxlength="63" disabled>
-            <div class="form_checkbox">
+            <div class="form_sublabel">
                 <label for="show_psk"><input type="checkbox" name="show_psk" id="show_psk"> show password</label>
             </div>
         </div>
 
-        <div class="form_label">Node ID</div>
+        <div class="form_label">Home ID</div>
         <div class="form_input">
-            <input type="text" value="" maxlength="16" name="nid" id="fld_nid" class="full-width" disabled>
+            <input type="text" value="" maxlength="16" name="hid" id="fld_hid" class="full-width" disabled>
         </div>
 
         <button type="submit" disabled="disabled" name="submit">Save and Reboot</button>
@@ -42,7 +43,7 @@
         <div class="form_input">
             <input type="file" accept=".bin,.bin.gz" name="file">
         </div>
-        <button type="submit" name="submit">Upload</button>
+        <button type="submit" name="submit" disabled="disabled">Upload</button>
     </form>
 </div>
 

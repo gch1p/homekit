@@ -123,15 +123,25 @@ def handler(**kwargs):
             return _handler_of_handler(f=f, *args, **inner_kwargs)
 
         messages = []
+        texts = []
+
         if 'messages' in kwargs:
             messages += kwargs['messages']
         if 'message' in kwargs:
             messages.append(kwargs['message'])
+
+        if 'text' in kwargs:
+            texts.append(kwargs['text'])
+        if 'texts' in kwargs:
+            texts.append(kwargs['texts'])
+
         if messages:
-            _updater.dispatcher.add_handler(
-                MessageHandler(text_filter(*list(itertools.chain.from_iterable([lang.all(m) for m in messages]))), _handler),
-                group=0
-            )
+            texts = list(itertools.chain.from_iterable([lang.all(m) for m in messages]))
+
+        _updater.dispatcher.add_handler(
+            MessageHandler(text_filter(*texts), _handler),
+            group=0
+        )
 
         if 'command' in kwargs:
             _updater.dispatcher.add_handler(CommandHandler(kwargs['command'], _handler), group=0)

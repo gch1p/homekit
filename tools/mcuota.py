@@ -10,7 +10,7 @@ sys.path.extend([
 from time import sleep
 from argparse import ArgumentParser
 from src.home.config import config
-from src.home.mqtt import MQTTRelay
+from src.home.mqtt import MQTTRelay, MQTTRelayDevice
 
 
 def guess_filename(product: str, build_target: str):
@@ -34,11 +34,10 @@ def relayctl_publish_ota(filename: str,
         global stop
         stop = True
 
-    mqtt_relay = MQTTRelay(home_id=home_id,
-                           secret=home_secret)
+    mqtt_relay = MQTTRelay(devices=MQTTRelayDevice(home_id=home_id, secret=home_secret))
     mqtt_relay.configure_tls()
     mqtt_relay.connect_and_loop(loop_forever=False)
-    mqtt_relay.push_ota(filename, published, qos)
+    mqtt_relay.push_ota(home_id, filename, published, qos)
     while not stop:
         sleep(0.1)
     mqtt_relay.disconnect()

@@ -1,8 +1,9 @@
 import paho.mqtt.client as mqtt
 import re
+import datetime
 
 from .mqtt import MQTTBase
-from typing import Optional, Union
+from typing import Optional, Union, List
 from .payload.relay import (
     InitialStatPayload,
     StatPayload,
@@ -11,19 +12,27 @@ from .payload.relay import (
 )
 
 
+class MQTTRelayDevice:
+    home_id: str
+    secret: str
+
+    def __init__(self, home_id: str, secret: str):
+        self.home_id = home_id
+        self.secret = secret
+
+
 class MQTTRelay(MQTTBase):
-    _home_id: Union[str, int]
-    _secret: str
+    _devices: list[MQTTRelayDevice]
     _message_callback: Optional[callable]
     _ota_publish_callback: Optional[callable]
 
     def __init__(self,
-                 home_id: Union[str, int],
-                 secret: str,
+                 devices: Union[MQTTRelayDevice, list[MQTTRelayDevice]],
                  subscribe_to_updates=True):
         super().__init__(clean_session=True)
-        self._home_id = home_id
-        self._secret = secret
+        if not isinstance(devices, list):
+            devices = [devices]
+        self._devices = devices
         self._message_callback = None
         self._ota_publish_callback = None
         self._subscribe_to_updates = subscribe_to_updates
@@ -33,10 +42,10 @@ class MQTTRelay(MQTTBase):
         super().on_connect(client, userdata, flags, rc)
 
         if self._subscribe_to_updates:
-            topic = f'hk/{self._home_id}/relay/#'
-            self._logger.info(f"subscribing to {topic}")
-
-            client.subscribe(topic, qos=1)
+            for device in self._devices:
+                topic = f'hk/{device.home_id}/relay/#'
+                self._logger.info(f"subscribing to {topic}")
+                client.subscribe(topic, qos=1)
 
     def on_publish(self, client: mqtt.Client, userdata, mid):
         if self._ota_mid is not None and mid == self._ota_mid and self._ota_publish_callback:
@@ -55,7 +64,7 @@ class MQTTRelay(MQTTBase):
             name = match.group(1)
             subtopic = match.group(2)
 
-            if name != self._home_id:
+            if name not in self._devices:
                 return
 
             message = None
@@ -67,27 +76,56 @@ class MQTTRelay(MQTTBase):
                 message = PowerPayload.unpack(msg.payload)
 
             if message and self._message_callback:
-                self._message_callback(message)
+                self._message_callback(name, message)
 
         except Exception as e:
             self._logger.exception(str(e))
 
-    def set_power(self, enable: bool):
-        payload = PowerPayload(secret=self._secret,
+    def set_power(self, home_id, enable: bool):
+        device = next(d for d in self._devices if d.home_id == home_id)
+
+        payload = PowerPayload(secret=device.secret,
                                state=enable)
-        self._client.publish(f'hk/{self._home_id}/relay/power',
+        self._client.publish(f'hk/{device.home_id}/relay/power',
                              payload=payload.pack(),
                              qos=1)
         self._client.loop_write()
 
     def push_ota(self,
+                 home_id,
                  filename: str,
                  publish_callback: callable,
                  qos: int):
+        device = next(d for d in self._devices if d.home_id == home_id)
+
         self._ota_publish_callback = publish_callback
-        payload = OTAPayload(secret=self._secret, filename=filename)
-        publish_result = self._client.publish(f'hk/{self._home_id}/relay/admin/ota',
+        payload = OTAPayload(secret=device.secret, filename=filename)
+        publish_result = self._client.publish(f'hk/{device.home_id}/relay/admin/ota',
                                               payload=payload.pack(),
                                               qos=qos)
         self._ota_mid = publish_result.mid
         self._client.loop_write()
+
+
+class MQTTRelayState:
+    enabled: bool
+    update_time: datetime.datetime
+    rssi: int
+    fw_version: int
+    ever_updated: bool
+
+    def __init__(self):
+        self.ever_updated = False
+        self.enabled = False
+        self.rssi = 0
+
+    def update(self,
+               enabled: bool,
+               rssi: int,
+               fw_version=None):
+        self.ever_updated = True
+        self.enabled = enabled
+        self.rssi = rssi
+        self.update_time = datetime.datetime.now()
+        if fw_version:
+            self.fw_version = fw_version

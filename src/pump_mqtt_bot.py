@@ -9,7 +9,7 @@ from home.config import config
 from home.telegram import bot
 from home.telegram._botutil import user_any_name
 from home.api.types import BotType
-from home.mqtt import MQTTRelay
+from home.mqtt import MQTTRelay, MQTTRelayState, MQTTRelayDevice
 from home.mqtt.payload import MQTTPayload
 from home.mqtt.payload.relay import InitialStatPayload, StatPayload
 
@@ -70,30 +70,8 @@ bot.lang.en(
 )
 
 
-class RelayState:
-    enabled: bool
-    update_time: datetime.datetime
-    rssi: int
-    fw_version: int
-    ever_updated: bool
-
-    def __init__(self):
-        self.ever_updated = False
-
-    def update(self,
-               enabled: bool,
-               rssi: int,
-               fw_version=None):
-        self.ever_updated = True
-        self.enabled = enabled
-        self.rssi = rssi
-        self.update_time = datetime.datetime.now()
-        if fw_version:
-            self.fw_version = fw_version
-
-
 mqtt_relay: Optional[MQTTRelay] = None
-relay_state = RelayState()
+relay_state = MQTTRelayState()
 
 
 class UserAction(Enum):
@@ -101,7 +79,7 @@ class UserAction(Enum):
     OFF = 'off'
 
 
-def on_mqtt_message(message: MQTTPayload):
+def on_mqtt_message(home_id, message: MQTTPayload):
     if isinstance(message, InitialStatPayload) or isinstance(message, StatPayload):
         kwargs = dict(rssi=message.rssi, enabled=message.flags.state)
         if isinstance(message, InitialStatPayload):
@@ -121,14 +99,14 @@ def notify(user: User, action: UserAction) -> None:
 
 @bot.handler(message='enable')
 def enable_handler(ctx: bot.Context) -> None:
-    mqtt_relay.set_power(True)
+    mqtt_relay.set_power(config['mqtt']['home_id'], True)
     ctx.reply(ctx.lang('done'))
     notify(ctx.user, UserAction.ON)
 
 
 @bot.handler(message='disable')
 def disable_handler(ctx: bot.Context) -> None:
-    mqtt_relay.set_power(False)
+    mqtt_relay.set_power(config['mqtt']['home_id'], False)
     ctx.reply(ctx.lang('done'))
     notify(ctx.user, UserAction.OFF)
 
@@ -179,8 +157,8 @@ def markup(ctx: Optional[bot.Context]) -> Optional[ReplyKeyboardMarkup]:
 
 
 if __name__ == '__main__':
-    mqtt_relay = MQTTRelay(home_id=config['mqtt']['home_id'],
-                           secret=config['mqtt']['relay']['secret'])
+    mqtt_relay = MQTTRelay(devices=MQTTRelayDevice(home_id=config['mqtt']['home_id'],
+                                                   secret=config['mqtt']['home_secret']))
     mqtt_relay.set_message_callback(on_mqtt_message)
     mqtt_relay.configure_tls()
     mqtt_relay.connect_and_loop(loop_forever=False)

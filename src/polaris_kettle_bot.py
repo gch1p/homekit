@@ -13,7 +13,7 @@ from home.api.types import BotType
 from home.mqtt import MQTTBase
 from home.config import config
 from home.util import chunks
-from polaris import (
+from syncleo import (
     Kettle,
     PowerType,
     DeviceListener,
@@ -21,7 +21,7 @@ from polaris import (
     ConnectionStatusListener,
     ConnectionStatus
 )
-import polaris.protocol as kettle_proto
+import syncleo.protocol as kettle_proto
 from typing import Optional, Tuple, List, Union
 from collections import namedtuple
 from functools import partial

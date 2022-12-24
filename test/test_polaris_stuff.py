@@ -7,13 +7,13 @@ sys.path.extend([
     )
 ])
 
-import src.polaris as polaris
+import src.syncleo as polaris
 
 
 if __name__ == '__main__':
-    sc = [cl for cl in polaris.protocol.CmdIncomingMessage.__subclasses__()
-          if cl is not polaris.protocol.SimpleBooleanMessage]
-    sc.extend(polaris.protocol.SimpleBooleanMessage.__subclasses__())
+    sc = [cl for cl in syncleo.protocol.CmdIncomingMessage.__subclasses__()
+          if cl is not syncleo.protocol.SimpleBooleanMessage]
+    sc.extend(syncleo.protocol.SimpleBooleanMessage.__subclasses__())
     for cl in sc:
         # if cl == polaris.protocol.HandshakeMessage:
         #     print('skip')

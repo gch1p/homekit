@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 from queue import SimpleQueue
 from home.mqtt import MQTTBase
 from home.config import config
-from polaris import (
+from syncleo import (
     Kettle,
     PowerType,
     protocol as kettle_proto

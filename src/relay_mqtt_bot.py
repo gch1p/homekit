@@ -18,29 +18,11 @@ bot.initialize()
 bot.lang.ru(
     start_message="Выберите команду на клавиатуре",
     unknown_command="Неизвестная команда",
-
-    enable="Включить",
-    enabled="Включен ✅",
-    disable="Выключить",
-    disabled="Выключен ❌",
-
-    status="Статус",
-    status_updated=' (обновлено %s)',
-
     done="Готово 👌",
 )
 bot.lang.en(
     start_message="Select command on the keyboard",
     unknown_command="Unknown command",
-
-    enable="Turn ON",
-    enabled="Turned ON ✅",
-    disable="Turn OFF",
-    disabled="Turned OFF ❌",
-
-    status="Status",
-    status_updated=' (updated %s)',
-
     done="Done 👌",
 )
 

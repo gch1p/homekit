@@ -1,0 +1,12 @@
+[Unit]
+Description=homekit relay_mqtt_bot
+After=network-online.target
+
+[Service]
+Restart=on-failure
+User=user
+WorkingDirectory=/home/user
+ExecStart=/home/user/homekit/src/relay_mqtt_bot.py
+
+[Install]
+WantedBy=multi-user.target

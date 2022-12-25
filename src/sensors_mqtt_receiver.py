@@ -23,7 +23,7 @@ class MQTTServer(MQTTBase):
 
     def on_connect(self, client: mqtt.Client, userdata, flags, rc):
         super().on_connect(client, userdata, flags, rc)
-        self._logger.info("subscribing to home/#")
+        self._logger.info("subscribing to hk/#")
         client.subscribe('hk/#', qos=1)
 
     def on_message(self, client: mqtt.Client, userdata, msg):

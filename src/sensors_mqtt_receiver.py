@@ -24,12 +24,12 @@ class MQTTServer(MQTTBase):
     def on_connect(self, client: mqtt.Client, userdata, flags, rc):
         super().on_connect(client, userdata, flags, rc)
         self._logger.info("subscribing to home/#")
-        client.subscribe('home/#', qos=1)
+        client.subscribe('hk/#', qos=1)
 
     def on_message(self, client: mqtt.Client, userdata, msg):
         try:
             variants = '|'.join([s.name.lower() for s in TemperatureSensorLocation])
-            match = re.match(rf'(?:home|hk)/(\d+)/si7021/({variants})', msg.topic)
+            match = re.match(rf'hk/(\d+)/si7021/({variants})', msg.topic)
             if not match:
                 return
 

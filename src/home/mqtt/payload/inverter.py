@@ -1,6 +1,6 @@
 import struct
 
-from .base_payload import MQTTPayload, MQTTPayloadBitField
+from .base_payload import MQTTPayload, bit_field
 from typing import Tuple
 
 _mult_10 = lambda n: int(n*10)
@@ -57,12 +57,12 @@ class Status(MQTTPayload):
     pv2_input_voltage: float
 
     # H
-    mppt1_charger_status: MQTTPayloadBitField[0, 16, 2]
-    mppt2_charger_status: MQTTPayloadBitField[0, 16, 2]
-    battery_power_direction: MQTTPayloadBitField[0, 16, 2]
-    dc_ac_power_direction: MQTTPayloadBitField[0, 16, 2]
-    line_power_direction: MQTTPayloadBitField[0, 16, 2]
-    load_connected: MQTTPayloadBitField[0, 16, 1]
+    mppt1_charger_status: bit_field(0, 16, 2)
+    mppt2_charger_status: bit_field(0, 16, 2)
+    battery_power_direction: bit_field(0, 16, 2)
+    dc_ac_power_direction: bit_field(0, 16, 2)
+    line_power_direction: bit_field(0, 16, 2)
+    load_connected: bit_field(0, 16, 1)
 
 
 class Generation(MQTTPayload):

@@ -23,12 +23,13 @@ $router->add('inverter/set-osp/',    'Inverter set_osp');
 $router->add('inverter/status.ajax', 'Inverter status_ajax');
 
 // misc
-$router->add('/',        'Misc main');
-$router->add('sensors/', 'Misc sensors_page');
-$router->add('pump/',    'Misc pump_page');
-$router->add('phpinfo/', 'Misc phpinfo');
-$router->add('cams/',    'Misc cams');
-$router->add('debug/',   'Misc debug');
+$router->add('/',              'Misc main');
+$router->add('sensors/',       'Misc sensors_page');
+$router->add('pump/',          'Misc pump_page');
+$router->add('phpinfo/',       'Misc phpinfo');
+$router->add('cams/',          'Misc cams');
+$router->add('cams/([\d,]+)/', 'Misc cams id=$(1)');
+$router->add('debug/',         'Misc debug');
 
 // auth
 $router->add('auth/',   'Auth auth');

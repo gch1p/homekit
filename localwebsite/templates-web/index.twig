@@ -23,6 +23,12 @@
     <li class="list-group-item"><a href="/inverter/">Инвертор</a> (<a href="{{ grafana_inverter_url }}">Grafana</a>)</li>
     <li class="list-group-item"><a href="/pump/">Насос</a></li>
     <li class="list-group-item"><a href="/sensors/">Датчики</a> (<a href="{{ grafana_sensors_url }}">Grafana</a>)</li>
-    <li class="list-group-item"><a href="/cams/">Камеры</a></li>
+  </ul>
+
+  <h6 class="mt-4"><a href="/cams/"><b>Все камеры</b></a> (<a href="/cams/?high=1">HQ</a>)</h6>
+  <ul class="list-group list-group-flush">
+    {% for id, name in cameras %}
+      <li class="list-group-item"><a href="/cams/{{ id }}/">{{ name }}</a> (<a href="/cams/{{ id }}/?high=1">HQ</a>)</li>
+    {% endfor %}
   </ul>
 </div>

@@ -9,6 +9,7 @@ class MiscHandler extends RequestHandler
         $this->tpl->set([
             'grafana_sensors_url' => $config['grafana_sensors_url'],
             'grafana_inverter_url' => $config['grafana_inverter_url'],
+            'cameras' => $config['cam_list']['labels']
         ]);
         $this->tpl->render_page('index.twig');
     }
@@ -52,7 +53,17 @@ class MiscHandler extends RequestHandler
     public function GET_cams() {
         global $config;
 
-        list($hls_debug, $video_events, $high) = $this->input('b:hls_debug, b:video_events, b:high');
+        list($hls_debug, $video_events, $high, $camera_ids) = $this->input('b:hls_debug, b:video_events, b:high, id');
+        if ($camera_ids != '') {
+            $camera_param = $camera_ids;
+            $camera_ids = explode(',', $camera_ids);
+            $camera_ids = array_filter($camera_ids);
+            $camera_ids = array_map('trim', $camera_ids);
+            $camera_ids = array_map('intval', $camera_ids);
+        } else {
+            $camera_ids = array_keys($config['cam_list']['labels']);
+            $camera_param = '';
+        }
 
         $tab = $high ? 'high' : 'low';
 
@@ -78,13 +89,18 @@ class MiscHandler extends RequestHandler
         if ($hls_key)
             setcookie_safe('hls_key', $hls_key);
 
+        $cam_filter = function($id) use ($config, $camera_ids) {
+            return in_array($id, $camera_ids);
+        };
+
         $this->tpl->set([
             'hls_host' => $hls_host,
             'hls_proto' => $hls_proto,
             'hls_opts' => $hls_opts,
             'hls_access_key' => $config['cam_hls_access_key'],
 
-            'cams' => $config['cam_list'][$tab],
+            'camera_param' => $camera_param,
+            'cams' => array_values(array_filter($config['cam_list'][$tab], $cam_filter)),
             'tab' => $tab,
             'video_events' => $video_events
         ]);

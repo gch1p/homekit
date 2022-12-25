@@ -66,6 +66,9 @@ return [
         'high' => [
             // fill me with names
         ],
+        'labels' => [
+            // assoc array
+        ],
     ],
 
     'vk_sms_checker' => [

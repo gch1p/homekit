@@ -137,11 +137,10 @@ def handler(**kwargs):
 
         if messages:
             texts = list(itertools.chain.from_iterable([lang.all(m) for m in messages]))
-
-        _updater.dispatcher.add_handler(
-            MessageHandler(text_filter(*texts), _handler),
-            group=0
-        )
+            _updater.dispatcher.add_handler(
+                MessageHandler(text_filter(*texts), _handler),
+                group=0
+            )
 
         if 'command' in kwargs:
             _updater.dispatcher.add_handler(CommandHandler(kwargs['command'], _handler), group=0)

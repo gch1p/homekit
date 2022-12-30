@@ -48,6 +48,7 @@ config.load('inverter_bot')
 
 bot.initialize()
 bot.lang.ru(
+    socket="В розетке",
     status='Статус',
     generation='Генерация',
     priority='Приоритет',
@@ -152,6 +153,7 @@ bot.lang.ru(
 )
 
 bot.lang.en(
+    socket='AC output',
     status='Status',
     generation='Generation',
     priority='Priority',
@@ -775,8 +777,13 @@ def status_handler(ctx: bot.Context) -> None:
 
     if gs['grid_voltage']['value'] > 0 or gs['grid_freq']['value'] > 0:
         ac_mode = getacmode()
-        html += f'\n<b>{ctx.lang(ac_mode.value)}:</b> %s %s' % (gs['grid_voltage']['unit'], gs['grid_voltage']['value'])
+        html += f'\n<b>{ctx.lang(ac_mode.value)}:</b> %s %s' % (gs['grid_voltage']['value'], gs['grid_voltage']['unit'])
         html += ', %s %s' % (gs['grid_freq']['value'], gs['grid_freq']['unit'])
+
+    html += f'\n<b>{ctx.lang("socket")}</b>: %s %s, %s %s' % (
+        gs['ac_output_voltage']['value'], gs['ac_output_voltage']['unit'],
+        gs['ac_output_freq']['value'], gs['ac_output_freq']['unit']
+    )
 
     html += f'\n<b>{ctx.lang("priority")}</b>: {rated["output_source_priority"]}'
 

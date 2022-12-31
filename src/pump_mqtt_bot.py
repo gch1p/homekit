@@ -157,7 +157,7 @@ def markup(ctx: Optional[bot.Context]) -> Optional[ReplyKeyboardMarkup]:
 
 
 if __name__ == '__main__':
-    mqtt_relay = MQTTRelay(devices=MQTTRelayDevice(home_id=config['mqtt']['home_id'],
+    mqtt_relay = MQTTRelay(devices=MQTTRelayDevice(id=config['mqtt']['home_id'],
                                                    secret=config['mqtt']['home_secret']))
     mqtt_relay.set_message_callback(on_mqtt_message)
     mqtt_relay.configure_tls()

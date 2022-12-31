@@ -87,7 +87,7 @@ def markup(ctx: Optional[bot.Context]) -> Optional[ReplyKeyboardMarkup]:
 if __name__ == '__main__':
     devices = []
     for device_id, data in config['relays'].items():
-        devices.append(MQTTRelayDevice(home_id=device_id,
+        devices.append(MQTTRelayDevice(id=device_id,
                                        secret=data['secret']))
         labels = data['labels']
         bot.lang.ru(**{device_id: labels['ru']})

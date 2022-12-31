@@ -34,7 +34,7 @@ def relayctl_publish_ota(filename: str,
         global stop
         stop = True
 
-    mqtt_relay = MQTTRelay(devices=MQTTRelayDevice(home_id=home_id, secret=home_secret))
+    mqtt_relay = MQTTRelay(devices=MQTTRelayDevice(id=home_id, secret=home_secret))
     mqtt_relay.configure_tls()
     mqtt_relay.connect_and_loop(loop_forever=False)
     mqtt_relay.push_ota(home_id, filename, published, qos)

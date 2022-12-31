@@ -3,7 +3,7 @@ import re
 import datetime
 
 from .mqtt import MQTTBase
-from typing import Optional, Union, List
+from typing import Optional, Union
 from .payload.relay import (
     InitialStatPayload,
     StatPayload,
@@ -13,11 +13,11 @@ from .payload.relay import (
 
 
 class MQTTRelayDevice:
-    home_id: str
-    secret: str
+    id: str
+    secret: Optional[str]
 
-    def __init__(self, home_id: str, secret: str):
-        self.home_id = home_id
+    def __init__(self, id: str, secret: Optional[str] = None):
+        self.id = id
         self.secret = secret
 
 
@@ -43,7 +43,7 @@ class MQTTRelay(MQTTBase):
 
         if self._subscribe_to_updates:
             for device in self._devices:
-                topic = f'hk/{device.home_id}/relay/#'
+                topic = f'hk/{device.id}/relay/#'
                 self._logger.info(f"subscribing to {topic}")
                 client.subscribe(topic, qos=1)
 
@@ -61,10 +61,12 @@ class MQTTRelay(MQTTBase):
             if not match:
                 return
 
-            name = match.group(1)
+            device_id = match.group(1)
             subtopic = match.group(2)
 
-            if name not in self._devices:
+            try:
+                next(d for d in self._devices if d.id == device_id)
+            except StopIteration:
                 return
 
             message = None
@@ -76,17 +78,18 @@ class MQTTRelay(MQTTBase):
                 message = PowerPayload.unpack(msg.payload)
 
             if message and self._message_callback:
-                self._message_callback(name, message)
+                self._message_callback(device_id, message)
 
         except Exception as e:
             self._logger.exception(str(e))
 
     def set_power(self, home_id, enable: bool):
-        device = next(d for d in self._devices if d.home_id == home_id)
+        device = next(d for d in self._devices if d.id == home_id)
+        assert device.secret is not None, 'device secret not specified'
 
         payload = PowerPayload(secret=device.secret,
                                state=enable)
-        self._client.publish(f'hk/{device.home_id}/relay/power',
+        self._client.publish(f'hk/{device.id}/relay/power',
                              payload=payload.pack(),
                              qos=1)
         self._client.loop_write()
@@ -96,11 +99,12 @@ class MQTTRelay(MQTTBase):
                  filename: str,
                  publish_callback: callable,
                  qos: int):
-        device = next(d for d in self._devices if d.home_id == home_id)
+        device = next(d for d in self._devices if d.id == home_id)
+        assert device.secret is not None, 'device secret not specified'
 
         self._ota_publish_callback = publish_callback
         payload = OTAPayload(secret=device.secret, filename=filename)
-        publish_result = self._client.publish(f'hk/{device.home_id}/relay/admin/ota',
+        publish_result = self._client.publish(f'hk/{device.id}/relay/admin/ota',
                                               payload=payload.pack(),
                                               qos=qos)
         self._ota_mid = publish_result.mid

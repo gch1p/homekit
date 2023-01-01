@@ -25,7 +25,7 @@ def guess_filename(product: str, build_target: str):
 
 
 def relayctl_publish_ota(filename: str,
-                         home_id: str,
+                         device_id: str,
                          home_secret: str,
                          qos: int):
     global stop
@@ -34,10 +34,10 @@ def relayctl_publish_ota(filename: str,
         global stop
         stop = True
 
-    mqtt_relay = MQTTRelay(devices=MQTTRelayDevice(id=home_id, secret=home_secret))
+    mqtt_relay = MQTTRelay(devices=MQTTRelayDevice(id=device_id, secret=home_secret))
     mqtt_relay.configure_tls()
     mqtt_relay.connect_and_loop(loop_forever=False)
-    mqtt_relay.push_ota(home_id, filename, published, qos)
+    mqtt_relay.push_ota(device_id, filename, published, qos)
     while not stop:
         sleep(0.1)
     mqtt_relay.disconnect()
@@ -61,7 +61,7 @@ products_dir = os.path.join(
 def main():
     parser = ArgumentParser()
     parser.add_argument('--filename', type=str)
-    parser.add_argument('--home-id', type=str, required=True)
+    parser.add_argument('--device-id', type=str, required=True)
     parser.add_argument('--product', type=str, required=True)
     parser.add_argument('--qos', type=int, default=1)
 
@@ -71,8 +71,8 @@ def main():
     if arg.product not in products:
         raise ValueError(f'invalid product: \'{arg.product}\' not found')
 
-    if arg.home_id not in config['mqtt']['home_secrets']:
-        raise ValueError(f'home_secret for home {arg.home_id} not found in config!')
+    if arg.device_id not in config['mqtt']['home_secrets']:
+        raise ValueError(f'home_secret for home {arg.device_id} not found in config!')
 
     filename = arg.filename if arg.filename else guess_filename(arg.product, products[arg.product]['build_target'])
     if not os.path.exists(filename):
@@ -80,13 +80,13 @@ def main():
 
     print('Please confirm following OTA params.')
     print('')
-    print(f'      Home ID: {arg.home_id}')
+    print(f'    Device ID: {arg.device_id}')
     print(f'      Product: {arg.product}')
     print(f'Firmware file: {filename}')
     print('')
     input('Press any key to continue or Ctrl+C to abort.')
 
-    products[arg.product]['callback'](filename, arg.home_id, config['mqtt']['home_secrets'][arg.home_id], qos=arg.qos)
+    products[arg.product]['callback'](filename, arg.device_id, config['mqtt']['home_secrets'][arg.device_id], qos=arg.qos)
 
 
 if __name__ == '__main__':

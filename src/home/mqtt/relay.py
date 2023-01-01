@@ -86,8 +86,8 @@ class MQTTRelay(MQTTBase):
         except Exception as e:
             self._logger.exception(str(e))
 
-    def set_power(self, home_id, enable: bool):
-        device = next(d for d in self._devices if d.id == home_id)
+    def set_power(self, device_id, enable: bool):
+        device = next(d for d in self._devices if d.id == device_id)
         assert device.secret is not None, 'device secret not specified'
 
         payload = PowerPayload(secret=device.secret,
@@ -98,11 +98,11 @@ class MQTTRelay(MQTTBase):
         self._client.loop_write()
 
     def push_ota(self,
-                 home_id,
+                 device_id,
                  filename: str,
                  publish_callback: callable,
                  qos: int):
-        device = next(d for d in self._devices if d.id == home_id)
+        device = next(d for d in self._devices if d.id == device_id)
         assert device.secret is not None, 'device secret not specified'
 
         self._ota_publish_callback = publish_callback

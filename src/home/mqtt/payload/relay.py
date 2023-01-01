@@ -62,6 +62,12 @@ class PowerPayload(MQTTPayload):
     state: bool
 
 
+class OTAResultPayload(MQTTPayload):
+    FORMAT = '=BB'
+    result: int
+    error_code: int
+
+
 class OTAPayload(MQTTPayload):
     secret: str
     filename: str
@@ -87,3 +93,4 @@ class OTAPayload(MQTTPayload):
         # secret = buf[:12].decode()
         # filename = buf[12:].decode()
         # return OTAPayload(secret=secret, filename=filename)
+

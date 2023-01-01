@@ -8,7 +8,8 @@ from .payload.relay import (
     InitialStatPayload,
     StatPayload,
     PowerPayload,
-    OTAPayload
+    OTAPayload,
+    OTAResultPayload
 )
 
 
@@ -76,6 +77,8 @@ class MQTTRelay(MQTTBase):
                 message = InitialStatPayload.unpack(msg.payload)
             elif subtopic == 'power':
                 message = PowerPayload.unpack(msg.payload)
+            elif subtopic == 'otares':
+                message = OTAResultPayload.unpack(msg.payload)
 
             if message and self._message_callback:
                 self._message_callback(device_id, message)

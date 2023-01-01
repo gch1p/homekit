@@ -5,16 +5,27 @@ from argparse import ArgumentParser
 from home.config import config
 from home.mqtt import MQTTRelay, MQTTRelayDevice
 from home.mqtt.payload import MQTTPayload
-from home.mqtt.payload.relay import InitialStatPayload, StatPayload
+from home.mqtt.payload.relay import (
+    InitialStatPayload, StatPayload, OTAResultPayload
+)
 
 mqtt_relay: Optional[MQTTRelay] = None
 
 
-def on_mqtt_message(device_id, message: MQTTPayload):
-    if isinstance(message, InitialStatPayload) or isinstance(message, StatPayload):
-        message = f'[{device_id}] state={message.flags.state} rssi={message.rssi}'
-        if isinstance(message, InitialStatPayload):
-            message += f' fw={message.fw_version}'
+def on_mqtt_message(device_id, p: MQTTPayload):
+    message = None
+
+    if isinstance(p, InitialStatPayload) or isinstance(p, StatPayload):
+        message = f'[stat] state={"on" if p.flags.state else "off"}'
+        message += f' rssi={p.rssi}'
+        message += f' free_heap={p.free_heap}'
+        if isinstance(p, InitialStatPayload):
+            message += f' fw={p.fw_version}'
+
+    elif isinstance(p, OTAResultPayload):
+        message = f'[otares] result={p.result} error_code={p.error_code}'
+
+    if message:
         print(message)
 
 

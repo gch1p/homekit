@@ -39,4 +39,7 @@ if __name__ == '__main__':
     mqtt_relay = MQTTRelay(devices=MQTTRelayDevice(id=arg.device_id))
     mqtt_relay.set_message_callback(on_mqtt_message)
     mqtt_relay.configure_tls()
-    mqtt_relay.connect_and_loop()
+    try:
+        mqtt_relay.connect_and_loop()
+    except KeyboardInterrupt:
+        mqtt_relay.disconnect()

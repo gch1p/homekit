@@ -45,7 +45,7 @@ class MQTTRelay(MQTTBase):
         if self._subscribe_to_updates:
             for device in self._devices:
                 topic = f'hk/{device.id}/relay/#'
-                self._logger.info(f"subscribing to {topic}")
+                self._logger.debug(f"subscribing to {topic}")
                 client.subscribe(topic, qos=1)
 
     def on_publish(self, client: mqtt.Client, userdata, mid):

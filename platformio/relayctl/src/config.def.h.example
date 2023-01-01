@@ -1,6 +1,6 @@
 #pragma once
 
-#define FW_VERSION 3
+#define FW_VERSION 7
 
 #define DEFAULT_WIFI_AP_SSID ""
 #define DEFAULT_WIFI_STA_SSID ""
@@ -28,5 +28,6 @@
 // 12 bytes string
 #define HOME_SECRET_SIZE 12
 #define HOME_SECRET ""
+#define MQTT_BLINK 1
 
 #define ARRAY_SIZE(X) sizeof((X))/sizeof((X)[0])

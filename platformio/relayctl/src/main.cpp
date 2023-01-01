@@ -34,7 +34,9 @@ static volatile enum WiFiConnectionState wifi_state = WiFiConnectionState::WAITI
 static void* service = nullptr;
 static WiFiEventHandler wifiConnectHandler, wifiDisconnectHandler;
 static Ticker wifiTimer;
+#if MQTT_BLINK
 static StopWatch blinkStopWatch;
+#endif
 
 static DNSServer* dnsServer = nullptr;
 
@@ -127,7 +129,9 @@ void loop() {
                 service = new mqtt::MQTT();
 
             ((mqtt::MQTT*)service)->connect();
+#if MQTT_BLINK
             blinkStopWatch.save();
+#endif
         }
 
         auto mqtt = (mqtt::MQTT*)service;
@@ -140,12 +144,13 @@ void loop() {
                 mqtt->sendStat();
             }
 
+#if MQTT_BLINK
             // periodically blink board led
             if (blinkStopWatch.elapsed(5000)) {
-                // PRINTF("free heap: %d\n", ESP.getFreeHeap());
                 board_led.blink(1, 10);
                 blinkStopWatch.save();
             }
+#endif
         }
     } else {
         if (dnsServer != nullptr)

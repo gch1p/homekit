@@ -86,11 +86,13 @@ class MQTTRelay(MQTTBase):
         except Exception as e:
             self._logger.exception(str(e))
 
-    def set_power(self, device_id, enable: bool):
+    def set_power(self, device_id, enable: bool, secret=None):
         device = next(d for d in self._devices if d.id == device_id)
-        assert device.secret is not None, 'device secret not specified'
+        secret = secret if secret else device.secret
 
-        payload = PowerPayload(secret=device.secret,
+        assert secret is not None, 'device secret not specified'
+
+        payload = PowerPayload(secret=secret,
                                state=enable)
         self._client.publish(f'hk/{device.id}/relay/power',
                              payload=payload.pack(),

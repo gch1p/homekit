@@ -48,7 +48,7 @@ def on_mqtt_message(home_id, message: MQTTPayload):
         kwargs = dict(rssi=message.rssi, enabled=message.flags.state)
         if isinstance(message, InitialStatPayload):
             kwargs['fw_version'] = message.fw_version
-        if home_id not in relay_states[home_id]:
+        if home_id not in relay_states:
             relay_states[home_id] = MQTTRelayState()
         relay_states[home_id].update(**kwargs)
 

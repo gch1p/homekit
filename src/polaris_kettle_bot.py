@@ -8,7 +8,7 @@ import time
 import threading
 import paho.mqtt.client as mqtt
 
-from home.bot import Wrapper, Context, text_filter, handlermethod
+from home.telegram import bot
 from home.api.types import BotType
 from home.mqtt import MQTTBase
 from home.config import config
@@ -41,8 +41,75 @@ from telegram.ext import (
 )
 
 logger = logging.getLogger(__name__)
+config.load('polaris_kettle_bot')
+
+primary_choices = (70, 80, 90, 100)
+all_choices = range(
+    config['kettle']['temp_min'],
+    config['kettle']['temp_max']+1,
+    config['kettle']['temp_step'])
+
+bot.initialize()
+bot.lang.ru(
+    start_message="Выберите команду на клавиатуре:",
+    invalid_command="Неизвестная команда",
+    unexpected_callback_data="Ошибка: неверные данные",
+    disable="❌ Выключить",
+    server_error="Ошибка сервера",
+    back="🔙 Назад",
+    smth_went_wrong="😱 Что-то пошло не так",
+
+    # /status
+    status_not_connected="😟 Связь с чайником не установлена",
+    status_on="🟢 Чайник <b>включён</b> (до <b>%d °C</b>)",
+    status_off="🔴 Чайник <b>выключен</b>",
+    status_current_temp="Сейчас: <b>%d °C</b>",
+    status_update_time="<i>Обновлено %s</i>",
+    status_update_time_fmt="%d %b в %H:%M:%S",
+
+    # /temp
+    select_temperature="Выберите температуру:",
+
+    # enable/disable
+    enabling="💤 Чайник включается...",
+    disabling="💤 Чайник выключается...",
+    enabled="🟢 Чайник <b>включён</b>.",
+    enabled_target="%s Цель: <b>%d °C</b>",
+    enabled_reached="✅ <b>Готово!</b> Чайник вскипел, температура <b>%d °C</b>.",
+    disabled="✅ Чайник <b>выключен</b>.",
+    please_wait="⏳ Ожидайте..."
+)
+bot.lang.en(
+    start_message="Select command on the keyboard:",
+    invalid_command="Unknown command",
+    unexpected_callback_data="Unexpected callback data",
+    disable="❌ Turn OFF",
+    server_error="Server error",
+    back="🔙 Back",
+    smth_went_wrong="😱 Something went wrong",
+
+    # /status
+    status_not_connected="😟 No connection",
+    status_on="🟢 Turned <b>ON</b>! Target: <b>%d °C</b>",
+    status_off="🔴 Turned <b>OFF</b>",
+    status_current_temp="Now: <b>%d °C</b>",
+    status_update_time="<i>Updated on %s</i>",
+    status_update_time_fmt="%b %d, %Y at %H:%M:%S",
+
+    # /temp
+    select_temperature="Select a temperature:",
+
+    # enable/disable
+    enabling="💤 Turning on...",
+    disabling="💤 Turning off...",
+    enabled="🟢 The kettle is <b>turned ON</b>.",
+    enabled_target="%s Target: <b>%d °C</b>",
+    enabled_reached="✅ <b>Done</b>! The kettle has boiled, the temperature is <b>%d °C</b>.",
+    disabled="✅ The kettle is <b>turned OFF</b>.",
+    please_wait="⏳ Please wait..."
+)
+
 kc: Optional[KettleController] = None
-bot: Optional[Wrapper] = None
 RenderedContent = Tuple[str, Optional[Union[InlineKeyboardMarkup, ReplyKeyboardMarkup]]]
 tasks_lock = threading.Lock()
 
@@ -348,13 +415,13 @@ class KettleController(threading.Thread,
 
 class Renderer:
     @classmethod
-    def index(cls, ctx: Context) -> RenderedContent:
+    def index(cls, ctx: bot.Context) -> RenderedContent:
         html = f'<b>{ctx.lang("settings")}</b>\n\n'
         html += ctx.lang('select_place')
         return html, None
 
     @classmethod
-    def status(cls, ctx: Context,
+    def status(cls, ctx: bot.Context,
                connected: bool,
                mode: PowerType,
                current_temp: int,
@@ -380,7 +447,7 @@ class Renderer:
         return html, None
 
     @classmethod
-    def temp(cls, ctx: Context, choices) -> RenderedContent:
+    def temp(cls, ctx: bot.Context, choices) -> RenderedContent:
         buttons = []
         for chunk in chunks(choices, 5):
             buttons.append([f'{temperature_emoji(n)} {n}' for n in chunk])
@@ -388,7 +455,7 @@ class Renderer:
         return ctx.lang('select_temperature'), ReplyKeyboardMarkup(buttons)
 
     @classmethod
-    def turned_on(cls, ctx: Context,
+    def turned_on(cls, ctx: bot.Context,
                   target_temp: int,
                   current_temp: int,
                   mode: PowerType,
@@ -420,7 +487,7 @@ class Renderer:
         return html, None if no_keyboard else cls.wait_buttons(ctx)
 
     @classmethod
-    def turned_off(cls, ctx: Context,
+    def turned_off(cls, ctx: bot.Context,
                    mode: PowerType,
                    update_time: Optional[int] = None,
                    reached=False,
@@ -438,16 +505,16 @@ class Renderer:
         return html, None if no_keyboard else cls.wait_buttons(ctx)
 
     @classmethod
-    def not_connected(cls, ctx: Context) -> RenderedContent:
+    def not_connected(cls, ctx: bot.Context) -> RenderedContent:
         return ctx.lang('status_not_connected'), None
 
     @classmethod
-    def smth_went_wrong(cls, ctx: Context) -> RenderedContent:
+    def smth_went_wrong(cls, ctx: bot.Context) -> RenderedContent:
         html = ctx.lang('smth_went_wrong')
         return html, None
 
     @classmethod
-    def updated(cls, ctx: Context, update_time: int):
+    def updated(cls, ctx: bot.Context, update_time: int):
         locale_bak = locale.getlocale(locale.LC_TIME)
         locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8' if ctx.user_lang == 'ru' else 'en_US.UTF-8')
         dt = datetime.fromtimestamp(update_time)
@@ -456,7 +523,7 @@ class Renderer:
         return html
 
     @classmethod
-    def wait_buttons(cls, ctx: Context):
+    def wait_buttons(cls, ctx: bot.Context):
         return InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(ctx.lang('please_wait'), callback_data='wait')
@@ -468,7 +535,7 @@ MUTUpdate = namedtuple('MUTUpdate', 'message_id, user_id, finished, changed, del
 
 
 class MessageUpdatingTarget:
-    ctx: Context
+    ctx: bot.Context
     message: Message
     user_target_temp: Optional[int]
     user_enabled_power_mode: PowerType
@@ -477,7 +544,7 @@ class MessageUpdatingTarget:
     rendered_content: Optional[RenderedContent]
 
     def __init__(self,
-                 ctx: Context,
+                 ctx: bot.Context,
                  message: Message,
                  user_enabled_power_mode: PowerType,
                  initial_power_mode: PowerType,
@@ -561,194 +628,118 @@ class MessageUpdatingTarget:
         return self.ctx.user_id
 
 
-class KettleBot(Wrapper):
-    def __init__(self):
-        super().__init__()
+@bot.handler(command='status')
+def status(ctx: bot.Context) -> None:
+    text, markup = Renderer.status(ctx,
+                                   connected=kc.kettle.is_connected(),
+                                   mode=kc.info.mode,
+                                   current_temp=kc.info.temperature,
+                                   target_temp=kc.info.target_temperature,
+                                   update_time=kc.info.update_time)
+    ctx.reply(text, markup=markup)
 
-        self.lang.ru(
-            start_message="Выберите команду на клавиатуре:",
-            invalid_command="Неизвестная команда",
-            unexpected_callback_data="Ошибка: неверные данные",
-            disable="❌ Выключить",
-            server_error="Ошибка сервера",
-            back="🔙 Назад",
-            smth_went_wrong="😱 Что-то пошло не так",
 
-            # /status
-            status_not_connected="😟 Связь с чайником не установлена",
-            status_on="🟢 Чайник <b>включён</b> (до <b>%d °C</b>)",
-            status_off="🔴 Чайник <b>выключен</b>",
-            status_current_temp="Сейчас: <b>%d °C</b>",
-            status_update_time="<i>Обновлено %s</i>",
-            status_update_time_fmt="%d %b в %H:%M:%S",
+@bot.handler(command='temp')
+def temp(ctx: bot.Context) -> None:
+    text, markup = Renderer.temp(
+        ctx, choices=all_choices)
+    ctx.reply(text, markup=markup)
 
-            # /temp
-            select_temperature="Выберите температуру:",
 
-            # enable/disable
-            enabling="💤 Чайник включается...",
-            disabling="💤 Чайник выключается...",
-            enabled="🟢 Чайник <b>включён</b>.",
-            enabled_target="%s Цель: <b>%d °C</b>",
-            enabled_reached="✅ <b>Готово!</b> Чайник вскипел, температура <b>%d °C</b>.",
-            disabled="✅ Чайник <b>выключен</b>.",
-            please_wait="⏳ Ожидайте..."
-        )
+def enable(temp: int, ctx: bot.Context) -> None:
+    if not kc.kettle.is_connected():
+        text, markup = Renderer.not_connected(ctx)
+        ctx.reply(text, markup=markup)
+        return
 
-        self.lang.en(
-            start_message="Select command on the keyboard:",
-            invalid_command="Unknown command",
-            unexpected_callback_data="Unexpected callback data",
-            disable="❌ Turn OFF",
-            server_error="Server error",
-            back="🔙 Back",
-            smth_went_wrong="😱 Something went wrong",
+    tasks = queue.SimpleQueue()
+    if temp == 100:
+        power_mode = PowerType.ON
+    else:
+        power_mode = PowerType.CUSTOM
+        tasks.put(['set_target_temperature', temp])
+    tasks.put(['set_power', power_mode])
 
-            # /status
-            status_not_connected="😟 No connection",
-            status_on="🟢 Turned <b>ON</b>! Target: <b>%d °C</b>",
-            status_off="🔴 Turned <b>OFF</b>",
-            status_current_temp="Now: <b>%d °C</b>",
-            status_update_time="<i>Updated on %s</i>",
-            status_update_time_fmt="%b %d, %Y at %H:%M:%S",
-
-            # /temp
-            select_temperature="Select a temperature:",
-
-            # enable/disable
-            enabling="💤 Turning on...",
-            disabling="💤 Turning off...",
-            enabled="🟢 The kettle is <b>turned ON</b>.",
-            enabled_target="%s Target: <b>%d °C</b>",
-            enabled_reached="✅ <b>Done</b>! The kettle has boiled, the temperature is <b>%d °C</b>.",
-            disabled="✅ The kettle is <b>turned OFF</b>.",
-            please_wait="⏳ Please wait..."
-        )
-
-        self.primary_choices = (70, 80, 90, 100)
-        self.all_choices = range(
-            config['kettle']['temp_min'],
-            config['kettle']['temp_max']+1,
-            config['kettle']['temp_step'])
-
-        # commands
-        self.add_handler(CommandHandler('status', self.status))
-        self.add_handler(CommandHandler('temp', self.temp))
-
-        # enable messages
-        for temp in self.primary_choices:
-            self.add_handler(MessageHandler(text_filter(f'{temperature_emoji(temp)} {temp}'), self.wrap(partial(self.on, temp))))
-        for temp in self.all_choices:
-            self.add_handler(MessageHandler(text_filter(f'{temperature_emoji(temp)} {temp}'), self.wrap(partial(self.on, temp))))
-
-        # disable message
-        self.add_handler(MessageHandler(text_filter(self.lang.all('disable')), self.off))
-
-        # back message
-        self.add_handler(MessageHandler(text_filter(self.lang.all('back')), self.back))
-
-    def markup(self, ctx: Optional[Context]) -> Optional[ReplyKeyboardMarkup]:
-        buttons = [
-            [f'{temperature_emoji(n)} {n}' for n in self.primary_choices],
-            [ctx.lang('disable')]
-        ]
-        return ReplyKeyboardMarkup(buttons, one_time_keyboard=False)
-
-    def on(self, temp: int, ctx: Context) -> None:
-        if not kc.kettle.is_connected():
-            text, markup = Renderer.not_connected(ctx)
-            ctx.reply(text, markup=markup)
-            return
-
-        tasks = queue.SimpleQueue()
-        if temp == 100:
-            power_mode = PowerType.ON
+    def done(ok: bool):
+        if not ok:
+            html, markup = Renderer.smth_went_wrong(ctx)
         else:
-            power_mode = PowerType.CUSTOM
-            tasks.put(['set_target_temperature', temp])
-        tasks.put(['set_power', power_mode])
+            html, markup = Renderer.turned_on(ctx,
+                                              target_temp=temp,
+                                              current_temp=kc.info.temperature,
+                                              mode=kc.info.mode)
+        message = ctx.reply(html, markup=markup)
+        logger.debug(f'ctx.reply returned message: {message}')
 
-        def done(ok: bool):
-            if not ok:
-                html, markup = Renderer.smth_went_wrong(ctx)
-            else:
-                html, markup = Renderer.turned_on(ctx,
-                                                  target_temp=temp,
-                                                  current_temp=kc.info.temperature,
-                                                  mode=kc.info.mode)
-            message = ctx.reply(html, markup=markup)
-            logger.debug(f'ctx.reply returned message: {message}')
+        if ok:
+            mut = MessageUpdatingTarget(ctx, message,
+                                        initial_power_mode=kc.info.mode,
+                                        user_enabled_power_mode=power_mode,
+                                        user_target_temp=temp)
+            mut.set_rendered_content((html, markup))
+            kc.add_updating_message(mut)
 
-            if ok:
-                mut = MessageUpdatingTarget(ctx, message,
-                                            initial_power_mode=kc.info.mode,
-                                            user_enabled_power_mode=power_mode,
-                                            user_target_temp=temp)
-                mut.set_rendered_content((html, markup))
-                kc.add_updating_message(mut)
+    run_tasks(tasks, done)
 
-        run_tasks(tasks, done)
 
-    @handlermethod
-    def off(self, ctx: Context) -> None:
-        if not kc.kettle.is_connected():
-            text, markup = Renderer.not_connected(ctx)
-            ctx.reply(text, markup=markup)
-            return
+@bot.handler(message='disable')
+def disable(ctx: bot.Context):
+    if not kc.kettle.is_connected():
+        text, markup = Renderer.not_connected(ctx)
+        ctx.reply(text, markup=markup)
+        return
 
-        def done(ok: bool):
-            mode = kc.info.mode
-            if not ok:
-                html, markup = Renderer.smth_went_wrong(ctx)
-            else:
-                kw = {}
-                if mode == PowerType.OFF:
-                    kw['reached'] = True
-                    kw['no_keyboard'] = True
-                html, markup = Renderer.turned_off(ctx, mode=mode, **kw)
-            message = ctx.reply(html, markup=markup)
-            logger.debug(f'ctx.reply returned message: {message}')
+    def done(ok: bool):
+        mode = kc.info.mode
+        if not ok:
+            html, markup = Renderer.smth_went_wrong(ctx)
+        else:
+            kw = {}
+            if mode == PowerType.OFF:
+                kw['reached'] = True
+                kw['no_keyboard'] = True
+            html, markup = Renderer.turned_off(ctx, mode=mode, **kw)
+        message = ctx.reply(html, markup=markup)
+        logger.debug(f'ctx.reply returned message: {message}')
 
-            if ok and mode != PowerType.OFF:
-                mut = MessageUpdatingTarget(ctx, message,
-                                            initial_power_mode=mode,
-                                            user_enabled_power_mode=PowerType.OFF)
-                mut.set_rendered_content((html, markup))
-                kc.add_updating_message(mut)
+        if ok and mode != PowerType.OFF:
+            mut = MessageUpdatingTarget(ctx, message,
+                                        initial_power_mode=mode,
+                                        user_enabled_power_mode=PowerType.OFF)
+            mut.set_rendered_content((html, markup))
+            kc.add_updating_message(mut)
 
-        tasks = queue.SimpleQueue()
-        tasks.put(['set_power', PowerType.OFF])
-        run_tasks(tasks, done)
+    tasks = queue.SimpleQueue()
+    tasks.put(['set_power', PowerType.OFF])
+    run_tasks(tasks, done)
 
-    @handlermethod
-    def status(self, ctx: Context):
-        text, markup = Renderer.status(ctx,
-                                       connected=kc.kettle.is_connected(),
-                                       mode=kc.info.mode,
-                                       current_temp=kc.info.temperature,
-                                       target_temp=kc.info.target_temperature,
-                                       update_time=kc.info.update_time)
-        return ctx.reply(text, markup=markup)
 
-    @handlermethod
-    def temp(self, ctx: Context):
-        text, markup = Renderer.temp(
-            ctx, choices=self.all_choices)
-        return ctx.reply(text, markup=markup)
+@bot.handler(message='back')
+def back(ctx: bot.Context):
+    bot.start(ctx)
 
-    @handlermethod
-    def back(self, ctx: Context):
-        self.start(ctx)
+
+@bot.defaultreplymarkup
+def defaultmarkup(ctx: Optional[bot.Context]) -> Optional[ReplyKeyboardMarkup]:
+    buttons = [
+        [f'{temperature_emoji(n)} {n}' for n in primary_choices],
+        [ctx.lang('disable')]
+    ]
+    return ReplyKeyboardMarkup(buttons, one_time_keyboard=False)
 
 
 if __name__ == '__main__':
-    config.load('polaris_kettle_bot')
+    for temp in primary_choices:
+        bot.handler(text=f'{temperature_emoji(temp)} {temp}')(partial(enable, temp))
+
+    for temp in all_choices:
+        bot.handler(text=f'{temperature_emoji(temp)} {temp}')(partial(enable, temp))
 
     kc = KettleController()
 
-    bot = KettleBot()
     if 'api' in config:
         bot.enable_logging(BotType.POLARIS_KETTLE)
+
     bot.run()
 
     # bot library handles signals, so when sigterm or something like that happens, we should stop all other threads here

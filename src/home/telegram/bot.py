@@ -133,10 +133,12 @@ def handler(**kwargs):
         if 'text' in kwargs:
             texts.append(kwargs['text'])
         if 'texts' in kwargs:
-            texts.append(kwargs['texts'])
+            texts += kwargs['texts']
 
-        if messages:
-            texts = list(itertools.chain.from_iterable([lang.all(m) for m in messages]))
+        if messages or texts:
+            new_messages = list(itertools.chain.from_iterable([lang.all(m) for m in messages]))
+            texts += new_messages
+            texts = list(set(texts))
             _updater.dispatcher.add_handler(
                 MessageHandler(text_filter(*texts), _handler),
                 group=0

@@ -6,7 +6,6 @@ import logging
 from typing import Optional
 
 from home.config import config
-from home.util import parse_addr
 from home.temphum import SensorType, create_sensor, TempHumSensor
 
 logger = logging.getLogger(__name__)
@@ -72,7 +71,7 @@ if __name__ == '__main__':
                            int(config['sensor']['bus']))
 
     try:
-        host, port = parse_addr(config['server']['listen'])
+        host, port = config.get_addr('server.listen')
         asyncio.run(run_server(host, port))
     except KeyboardInterrupt:
         logging.info('Exiting...')

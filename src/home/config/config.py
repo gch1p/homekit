@@ -6,6 +6,7 @@ import os
 from os.path import join, isdir, isfile
 from typing import Optional, Any, MutableMapping
 from argparse import ArgumentParser
+from ..util import parse_addr
 
 
 def _get_config_path(name: str) -> str:
@@ -117,6 +118,9 @@ class ConfigStore:
                 return cur[k] if k in cur else default
             cur = self.data[k]
         raise KeyError(f'option {key} not found')
+
+    def get_addr(self, key: str):
+        return parse_addr(self.get(key))
 
     def items(self):
         return self.data.items()

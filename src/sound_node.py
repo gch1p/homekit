@@ -3,7 +3,6 @@ import os
 
 from typing import Optional
 
-from home.util import parse_addr
 from home.config import config
 from home.audio import amixer
 from home.media import MediaNodeServer, SoundRecordStorage, SoundRecorder
@@ -87,5 +86,5 @@ if __name__ == '__main__':
 
     server = SoundNodeServer(recorder=recorder,
                              storage=storage,
-                             addr=parse_addr(config['node']['listen']))
+                             addr=config.get_addr('node.listen'))
     server.run()

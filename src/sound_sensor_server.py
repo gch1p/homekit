@@ -190,7 +190,7 @@ if __name__ == '__main__':
                                                                   finished_handler=partial(record_finished, MediaNodeType.CAMERA))
 
     try:
-        server = SoundSensorServer(parse_addr(config['server']['listen']), HitHandler)
+        server = SoundSensorServer(config.get_addr('server.listen'), HitHandler)
         server.run()
     except KeyboardInterrupt:
         interrupted = True

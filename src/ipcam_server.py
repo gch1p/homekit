@@ -10,7 +10,6 @@ import home.telegram.aio as telegram
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from home.config import config
-from home.util import parse_addr
 from home import http
 from home.database.sqlite import SQLiteBase
 from home.camera import util as camutil
@@ -507,5 +506,5 @@ if __name__ == '__main__':
     except KeyError:
         pass
 
-    server = IPCamWebServer(parse_addr(config['server']['listen']))
+    server = IPCamWebServer(config.get_addr('server.listen'))
     server.run()

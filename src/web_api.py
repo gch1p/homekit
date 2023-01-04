@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 
 from aiohttp import web
 from home import http
-from home.util import parse_addr
 from home.config import config, is_development_mode
 from home.database import BotsDatabase, SensorsDatabase, InverterDatabase
 from home.database.inverter_time_formats import *
@@ -234,5 +233,5 @@ if __name__ == '__main__':
 
     loop = asyncio.get_event_loop()
 
-    server = WebAPIServer(parse_addr(config['server']['listen']))
+    server = WebAPIServer(config.get_addr('server.listen'))
     server.run()

@@ -5,7 +5,6 @@ from home.mqtt import MQTTRelay, MQTTRelayDevice, MQTTRelayState
 from home.mqtt.payload import MQTTPayload
 from home.mqtt.payload.relay import InitialStatPayload, StatPayload
 from typing import Optional
-from home.util import parse_addr
 
 mqtt_relay: Optional[MQTTRelay] = None
 relay_states: dict[str, MQTTRelayState] = {}
@@ -60,9 +59,8 @@ if __name__ == '__main__':
     mqtt_relay.set_message_callback(on_mqtt_message)
     mqtt_relay.connect_and_loop(loop_forever=False)
 
-    proxy = RelayMqttHttpProxy(parse_addr(config.get('server.listen')))
+    proxy = RelayMqttHttpProxy(config.get_addr('server.listen'))
     try:
         proxy.run()
     except KeyboardInterrupt:
         mqtt_relay.disconnect()
-

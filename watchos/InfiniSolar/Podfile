@@ -1,0 +1,37 @@
+# Uncomment the next line to define a global platform for your project
+# platform :ios, '9.0'
+
+target 'InfiniSolar' do
+  # Comment the next line if you don't want to use dynamic frameworks
+  #use_frameworks!
+
+  # Pods for InfiniSolar
+
+  target 'InfiniSolarTests' do
+    inherit! :search_paths
+    # Pods for testing
+  end
+
+  target 'InfiniSolarUITests' do
+    # Pods for testing
+  end
+
+end
+
+target 'InfiniSolar WatchKit App' do
+  # Comment the next line if you don't want to use dynamic frameworks
+  #use_frameworks!
+
+  # Pods for InfiniSolar WatchKit App
+
+end
+
+target 'InfiniSolar WatchKit Extension' do
+  # Comment the next line if you don't want to use dynamic frameworks
+  #use_frameworks!
+
+  # Pods for InfiniSolar WatchKit Extension
+  pod 'Alamofire', '~> 5.1'
+  pod 'SwiftyJSON', '~> 4.0'
+  pod 'SwiftSocket'
+end

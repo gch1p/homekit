@@ -21,3 +21,6 @@ CMakeListsPrivate.txt
 /localwebsite/config.local.php
 /localwebsite/cache
 /localwebsite/test.php
+
+/watchos/InfiniSolar/Pods
+xcuserdata

@@ -1,0 +1,1046 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0902D91926C05D6100B4535C /* GenerationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0902D91826C05D6100B4535C /* GenerationView.swift */; };
+		0902D91B26C0600800B4535C /* InverterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0902D91A26C0600800B4535C /* InverterView.swift */; };
+		0926FBC026B9CCF400258270 /* InverterState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0926FBBF26B9CCF400258270 /* InverterState.swift */; };
+		097A823726B9C33B00E8CBD0 /* InverterStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 097A823626B9C33B00E8CBD0 /* InverterStatus.swift */; };
+		09A397D526B9932A008FA5F4 /* InfiniSolar WatchKit App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 09A397D426B9932A008FA5F4 /* InfiniSolar WatchKit App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		09A397DA26B9932B008FA5F4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09A397D926B9932B008FA5F4 /* Assets.xcassets */; };
+		09A397E126B9932B008FA5F4 /* InfiniSolar WatchKit Extension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 09A397E026B9932B008FA5F4 /* InfiniSolar WatchKit Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		09A397E626B9932B008FA5F4 /* InfiniSolarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09A397E526B9932B008FA5F4 /* InfiniSolarApp.swift */; };
+		09A397EA26B9932B008FA5F4 /* NotificationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09A397E926B9932B008FA5F4 /* NotificationController.swift */; };
+		09A397EC26B9932B008FA5F4 /* NotificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09A397EB26B9932B008FA5F4 /* NotificationView.swift */; };
+		09A397EE26B9932B008FA5F4 /* ComplicationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09A397ED26B9932B008FA5F4 /* ComplicationController.swift */; };
+		09A397F026B9932B008FA5F4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09A397EF26B9932B008FA5F4 /* Assets.xcassets */; };
+		09A397F326B9932B008FA5F4 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09A397F226B9932B008FA5F4 /* Preview Assets.xcassets */; };
+		09A397FF26B9932B008FA5F4 /* InfiniSolarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09A397FE26B9932B008FA5F4 /* InfiniSolarTests.swift */; };
+		09A3980A26B9932B008FA5F4 /* InfiniSolarUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09A3980926B9932B008FA5F4 /* InfiniSolarUITests.swift */; };
+		09B7EE9226C06B9A00151053 /* InverterGenerationState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B7EE9126C06B9A00151053 /* InverterGenerationState.swift */; };
+		09B7EE9426C07AA600151053 /* RoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B7EE9326C07AA600151053 /* RoomView.swift */; };
+		09B7EE9626C07DC800151053 /* RoomState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B7EE9526C07DC800151053 /* RoomState.swift */; };
+		09B7EE9826C080A700151053 /* PumpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B7EE9726C080A700151053 /* PumpView.swift */; };
+		09B7EE9A26C0816100151053 /* PumpState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B7EE9926C0816100151053 /* PumpState.swift */; };
+		37920A46126F658DCCC9E041 /* libPods-InfiniSolar WatchKit App.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 69108F92E2798AFDC89B3E84 /* libPods-InfiniSolar WatchKit App.a */; };
+		74B2D9D231F5833587DA7703 /* libPods-InfiniSolarTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 51BAECA5029DFF903F615AD6 /* libPods-InfiniSolarTests.a */; };
+		7A501193D2163834D4F7971A /* libPods-InfiniSolar-InfiniSolarUITests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BEB068C7E7EFA0C20934FDA8 /* libPods-InfiniSolar-InfiniSolarUITests.a */; };
+		7DB8E026149DECFA0CD8CC29 /* libPods-InfiniSolar WatchKit Extension.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 17ECD5CD92390150E38923D5 /* libPods-InfiniSolar WatchKit Extension.a */; };
+		B4B39BE69AA203CF4E2DBB0C /* libPods-InfiniSolar.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8F620F180B7151DDDE2C34F /* libPods-InfiniSolar.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		09A397D626B9932A008FA5F4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 09A397CA26B99329008FA5F4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 09A397D326B9932A008FA5F4;
+			remoteInfo = "InfiniSolar WatchKit App";
+		};
+		09A397E226B9932B008FA5F4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 09A397CA26B99329008FA5F4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 09A397DF26B9932B008FA5F4;
+			remoteInfo = "InfiniSolar WatchKit Extension";
+		};
+		09A397FB26B9932B008FA5F4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 09A397CA26B99329008FA5F4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 09A397DF26B9932B008FA5F4;
+			remoteInfo = "InfiniSolar WatchKit Extension";
+		};
+		09A3980626B9932B008FA5F4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 09A397CA26B99329008FA5F4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 09A397D326B9932A008FA5F4;
+			remoteInfo = "InfiniSolar WatchKit App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		09A3981126B9932B008FA5F4 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				09A397E126B9932B008FA5F4 /* InfiniSolar WatchKit Extension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09A3981526B9932B008FA5F4 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				09A397D526B9932A008FA5F4 /* InfiniSolar WatchKit App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0902D91826C05D6100B4535C /* GenerationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerationView.swift; sourceTree = "<group>"; };
+		0902D91A26C0600800B4535C /* InverterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InverterView.swift; sourceTree = "<group>"; };
+		0926FBBF26B9CCF400258270 /* InverterState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InverterState.swift; sourceTree = "<group>"; };
+		097A823626B9C33B00E8CBD0 /* InverterStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InverterStatus.swift; sourceTree = "<group>"; };
+		09A397D026B9932A008FA5F4 /* InfiniSolar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InfiniSolar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		09A397D426B9932A008FA5F4 /* InfiniSolar WatchKit App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "InfiniSolar WatchKit App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		09A397D926B9932B008FA5F4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		09A397DB26B9932B008FA5F4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		09A397E026B9932B008FA5F4 /* InfiniSolar WatchKit Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "InfiniSolar WatchKit Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		09A397E526B9932B008FA5F4 /* InfiniSolarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfiniSolarApp.swift; sourceTree = "<group>"; };
+		09A397E926B9932B008FA5F4 /* NotificationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationController.swift; sourceTree = "<group>"; };
+		09A397EB26B9932B008FA5F4 /* NotificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationView.swift; sourceTree = "<group>"; };
+		09A397ED26B9932B008FA5F4 /* ComplicationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComplicationController.swift; sourceTree = "<group>"; };
+		09A397EF26B9932B008FA5F4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		09A397F226B9932B008FA5F4 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		09A397F426B9932B008FA5F4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		09A397F526B9932B008FA5F4 /* PushNotificationPayload.apns */ = {isa = PBXFileReference; lastKnownFileType = text; path = PushNotificationPayload.apns; sourceTree = "<group>"; };
+		09A397FA26B9932B008FA5F4 /* InfiniSolarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InfiniSolarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		09A397FE26B9932B008FA5F4 /* InfiniSolarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfiniSolarTests.swift; sourceTree = "<group>"; };
+		09A3980026B9932B008FA5F4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		09A3980526B9932B008FA5F4 /* InfiniSolarUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InfiniSolarUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		09A3980926B9932B008FA5F4 /* InfiniSolarUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfiniSolarUITests.swift; sourceTree = "<group>"; };
+		09A3980B26B9932B008FA5F4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		09B7EE9126C06B9A00151053 /* InverterGenerationState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InverterGenerationState.swift; sourceTree = "<group>"; };
+		09B7EE9326C07AA600151053 /* RoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomView.swift; sourceTree = "<group>"; };
+		09B7EE9526C07DC800151053 /* RoomState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomState.swift; sourceTree = "<group>"; };
+		09B7EE9726C080A700151053 /* PumpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PumpView.swift; sourceTree = "<group>"; };
+		09B7EE9926C0816100151053 /* PumpState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PumpState.swift; sourceTree = "<group>"; };
+		17ECD5CD92390150E38923D5 /* libPods-InfiniSolar WatchKit Extension.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-InfiniSolar WatchKit Extension.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F8FDC87E75553B5F63E8CDD /* Pods-InfiniSolar WatchKit App.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InfiniSolar WatchKit App.debug.xcconfig"; path = "Target Support Files/Pods-InfiniSolar WatchKit App/Pods-InfiniSolar WatchKit App.debug.xcconfig"; sourceTree = "<group>"; };
+		51BAECA5029DFF903F615AD6 /* libPods-InfiniSolarTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-InfiniSolarTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5AF182901E117EC848223549 /* Pods-InfiniSolarTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InfiniSolarTests.release.xcconfig"; path = "Target Support Files/Pods-InfiniSolarTests/Pods-InfiniSolarTests.release.xcconfig"; sourceTree = "<group>"; };
+		66D1B49C439D66B7CC83B844 /* Pods-InfiniSolarTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InfiniSolarTests.debug.xcconfig"; path = "Target Support Files/Pods-InfiniSolarTests/Pods-InfiniSolarTests.debug.xcconfig"; sourceTree = "<group>"; };
+		69108F92E2798AFDC89B3E84 /* libPods-InfiniSolar WatchKit App.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-InfiniSolar WatchKit App.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		77EA508CE2EC543A1BD66C12 /* Pods-InfiniSolar-InfiniSolarUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InfiniSolar-InfiniSolarUITests.release.xcconfig"; path = "Target Support Files/Pods-InfiniSolar-InfiniSolarUITests/Pods-InfiniSolar-InfiniSolarUITests.release.xcconfig"; sourceTree = "<group>"; };
+		7999FF5D198D8AC8F58E2512 /* Pods-InfiniSolar.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InfiniSolar.release.xcconfig"; path = "Target Support Files/Pods-InfiniSolar/Pods-InfiniSolar.release.xcconfig"; sourceTree = "<group>"; };
+		7DFB5B6EDB85E029D8A394D2 /* Pods-InfiniSolar-InfiniSolarUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InfiniSolar-InfiniSolarUITests.debug.xcconfig"; path = "Target Support Files/Pods-InfiniSolar-InfiniSolarUITests/Pods-InfiniSolar-InfiniSolarUITests.debug.xcconfig"; sourceTree = "<group>"; };
+		87898170617B69EDFD754E8D /* Pods-InfiniSolar WatchKit App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InfiniSolar WatchKit App.release.xcconfig"; path = "Target Support Files/Pods-InfiniSolar WatchKit App/Pods-InfiniSolar WatchKit App.release.xcconfig"; sourceTree = "<group>"; };
+		A8F620F180B7151DDDE2C34F /* libPods-InfiniSolar.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-InfiniSolar.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		BEB068C7E7EFA0C20934FDA8 /* libPods-InfiniSolar-InfiniSolarUITests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-InfiniSolar-InfiniSolarUITests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C59C7EDA2DB8E0FEF9BAA170 /* Pods-InfiniSolar.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InfiniSolar.debug.xcconfig"; path = "Target Support Files/Pods-InfiniSolar/Pods-InfiniSolar.debug.xcconfig"; sourceTree = "<group>"; };
+		D07D9D2A549779C2ED76D4FC /* Pods-InfiniSolar WatchKit Extension.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InfiniSolar WatchKit Extension.release.xcconfig"; path = "Target Support Files/Pods-InfiniSolar WatchKit Extension/Pods-InfiniSolar WatchKit Extension.release.xcconfig"; sourceTree = "<group>"; };
+		DAFCB6D0B50AE04B5F1823E7 /* Pods-InfiniSolar WatchKit Extension.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-InfiniSolar WatchKit Extension.debug.xcconfig"; path = "Target Support Files/Pods-InfiniSolar WatchKit Extension/Pods-InfiniSolar WatchKit Extension.debug.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		09A397DD26B9932B008FA5F4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7DB8E026149DECFA0CD8CC29 /* libPods-InfiniSolar WatchKit Extension.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09A397F726B9932B008FA5F4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				74B2D9D231F5833587DA7703 /* libPods-InfiniSolarTests.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09A3980226B9932B008FA5F4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7A501193D2163834D4F7971A /* libPods-InfiniSolar-InfiniSolarUITests.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7E06B301F11B5B101365AE18 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				37920A46126F658DCCC9E041 /* libPods-InfiniSolar WatchKit App.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B022AE3047F3D13437E327CD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B4B39BE69AA203CF4E2DBB0C /* libPods-InfiniSolar.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		09A397C926B99329008FA5F4 = {
+			isa = PBXGroup;
+			children = (
+				09A397D826B9932A008FA5F4 /* InfiniSolar WatchKit App */,
+				09A397E426B9932B008FA5F4 /* InfiniSolar WatchKit Extension */,
+				09A397FD26B9932B008FA5F4 /* InfiniSolarTests */,
+				09A3980826B9932B008FA5F4 /* InfiniSolarUITests */,
+				09A397D126B9932A008FA5F4 /* Products */,
+				E674DA0359E4DB81F0FC70B5 /* Pods */,
+				BD5BEEEE73379487F7C79FB2 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		09A397D126B9932A008FA5F4 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				09A397D026B9932A008FA5F4 /* InfiniSolar.app */,
+				09A397D426B9932A008FA5F4 /* InfiniSolar WatchKit App.app */,
+				09A397E026B9932B008FA5F4 /* InfiniSolar WatchKit Extension.appex */,
+				09A397FA26B9932B008FA5F4 /* InfiniSolarTests.xctest */,
+				09A3980526B9932B008FA5F4 /* InfiniSolarUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		09A397D826B9932A008FA5F4 /* InfiniSolar WatchKit App */ = {
+			isa = PBXGroup;
+			children = (
+				09A397D926B9932B008FA5F4 /* Assets.xcassets */,
+				09A397DB26B9932B008FA5F4 /* Info.plist */,
+			);
+			path = "InfiniSolar WatchKit App";
+			sourceTree = "<group>";
+		};
+		09A397E426B9932B008FA5F4 /* InfiniSolar WatchKit Extension */ = {
+			isa = PBXGroup;
+			children = (
+				09A397E526B9932B008FA5F4 /* InfiniSolarApp.swift */,
+				09B7EE9726C080A700151053 /* PumpView.swift */,
+				09B7EE9926C0816100151053 /* PumpState.swift */,
+				0902D91A26C0600800B4535C /* InverterView.swift */,
+				09B7EE9326C07AA600151053 /* RoomView.swift */,
+				09B7EE9526C07DC800151053 /* RoomState.swift */,
+				0902D91826C05D6100B4535C /* GenerationView.swift */,
+				0926FBBF26B9CCF400258270 /* InverterState.swift */,
+				09B7EE9126C06B9A00151053 /* InverterGenerationState.swift */,
+				097A823626B9C33B00E8CBD0 /* InverterStatus.swift */,
+				09A397E926B9932B008FA5F4 /* NotificationController.swift */,
+				09A397EB26B9932B008FA5F4 /* NotificationView.swift */,
+				09A397ED26B9932B008FA5F4 /* ComplicationController.swift */,
+				09A397EF26B9932B008FA5F4 /* Assets.xcassets */,
+				09A397F426B9932B008FA5F4 /* Info.plist */,
+				09A397F526B9932B008FA5F4 /* PushNotificationPayload.apns */,
+				09A397F126B9932B008FA5F4 /* Preview Content */,
+			);
+			path = "InfiniSolar WatchKit Extension";
+			sourceTree = "<group>";
+		};
+		09A397F126B9932B008FA5F4 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				09A397F226B9932B008FA5F4 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		09A397FD26B9932B008FA5F4 /* InfiniSolarTests */ = {
+			isa = PBXGroup;
+			children = (
+				09A397FE26B9932B008FA5F4 /* InfiniSolarTests.swift */,
+				09A3980026B9932B008FA5F4 /* Info.plist */,
+			);
+			path = InfiniSolarTests;
+			sourceTree = "<group>";
+		};
+		09A3980826B9932B008FA5F4 /* InfiniSolarUITests */ = {
+			isa = PBXGroup;
+			children = (
+				09A3980926B9932B008FA5F4 /* InfiniSolarUITests.swift */,
+				09A3980B26B9932B008FA5F4 /* Info.plist */,
+			);
+			path = InfiniSolarUITests;
+			sourceTree = "<group>";
+		};
+		BD5BEEEE73379487F7C79FB2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A8F620F180B7151DDDE2C34F /* libPods-InfiniSolar.a */,
+				69108F92E2798AFDC89B3E84 /* libPods-InfiniSolar WatchKit App.a */,
+				17ECD5CD92390150E38923D5 /* libPods-InfiniSolar WatchKit Extension.a */,
+				BEB068C7E7EFA0C20934FDA8 /* libPods-InfiniSolar-InfiniSolarUITests.a */,
+				51BAECA5029DFF903F615AD6 /* libPods-InfiniSolarTests.a */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		E674DA0359E4DB81F0FC70B5 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				C59C7EDA2DB8E0FEF9BAA170 /* Pods-InfiniSolar.debug.xcconfig */,
+				7999FF5D198D8AC8F58E2512 /* Pods-InfiniSolar.release.xcconfig */,
+				1F8FDC87E75553B5F63E8CDD /* Pods-InfiniSolar WatchKit App.debug.xcconfig */,
+				87898170617B69EDFD754E8D /* Pods-InfiniSolar WatchKit App.release.xcconfig */,
+				DAFCB6D0B50AE04B5F1823E7 /* Pods-InfiniSolar WatchKit Extension.debug.xcconfig */,
+				D07D9D2A549779C2ED76D4FC /* Pods-InfiniSolar WatchKit Extension.release.xcconfig */,
+				7DFB5B6EDB85E029D8A394D2 /* Pods-InfiniSolar-InfiniSolarUITests.debug.xcconfig */,
+				77EA508CE2EC543A1BD66C12 /* Pods-InfiniSolar-InfiniSolarUITests.release.xcconfig */,
+				66D1B49C439D66B7CC83B844 /* Pods-InfiniSolarTests.debug.xcconfig */,
+				5AF182901E117EC848223549 /* Pods-InfiniSolarTests.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		09A397CF26B9932A008FA5F4 /* InfiniSolar */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 09A3981626B9932B008FA5F4 /* Build configuration list for PBXNativeTarget "InfiniSolar" */;
+			buildPhases = (
+				4D97047B0DB02367D89B492D /* [CP] Check Pods Manifest.lock */,
+				09A397CE26B9932A008FA5F4 /* Resources */,
+				09A3981526B9932B008FA5F4 /* Embed Watch Content */,
+				B022AE3047F3D13437E327CD /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				09A397D726B9932A008FA5F4 /* PBXTargetDependency */,
+			);
+			name = InfiniSolar;
+			productName = InfiniSolar;
+			productReference = 09A397D026B9932A008FA5F4 /* InfiniSolar.app */;
+			productType = "com.apple.product-type.application.watchapp2-container";
+		};
+		09A397D326B9932A008FA5F4 /* InfiniSolar WatchKit App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 09A3981226B9932B008FA5F4 /* Build configuration list for PBXNativeTarget "InfiniSolar WatchKit App" */;
+			buildPhases = (
+				CEC8F11D4BD0F817463AF15E /* [CP] Check Pods Manifest.lock */,
+				09A397D226B9932A008FA5F4 /* Resources */,
+				09A3981126B9932B008FA5F4 /* Embed App Extensions */,
+				7E06B301F11B5B101365AE18 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				09A397E326B9932B008FA5F4 /* PBXTargetDependency */,
+			);
+			name = "InfiniSolar WatchKit App";
+			productName = "InfiniSolar WatchKit App";
+			productReference = 09A397D426B9932A008FA5F4 /* InfiniSolar WatchKit App.app */;
+			productType = "com.apple.product-type.application.watchapp2";
+		};
+		09A397DF26B9932B008FA5F4 /* InfiniSolar WatchKit Extension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 09A3980E26B9932B008FA5F4 /* Build configuration list for PBXNativeTarget "InfiniSolar WatchKit Extension" */;
+			buildPhases = (
+				406CCF96EB9F62A0D64F42B9 /* [CP] Check Pods Manifest.lock */,
+				09A397DC26B9932B008FA5F4 /* Sources */,
+				09A397DD26B9932B008FA5F4 /* Frameworks */,
+				09A397DE26B9932B008FA5F4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "InfiniSolar WatchKit Extension";
+			productName = "InfiniSolar WatchKit Extension";
+			productReference = 09A397E026B9932B008FA5F4 /* InfiniSolar WatchKit Extension.appex */;
+			productType = "com.apple.product-type.watchkit2-extension";
+		};
+		09A397F926B9932B008FA5F4 /* InfiniSolarTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 09A3981926B9932B008FA5F4 /* Build configuration list for PBXNativeTarget "InfiniSolarTests" */;
+			buildPhases = (
+				9C8D971EA933EBD78A96298C /* [CP] Check Pods Manifest.lock */,
+				09A397F626B9932B008FA5F4 /* Sources */,
+				09A397F726B9932B008FA5F4 /* Frameworks */,
+				09A397F826B9932B008FA5F4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				09A397FC26B9932B008FA5F4 /* PBXTargetDependency */,
+			);
+			name = InfiniSolarTests;
+			productName = InfiniSolarTests;
+			productReference = 09A397FA26B9932B008FA5F4 /* InfiniSolarTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		09A3980426B9932B008FA5F4 /* InfiniSolarUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 09A3981C26B9932B008FA5F4 /* Build configuration list for PBXNativeTarget "InfiniSolarUITests" */;
+			buildPhases = (
+				A64FF527A6875F63696F6ACD /* [CP] Check Pods Manifest.lock */,
+				09A3980126B9932B008FA5F4 /* Sources */,
+				09A3980226B9932B008FA5F4 /* Frameworks */,
+				09A3980326B9932B008FA5F4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				09A3980726B9932B008FA5F4 /* PBXTargetDependency */,
+			);
+			name = InfiniSolarUITests;
+			productName = InfiniSolarUITests;
+			productReference = 09A3980526B9932B008FA5F4 /* InfiniSolarUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		09A397CA26B99329008FA5F4 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1250;
+				LastUpgradeCheck = 1250;
+				TargetAttributes = {
+					09A397CF26B9932A008FA5F4 = {
+						CreatedOnToolsVersion = 12.5.1;
+					};
+					09A397D326B9932A008FA5F4 = {
+						CreatedOnToolsVersion = 12.5.1;
+					};
+					09A397DF26B9932B008FA5F4 = {
+						CreatedOnToolsVersion = 12.5.1;
+					};
+					09A397F926B9932B008FA5F4 = {
+						CreatedOnToolsVersion = 12.5.1;
+						TestTargetID = 09A397DF26B9932B008FA5F4;
+					};
+					09A3980426B9932B008FA5F4 = {
+						CreatedOnToolsVersion = 12.5.1;
+						TestTargetID = 09A397D326B9932A008FA5F4;
+					};
+				};
+			};
+			buildConfigurationList = 09A397CD26B9932A008FA5F4 /* Build configuration list for PBXProject "InfiniSolar" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 09A397C926B99329008FA5F4;
+			productRefGroup = 09A397D126B9932A008FA5F4 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				09A397CF26B9932A008FA5F4 /* InfiniSolar */,
+				09A397D326B9932A008FA5F4 /* InfiniSolar WatchKit App */,
+				09A397DF26B9932B008FA5F4 /* InfiniSolar WatchKit Extension */,
+				09A397F926B9932B008FA5F4 /* InfiniSolarTests */,
+				09A3980426B9932B008FA5F4 /* InfiniSolarUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		09A397CE26B9932A008FA5F4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09A397D226B9932A008FA5F4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				09A397DA26B9932B008FA5F4 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09A397DE26B9932B008FA5F4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				09A397F326B9932B008FA5F4 /* Preview Assets.xcassets in Resources */,
+				09A397F026B9932B008FA5F4 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09A397F826B9932B008FA5F4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09A3980326B9932B008FA5F4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		406CCF96EB9F62A0D64F42B9 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-InfiniSolar WatchKit Extension-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		4D97047B0DB02367D89B492D /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-InfiniSolar-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		9C8D971EA933EBD78A96298C /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-InfiniSolarTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A64FF527A6875F63696F6ACD /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-InfiniSolar-InfiniSolarUITests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		CEC8F11D4BD0F817463AF15E /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-InfiniSolar WatchKit App-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		09A397DC26B9932B008FA5F4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0902D91B26C0600800B4535C /* InverterView.swift in Sources */,
+				09A397EA26B9932B008FA5F4 /* NotificationController.swift in Sources */,
+				09B7EE9826C080A700151053 /* PumpView.swift in Sources */,
+				0926FBC026B9CCF400258270 /* InverterState.swift in Sources */,
+				09B7EE9226C06B9A00151053 /* InverterGenerationState.swift in Sources */,
+				09A397EE26B9932B008FA5F4 /* ComplicationController.swift in Sources */,
+				09B7EE9626C07DC800151053 /* RoomState.swift in Sources */,
+				09A397E626B9932B008FA5F4 /* InfiniSolarApp.swift in Sources */,
+				09B7EE9A26C0816100151053 /* PumpState.swift in Sources */,
+				09B7EE9426C07AA600151053 /* RoomView.swift in Sources */,
+				097A823726B9C33B00E8CBD0 /* InverterStatus.swift in Sources */,
+				0902D91926C05D6100B4535C /* GenerationView.swift in Sources */,
+				09A397EC26B9932B008FA5F4 /* NotificationView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09A397F626B9932B008FA5F4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				09A397FF26B9932B008FA5F4 /* InfiniSolarTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		09A3980126B9932B008FA5F4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				09A3980A26B9932B008FA5F4 /* InfiniSolarUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		09A397D726B9932A008FA5F4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 09A397D326B9932A008FA5F4 /* InfiniSolar WatchKit App */;
+			targetProxy = 09A397D626B9932A008FA5F4 /* PBXContainerItemProxy */;
+		};
+		09A397E326B9932B008FA5F4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 09A397DF26B9932B008FA5F4 /* InfiniSolar WatchKit Extension */;
+			targetProxy = 09A397E226B9932B008FA5F4 /* PBXContainerItemProxy */;
+		};
+		09A397FC26B9932B008FA5F4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 09A397DF26B9932B008FA5F4 /* InfiniSolar WatchKit Extension */;
+			targetProxy = 09A397FB26B9932B008FA5F4 /* PBXContainerItemProxy */;
+		};
+		09A3980726B9932B008FA5F4 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 09A397D326B9932A008FA5F4 /* InfiniSolar WatchKit App */;
+			targetProxy = 09A3980626B9932B008FA5F4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		09A3980C26B9932B008FA5F4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		09A3980D26B9932B008FA5F4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		09A3980F26B9932B008FA5F4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DAFCB6D0B50AE04B5F1823E7 /* Pods-InfiniSolar WatchKit Extension.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_COMPLICATION_NAME = Complication;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_ASSET_PATHS = "\"InfiniSolar WatchKit Extension/Preview Content\"";
+				DEVELOPMENT_TEAM = 7VWP63QJWL;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = "InfiniSolar WatchKit Extension/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.ch1p.InfiniSolar.watchkitapp.watchkitextension;
+				PRODUCT_NAME = "${TARGET_NAME}";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 7.4;
+			};
+			name = Debug;
+		};
+		09A3981026B9932B008FA5F4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D07D9D2A549779C2ED76D4FC /* Pods-InfiniSolar WatchKit Extension.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_COMPLICATION_NAME = Complication;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_ASSET_PATHS = "\"InfiniSolar WatchKit Extension/Preview Content\"";
+				DEVELOPMENT_TEAM = 7VWP63QJWL;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = "InfiniSolar WatchKit Extension/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.ch1p.InfiniSolar.watchkitapp.watchkitextension;
+				PRODUCT_NAME = "${TARGET_NAME}";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 7.4;
+			};
+			name = Release;
+		};
+		09A3981326B9932B008FA5F4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1F8FDC87E75553B5F63E8CDD /* Pods-InfiniSolar WatchKit App.debug.xcconfig */;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 7VWP63QJWL;
+				IBSC_MODULE = InfiniSolar_WatchKit_Extension;
+				INFOPLIST_FILE = "InfiniSolar WatchKit App/Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = io.ch1p.InfiniSolar.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 7.4;
+			};
+			name = Debug;
+		};
+		09A3981426B9932B008FA5F4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 87898170617B69EDFD754E8D /* Pods-InfiniSolar WatchKit App.release.xcconfig */;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 7VWP63QJWL;
+				IBSC_MODULE = InfiniSolar_WatchKit_Extension;
+				INFOPLIST_FILE = "InfiniSolar WatchKit App/Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = io.ch1p.InfiniSolar.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 7.4;
+			};
+			name = Release;
+		};
+		09A3981726B9932B008FA5F4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = C59C7EDA2DB8E0FEF9BAA170 /* Pods-InfiniSolar.debug.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7VWP63QJWL;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.ch1p.InfiniSolar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		09A3981826B9932B008FA5F4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7999FF5D198D8AC8F58E2512 /* Pods-InfiniSolar.release.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7VWP63QJWL;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.ch1p.InfiniSolar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		09A3981A26B9932B008FA5F4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 66D1B49C439D66B7CC83B844 /* Pods-InfiniSolarTests.debug.xcconfig */;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 7VWP63QJWL;
+				INFOPLIST_FILE = InfiniSolarTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.ch1p.InfiniSolarTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/InfiniSolar WatchKit Extension.appex/InfiniSolar WatchKit Extension";
+				WATCHOS_DEPLOYMENT_TARGET = 7.4;
+			};
+			name = Debug;
+		};
+		09A3981B26B9932B008FA5F4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5AF182901E117EC848223549 /* Pods-InfiniSolarTests.release.xcconfig */;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 7VWP63QJWL;
+				INFOPLIST_FILE = InfiniSolarTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.ch1p.InfiniSolarTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/InfiniSolar WatchKit Extension.appex/InfiniSolar WatchKit Extension";
+				WATCHOS_DEPLOYMENT_TARGET = 7.4;
+			};
+			name = Release;
+		};
+		09A3981D26B9932B008FA5F4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7DFB5B6EDB85E029D8A394D2 /* Pods-InfiniSolar-InfiniSolarUITests.debug.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 7VWP63QJWL;
+				INFOPLIST_FILE = InfiniSolarUITests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.ch1p.InfiniSolarUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "InfiniSolar WatchKit App";
+				WATCHOS_DEPLOYMENT_TARGET = 7.4;
+			};
+			name = Debug;
+		};
+		09A3981E26B9932B008FA5F4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 77EA508CE2EC543A1BD66C12 /* Pods-InfiniSolar-InfiniSolarUITests.release.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 7VWP63QJWL;
+				INFOPLIST_FILE = InfiniSolarUITests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.ch1p.InfiniSolarUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_TARGET_NAME = "InfiniSolar WatchKit App";
+				WATCHOS_DEPLOYMENT_TARGET = 7.4;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		09A397CD26B9932A008FA5F4 /* Build configuration list for PBXProject "InfiniSolar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				09A3980C26B9932B008FA5F4 /* Debug */,
+				09A3980D26B9932B008FA5F4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		09A3980E26B9932B008FA5F4 /* Build configuration list for PBXNativeTarget "InfiniSolar WatchKit Extension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				09A3980F26B9932B008FA5F4 /* Debug */,
+				09A3981026B9932B008FA5F4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		09A3981226B9932B008FA5F4 /* Build configuration list for PBXNativeTarget "InfiniSolar WatchKit App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				09A3981326B9932B008FA5F4 /* Debug */,
+				09A3981426B9932B008FA5F4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		09A3981626B9932B008FA5F4 /* Build configuration list for PBXNativeTarget "InfiniSolar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				09A3981726B9932B008FA5F4 /* Debug */,
+				09A3981826B9932B008FA5F4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		09A3981926B9932B008FA5F4 /* Build configuration list for PBXNativeTarget "InfiniSolarTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				09A3981A26B9932B008FA5F4 /* Debug */,
+				09A3981B26B9932B008FA5F4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		09A3981C26B9932B008FA5F4 /* Build configuration list for PBXNativeTarget "InfiniSolarUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				09A3981D26B9932B008FA5F4 /* Debug */,
+				09A3981E26B9932B008FA5F4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 09A397CA26B99329008FA5F4 /* Project object */;
+}

@@ -29,3 +29,12 @@ for k in "Mic1 Boost" "Line In" "Mic1" "Mic2 Boost" "Mic2"; do
   /usr/bin/amixer set "$k" "86%"
 done
 ```
+
+
+## Orange Pi 3 LTS (Allwinner H6)
+
+See [script](../tools/h6-setup-amixer.sh).
+
+```
+arecord -v -f S32 -r 44100 test.wav
+```

@@ -102,7 +102,7 @@ case "$device" in
 	*"Orange Pi PC 2")
 		setup_opi_pc2
 		;;
-	*"Orange Pi One")
+	*"Orange Pi One"|*"Orange Pi Lite")
 		setup_opi_one
 		;;
 	*"OrangePi 3 LTS")

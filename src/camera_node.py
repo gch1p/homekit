@@ -30,7 +30,7 @@ class ESP32CameraNodeServer(MediaNodeServer):
 
         if with_flash:
             await self.web.setflash(True)
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(1)
 
         bytes = (await self.web.capture()).read()
 

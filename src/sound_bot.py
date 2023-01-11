@@ -304,7 +304,7 @@ class RecordRenderer(Renderer):
 
     @classmethod
     def record_done(cls, info: dict, node: str, uid: int) -> str:
-        ulang = bot.store.get_user_lang(uid)
+        ulang = bot.db.get_user_lang(uid)
 
         def lang(key, *args):
             return bot.lang.get(key, ulang, *args)
@@ -324,7 +324,7 @@ class RecordRenderer(Renderer):
 
     @classmethod
     def record_error(cls, info: dict, node: str, uid: int) -> str:
-        ulang = bot.store.get_user_lang(uid)
+        ulang = bot.db.get_user_lang(uid)
 
         def lang(key, *args):
             return bot.lang.get(key, ulang, *args)
@@ -471,7 +471,7 @@ class CamerasRenderer(Renderer):
     #
     # @classmethod
     # def record_done(cls, info: dict, node: str, uid: int) -> str:
-    #     ulang = bot.store.get_user_lang(uid)
+    #     ulang = bot.db.get_user_lang(uid)
     #
     #     def lang(key, *args):
     #         return bot.lang.get(key, ulang, *args)
@@ -491,7 +491,7 @@ class CamerasRenderer(Renderer):
     #
     # @classmethod
     # def record_error(cls, info: dict, node: str, uid: int) -> str:
-    #     ulang = bot.store.get_user_lang(uid)
+    #     ulang = bot.db.get_user_lang(uid)
     #
     #     def lang(key, *args):
     #         return bot.lang.get(key, ulang, *args)

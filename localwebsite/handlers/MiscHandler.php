@@ -108,6 +108,21 @@ class MiscHandler extends RequestHandler
         $this->tpl->render_page('cams.twig');
     }
 
+    public function GET_cams_stat() {
+        global $config;
+        list($ip, $port) = explode(':', $config['ipcam_server_api_addr']);
+        $body = jsonDecode(file_get_contents('http://'.$ip.':'.$port.'/api/timestamp/all'));
+
+        header('Content-Type: text/plain');
+        $date_fmt = 'd.m.Y H:i:s';
+
+        foreach ($body['response'] as $cam => $data) {
+            $fix = date($date_fmt, $data['fix']);
+            $motion = date($date_fmt, $data['motion']);
+            echo "$cam:\n    motion: $motion\n\n";
+        }
+    }
+
     public function GET_debug() {
         print_r($_SERVER);
     }

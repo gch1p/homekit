@@ -86,5 +86,7 @@ return [
     'grafana_sensors_url' => '',
     'grafana_inverter_url' => '',
 
+    'ipcam_server_api_addr' => '',
+
     'dhcp_hostname_overrides' => [],
 ];

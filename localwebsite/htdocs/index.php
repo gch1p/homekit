@@ -29,6 +29,7 @@ $router->add('pump/',          'Misc pump_page');
 $router->add('phpinfo/',       'Misc phpinfo');
 $router->add('cams/',          'Misc cams');
 $router->add('cams/([\d,]+)/', 'Misc cams id=$(1)');
+$router->add('cams/stat/',     'Misc cams_stat');
 $router->add('debug/',         'Misc debug');
 
 // auth

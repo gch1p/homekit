@@ -2,6 +2,7 @@ import logging
 import asyncio
 
 from aiohttp import web
+from aiohttp.web import Response
 from aiohttp.web_exceptions import HTTPNotFound
 
 from ..util import stringify, format_tb, Addr
@@ -100,3 +101,6 @@ class HTTPServer:
 
     def ok(self, data=None):
         return ok(data)
+
+    def plain(self, text: str):
+        return Response(text=text, content_type='text/plain')

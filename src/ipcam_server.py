@@ -39,6 +39,10 @@ def filename_to_datetime(filename: str) -> datetime:
     return datetime.strptime(filename, datetime_format)
 
 
+def get_all_cams() -> list:
+    return [cam for cam in config['camera'].keys()]
+
+
 # ipcam database
 # --------------
 
@@ -125,6 +129,7 @@ class IPCamWebServer(http.HTTPServer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.get('/api/recordings', self.get_motion_queue)
         self.get('/api/recordings/{name}', self.get_camera_recordings)
         self.get('/api/recordings/{name}/download/{file}', self.download_recording)
         self.get('/api/camera/list', self.camlist)
@@ -139,6 +144,9 @@ class IPCamWebServer(http.HTTPServer):
         self.post('/api/motion/done/{name}', self.submit_motion)
         self.post('/api/motion/fail/{name}', self.submit_motion_failure)
 
+        self.get('/api/motion/params/{name}', self.get_motion_params)
+        self.get('/api/motion/params/{name}/roi', self.get_motion_roi_params)
+
     async def get_camera_recordings(self, req):
         cam = int(req.match_info['name'])
         try:
@@ -146,8 +154,21 @@ class IPCamWebServer(http.HTTPServer):
         except KeyError:
             filter = None
 
-        files = get_recordings_files(cam, filter)
+        try:
+            limit = int(req.query['limit'])
+        except KeyError:
+            limit = 0
 
+        files = get_recordings_files(cam, filter, limit)
+        return self.ok({'files': files})
+
+    async def get_motion_queue(self, req):
+        try:
+            limit = int(req.query['limit'])
+        except KeyError:
+            limit = 0
+
+        files = get_recordings_files(None, TimeFilterType.MOTION, limit)
         return self.ok({'files': files})
 
     async def download_recording(self, req: http.Request):
@@ -234,6 +255,20 @@ class IPCamWebServer(http.HTTPServer):
     async def get_all_timestamps(self, req: http.Request):
         return self.ok(db.get_all_timestamps())
 
+    async def get_motion_params(self, req: http.Request):
+        data = config['motion_params'][int(req.match_info['name'])]
+        lines = [
+            f'threshold={data["threshold"]}',
+            f'min_event_length=3s',
+            f'frame_skip=2',
+            f'downscale_factor=3',
+        ]
+        return self.plain('\n'.join(lines)+'\n')
+
+    async def get_motion_roi_params(self, req: http.Request):
+        data = config['motion_params'][int(req.match_info['name'])]
+        return self.plain('\n'.join(data['roi'])+'\n')
+
     @staticmethod
     def _getset_timestamp_params(req: http.Request, need_time=False):
         values = []
@@ -279,33 +314,42 @@ def get_motion_path(cam: int) -> str:
     return config['camera'][cam]['motion_path']
 
 
-def get_recordings_files(cam: int,
-                         time_filter_type: Optional[TimeFilterType] = None) -> List[dict]:
+def get_recordings_files(cam: Optional[int] = None,
+                         time_filter_type: Optional[TimeFilterType] = None,
+                         limit=0) -> List[dict]:
     from_time = 0
     to_time = int(time.time())
 
-    if time_filter_type:
-        from_time = db.get_timestamp(cam, time_filter_type)
-        if time_filter_type == TimeFilterType.MOTION:
-            to_time = db.get_timestamp(cam, TimeFilterType.FIX)
+    cams = [cam] if cam is not None else get_all_cams()
+    files = []
+    for cam in cams:
+        if time_filter_type:
+            from_time = db.get_timestamp(cam, time_filter_type)
+            if time_filter_type == TimeFilterType.MOTION:
+                to_time = db.get_timestamp(cam, TimeFilterType.FIX)
 
-    from_time = datetime.fromtimestamp(from_time)
-    to_time = datetime.fromtimestamp(to_time)
+        from_time = datetime.fromtimestamp(from_time)
+        to_time = datetime.fromtimestamp(to_time)
 
-    recdir = get_recordings_path(cam)
-    files = [{
-        'name': file,
-        'size': os.path.getsize(os.path.join(recdir, file))}
-             for file in os.listdir(recdir)
-             if valid_recording_name(file) and from_time < filename_to_datetime(file) <= to_time]
-    files.sort(key=lambda file: file['name'])
+        recdir = get_recordings_path(cam)
+        cam_files = [{
+            'cam': cam,
+            'name': file,
+            'size': os.path.getsize(os.path.join(recdir, file))}
+                 for file in os.listdir(recdir)
+                 if valid_recording_name(file) and from_time < filename_to_datetime(file) <= to_time]
+        cam_files.sort(key=lambda file: file['name'])
 
-    if files:
-        last = files[len(files)-1]
-        fullpath = os.path.join(recdir, last['name'])
-        if camutil.has_handle(fullpath):
-            logger.debug(f'get_recordings_files: file {fullpath} has opened handle, ignoring it')
-            files.pop()
+        if cam_files:
+            last = cam_files[len(cam_files)-1]
+            fullpath = os.path.join(recdir, last['name'])
+            if camutil.has_handle(fullpath):
+                logger.debug(f'get_recordings_files: file {fullpath} has opened handle, ignoring it')
+                cam_files.pop()
+            files.extend(cam_files)
+
+    if limit > 0:
+        files = files[:limit]
 
     return files
 

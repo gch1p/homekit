@@ -7,9 +7,19 @@ PROGNAME="$0"
 
 . "$DIR/lib.bash"
 
-curl_opts="-s --connect-timeout 5 --retry 5 --max-time 10 --retry-delay 0 --retry-max-time 40"
+curl_opts="-s --connect-timeout 10 --retry 5 --max-time 180 --retry-delay 0 --retry-max-time 180"
 allow_multiple=
-config_file="$HOME/.config/ipcam_motion_worker/config.txt"
+fetch_limit=10
+
+config=
+config_camera=
+is_remote=
+api_url=
+
+dvr_scan_path="$HOME/.local/bin/dvr-scan"
+fs_root="/var/ipcam_motion_fs"
+fs_max_filesize=146800640
+
 declare -A config=()
 
 usage() {
@@ -17,42 +27,101 @@ usage() {
 usage: $PROGNAME OPTIONS
 
 Options:
-    -c|--config FILE  configuration file, default is $config_file
-    -v, -vx           be verbose.
-                      -v enables debug logs.
-                      -vx does \`set -x\`, may be used to debug the script.
-    --allow-multiple  don't check for another instance
+    -v, -vx             be verbose.
+                        -v enables debug logs.
+                        -vx does \`set -x\`, may be used to debug the script.
+    --allow-multiple    don't check for another instance
+    --L, --fetch-limit  default: $fetch_limit
+    --remote
+    --local
+    --dvr-scan-path     default: $dvr_scan_path
+    --fs-root           default: $fs_root
+    --fs-max-filesize   default: $fs_max_filesize
 EOF
 	exit 1
 }
 
 get_recordings_dir() {
-	curl $curl_opts "${config[api_url]}/api/camera/list" \
-		| jq ".response.\"${config[camera]}\".recordings_path" | tr -d '"'
+	local camera="$1"
+	curl $curl_opts "${api_url}/api/camera/list" \
+		| jq ".response.\"${camera}\".recordings_path" | tr -d '"'
 }
 
-# returns two words per line:
-# filename filesize
+# returns three words per line:
+# filename filesize camera
 get_recordings_list() {
-	curl $curl_opts "${config[api_url]}/api/recordings/${config[camera]}?filter=motion" \
-		| jq '.response.files[] | [.name, .size] | join(" ")' | tr -d '"'
+	curl $curl_opts "${api_url}/api/recordings?limit=${fetch_limit}" \
+		| jq '.response.files[] | [.name, .size, .cam] | join(" ")' | tr -d '"'
+}
+
+read_camera_motion_config() {
+	local camera="$1"
+	local dst=config
+
+	if [ "$config_camera" != "$camera" ]; then
+		local n=0
+		local failed=
+		local key
+		local value
+
+		while read line; do
+			n=$(( n+1 ))
+
+			# skip empty lines or comments
+			if [ -z "$line" ] || [[ "$line" =~ ^#.*  ]]; then
+				continue
+			fi
+
+			if [[ $line = *"="* ]]; then
+				key="${line%%=*}"
+				value="${line#*=}"
+				eval "$dst[$key]=\"$value\""
+			else
+				echoerr "config: invalid line $n"
+				failed=1
+			fi
+		done < <(curl $curl_opts "${api_url}/api/motion/params/${camera}")
+
+		config_camera="$camera"
+
+		[ -z "$failed" ]
+	else
+		debug "read_camera_motion_config: config for $camera already loaded"
+	fi
+}
+
+dump_config() {
+	for key in min_event_length downscale_factor frame_skip threshold; do
+		debug "config[$key]=${config[$key]}"
+	done
+}
+
+get_camera_roi_config() {
+	local camera="$1"
+	curl $curl_opts "${api_url}/api/motion/params/${camera}/roi"
 }
 
 report_failure() {
-	local file="$1"
-	local message="$2"
-	local response=$(curl $curl_opts -X POST "${config[api_url]}/api/motion/fail/${config[camera]}" \
+	local camera="$1"
+	local file="$2"
+	local message="$3"
+
+	local response=$(curl $curl_opts -X POST "${api_url}/api/motion/fail/${camera}" \
 		-F "filename=$file" \
 		-F "message=$message")
+
 	print_response_error "$response" "report_failure"
 }
 
 report_timecodes() {
-	local file="$1"
-	local timecodes="$2"
-	local response=$(curl $curl_opts -X POST "${config[api_url]}/api/motion/done/${config[camera]}" \
+	local camera="$1"
+	local file="$2"
+	local timecodes="$3"
+
+	local response=$(curl $curl_opts -X POST "${api_url}/api/motion/done/${camera}" \
 		-F "filename=$file" \
 		-F "timecodes=$timecodes")
+
 	print_response_error "$response" "report_timecodes"
 }
 
@@ -71,109 +140,92 @@ print_response_error() {
 	fi
 }
 
-get_roi_file() {
-	if [ -n "${config[roi_file]}" ]; then
-		file="${config[roi_file]}"
-		if ! [[ "$file" =~ ^/.* ]]; then
-			file="$(dirname "$config_file")/$file"
-		fi
-
-		debug "get_roi_file: detected file $file"
-		[ -f "$file" ] || die "invalid roi_file: $file: no such file"
-
-		echo "$file"
-	fi
-}
-
-process_local() {
-	local recdir="$(get_recordings_dir)"
-	local tc
-	local words
-	local file
-
-	while read line; do
-		words=($line)
-		file=${words[0]}
-
-		debug "processing $file..."
-
-		tc=$(do_motion "${recdir}/$file")
-		debug "$file: timecodes=$tc"
-
-		report_timecodes "$file" "$tc"
-	done < <(get_recordings_list)
-}
-
-process_remote() {
+process_queue() {
 	local tc
 	local url
 	local words
 	local file
 	local size
+	local camera
+	local local_recs_dir
 
-	pushd "${config[fs_root]}" >/dev/null || die "failed to change to ${config[fs_root]}"
-	touch tmp || die "directory '${config[fs_root]}' is not writable"
-	rm tmp
+	if [ "$is_remote" = "1" ]; then
+		pushd "${fs_root}" >/dev/null || die "failed to change to ${fs_root}"
+		touch tmp || die "directory '${fs_root}' is not writable"
+		rm tmp
 
-	[ -f "video.mp4" ] && {
-		echowarn "video.mp4 already exists in ${config[fs_root]}, removing.."
-		rm "video.mp4"
-	}
+		[ -f "video.mp4" ] && {
+			echowarn "video.mp4 already exists in ${fs_root}, removing.."
+			rm "video.mp4"
+		}
+	fi
 
 	while read line; do
 		words=($line)
 		file=${words[0]}
 		size=${words[1]}
+		camera=${words[2]}
 
-		if (( size > config[fs_max_filesize] )); then
-			echoerr "won't download $file, size exceedes fs_max_filesize ($size > ${config[fs_max_filesize]})"
-			report_failure "$file" "too large file"
-			continue
+		debug "next video: cam=$camera file=$file"
+
+		read_camera_motion_config "$camera"
+#		dump_config
+
+		if [ "$is_remote" = "0" ]; then
+			local_recs_dir="$(get_recordings_dir "$camera")"
+
+			debug "[$camera] processing $file..."
+
+			tc=$(do_motion "$camera" "${local_recs_dir}/$file")
+			debug "[$camera] $file: timecodes=$tc"
+
+			report_timecodes "$camera" "$file" "$tc"
+		else
+			if (( size > fs_max_filesize )); then
+				echoerr "[$camera] won't download $file, size exceeds fs_max_filesize ($size > ${fs_max_filesize})"
+				report_failure "$camera" "$file" "too large file"
+				continue
+			fi
+
+			url="${api_url}/api/recordings/${camera}/download/${file}"
+			debug "[$camera] downloading $url..."
+
+			if ! download "$url" "video.mp4"; then
+				echoerr "[$camera] failed to download $file"
+				report_failure "$camera" "$file" "download error"
+				continue
+			fi
+
+			tc=$(do_motion "$camera" "video.mp4")
+			debug "[$camera] $file: timecodes=$tc"
+
+			report_timecodes "$camera" "$file" "$tc"
+
+			rm "video.mp4"
 		fi
-
-		url="${config[api_url]}/api/recordings/${config[camera]}/download/${file}"
-		debug "downloading $url..."
-
-		if ! download "$url" "video.mp4"; then
-			echoerr "failed to download $file"
-			report_failure "$file" "download error"
-			continue
-		fi
-
-		tc=$(do_motion "video.mp4")
-		debug "$file: timecodes=$tc"
-
-		report_timecodes "$file" "$tc"
-
-		rm "video.mp4"
 	done < <(get_recordings_list)
 
-	popd >/dev/null
+	if [ "$is_remote" = "1" ]; then popd >/dev/null; fi
 }
 
 do_motion() {
-	local input="$1"
-	local roi_file="$(get_roi_file)"
+	local camera="$1"
+	local input="$2"
 	local tc
 
 	local timecodes=()
 
 	time_start
-	if [ -z "$roi_file" ]; then
-		timecodes+=($(do_dvr_scan "$input"))
-	else
-		echoinfo "using roi sets from file: ${BOLD}$roi_file"
-		while read line; do
-			if ! [[ "$line" =~ ^#.*  ]]; then
-				tc="$(do_dvr_scan "$input" "$line")"
-				if [ -n "$tc" ]; then
-					timecodes+=("$tc")
-				fi
+	while read line; do
+		if ! [[ "$line" =~ ^#.*  ]]; then
+			tc="$(do_dvr_scan "$input" "$line")"
+			if [ -n "$tc" ]; then
+				timecodes+=("$tc")
 			fi
-		done < <(cat "$roi_file")
-	fi
+		fi
+	done < <(get_camera_roi_config "$camera")
 
-	debug "do_motion: finished in $(time_elapsed)s"
+	debug "[$camera] do_motion: finished in $(time_elapsed)s"
 
 	timecodes="$(echo "${timecodes[@]}" | sed 's/  */ /g' | xargs)"
 	timecodes="${timecodes// /,}"
@@ -182,7 +234,7 @@ do_motion() {
 }
 
 dvr_scan() {
-	"${config[dvr_scan_path]}" "$@"
+	"${dvr_scan_path}" "$@"
 }
 
 do_dvr_scan() {
@@ -207,14 +259,44 @@ do_dvr_scan() {
 
 while [[ $# -gt 0 ]]; do
 	case $1 in
-		-c|--config)
-			config_file="$2"
+		-L|--fetch-limit)
+			fetch_limit="$2"
 			shift; shift
 			;;
 
 		--allow-multiple)
 			allow_multiple=1
 			shift
+			;;
+
+		--remote)
+			is_remote=1
+			shift
+			;;
+
+		--local)
+			is_remote=0
+			shift
+			;;
+
+		--dvr-scan-path)
+			dvr_scan_path="$2"
+			shift; shift
+			;;
+
+		--fs-root)
+			fs_root="$2"
+			shift; shift
+			;;
+
+		--fs-max-filesize)
+			fs_max_filesize="$2"
+			shift; shift
+			;;
+
+		--api-url)
+			api_url="$2"
+			shift; shift
 			;;
 
 		-v)
@@ -239,20 +321,7 @@ if [ -z "$allow_multiple" ] && pidof -o %PPID -x "$(basename "${BASH_SOURCE[0]}"
 	die "process already running"
 fi
 
-read_config "$config_file" config
-check_config config "api_url camera"
-if [ -n "${config[remote]}" ]; then
-	check_config config "fs_root fs_max_filesize"
-fi
+[ -z "$is_remote" ] && die "either --remote or --local is required"
+[ -z "$api_url" ] && die "--api-url is required"
 
-[ -z "${config[threshold]}" ] && config[threshold]=1
-[ -z "${conifg[min_event_length]}" ] && config[min_event_length]="3s"
-[ -z "${conifg[frame_skip]}" ] && config[frame_skip]=2
-[ -z "${conifg[downscale_factor]}" ] && config[downscale_factor]=3
-[ -z "${conifg[dvr_scan_path]}" ] && config[dvr_scan_path]="dvr-scan"
-
-if [ -z "${config[remote]}" ]; then
-	process_local
-else
-	process_remote
-fi
+process_queue

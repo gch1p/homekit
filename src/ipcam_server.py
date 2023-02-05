@@ -8,6 +8,7 @@ import shutil
 import home.telegram.aio as telegram
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from asyncio import Lock
 
 from home.config import config
 from home import http
@@ -23,6 +24,7 @@ from functools import cmp_to_key
 class TimeFilterType(Enum):
     FIX = 'fix'
     MOTION = 'motion'
+    MOTION_START = 'motion_start'
 
 
 class TelegramLinkType(Enum):
@@ -47,7 +49,7 @@ def get_all_cams() -> list:
 # --------------
 
 class IPCamServerDatabase(SQLiteBase):
-    SCHEMA = 3
+    SCHEMA = 4
 
     def __init__(self):
         super().__init__()
@@ -75,6 +77,10 @@ class IPCamServerDatabase(SQLiteBase):
 
         if version < 3:
             cursor.execute("ALTER TABLE motion_failures ADD COLUMN message TEXT NOT NULL DEFAULT ''")
+
+        if version < 4:
+            cursor.execute("ALTER TABLE timestamps ADD COLUMN motion_start_time INTEGER NOT NULL")
+            cursor.execute("UPDATE timestamps SET motion_start_time=motion_time")
 
         self.commit()
 
@@ -147,8 +153,10 @@ class IPCamWebServer(http.HTTPServer):
         self.get('/api/motion/params/{name}', self.get_motion_params)
         self.get('/api/motion/params/{name}/roi', self.get_motion_roi_params)
 
+        self.queue_lock = Lock()
+
     async def get_camera_recordings(self, req):
-        cam = int(req.match_info['name'])
+        camera = int(req.match_info['name'])
         try:
             filter = TimeFilterType(req.query['filter'])
         except KeyError:
@@ -159,7 +167,10 @@ class IPCamWebServer(http.HTTPServer):
         except KeyError:
             limit = 0
 
-        files = get_recordings_files(cam, filter, limit)
+        files = get_recordings_files(camera, filter, limit)
+        if files:
+            time = filename_to_datetime(files[len(files)-1]['name'])
+            db.set_timestamp(camera, TimeFilterType.MOTION_START, time)
         return self.ok({'files': files})
 
     async def get_motion_queue(self, req):
@@ -168,7 +179,17 @@ class IPCamWebServer(http.HTTPServer):
         except KeyError:
             limit = 0
 
-        files = get_recordings_files(None, TimeFilterType.MOTION, limit)
+        async with self.queue_lock:
+            files = get_recordings_files(None, TimeFilterType.MOTION_START, limit)
+            if files:
+                times_by_cam = {}
+                for file in files:
+                    time = filename_to_datetime(file['name'])
+                    if file['cam'] not in times_by_cam or times_by_cam[file['cam']] < time:
+                        times_by_cam[file['cam']] = time
+                for cam, time in times_by_cam.items():
+                    db.set_timestamp(cam, TimeFilterType.MOTION_START, time)
+
         return self.ok({'files': files})
 
     async def download_recording(self, req: http.Request):

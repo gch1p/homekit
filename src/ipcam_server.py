@@ -346,7 +346,7 @@ def get_recordings_files(cam: Optional[int] = None,
     for cam in cams:
         if time_filter_type:
             from_time = db.get_timestamp(cam, time_filter_type)
-            if time_filter_type == TimeFilterType.MOTION:
+            if time_filter_type in (TimeFilterType.MOTION, TimeFilterType.MOTION_START):
                 to_time = db.get_timestamp(cam, TimeFilterType.FIX)
 
         from_time = datetime.fromtimestamp(from_time)

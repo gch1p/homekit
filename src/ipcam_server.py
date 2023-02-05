@@ -79,7 +79,7 @@ class IPCamServerDatabase(SQLiteBase):
             cursor.execute("ALTER TABLE motion_failures ADD COLUMN message TEXT NOT NULL DEFAULT ''")
 
         if version < 4:
-            cursor.execute("ALTER TABLE timestamps ADD COLUMN motion_start_time INTEGER NOT NULL")
+            cursor.execute("ALTER TABLE timestamps ADD COLUMN motion_start_time INTEGER NOT NULL DEFAULT 0")
             cursor.execute("UPDATE timestamps SET motion_start_time=motion_time")
 
         self.commit()

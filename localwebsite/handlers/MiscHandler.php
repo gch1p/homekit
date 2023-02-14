@@ -117,9 +117,11 @@ class MiscHandler extends RequestHandler
         $date_fmt = 'd.m.Y H:i:s';
 
         foreach ($body['response'] as $cam => $data) {
-            $fix = date($date_fmt, $data['fix']);
+            // $fix = date($date_fmt, $data['fix']);
+            $start = date($date_fmt, $data['motion_start']);
             $motion = date($date_fmt, $data['motion']);
-            echo "$cam:\n    motion: $motion\n\n";
+            echo "$cam:\n    motion: $motion\n";
+            echo "    motion_start: $start\n\n";
         }
     }
 

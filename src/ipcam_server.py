@@ -101,11 +101,12 @@ class IPCamServerDatabase(SQLiteBase):
         cur = self.cursor()
         data = {}
 
-        cur.execute("SELECT camera, fix_time, motion_time FROM timestamps")
-        for cam, fix_time, motion_time in cur.fetchall():
+        cur.execute("SELECT camera, fix_time, motion_time, motion_start_time FROM timestamps")
+        for cam, fix_time, motion_time, motion_start_time in cur.fetchall():
             data[int(cam)] = {
                 'fix': int(fix_time),
-                'motion': int(motion_time)
+                'motion': int(motion_time),
+                'motion_start': int(motion_start_time)
             }
 
         return data

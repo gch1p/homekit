@@ -8,6 +8,10 @@ die() {
 	exit 1
 }
 
+vkos() {
+	$PROGNAME "$@"
+}
+
 usage() {
 	cat <<EOF
 usage: $PROGNAME [OPTIONS] COMMAND
@@ -20,6 +24,7 @@ Supported commands:
 	list NODE
 	fetch NODE PREFIX
 	merge
+	auto DATE
 EOF
 	exit
 }
@@ -31,6 +36,7 @@ NODE=
 PREFIX=
 FROM_BACKUP=0
 DONT_DELETE=0
+DATE=
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		list)
@@ -48,6 +54,12 @@ while [[ $# -gt 0 ]]; do
 
 		merge)
 			COMMAND="$1"
+			;;
+
+		auto)
+			COMMAND="$1"
+			DATE="$2"
+			shift
 			;;
 
 		-b)
@@ -95,5 +107,21 @@ case "$COMMAND" in
 		args=
 		if [ "$DONT_DELETE" = "0" ]; then args="-D"; fi
 		$DIR/merge-recordings.py $args
+		;;
+
+	auto)
+		[ -z "$DATE" ] && usage
+		DATE_WO_DOTS=${DATE//./}
+
+		cd ~/vkos
+		mkdir $DATE
+		cd $DATE
+		for node in bh1 room; do
+			mkdir $node
+			cd $node
+			vkos fetch $node $DATE_WO_DOTS
+			vkos merge -d
+			cd ..
+		done
 		;;
 esac
